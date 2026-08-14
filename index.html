@@ -25,7 +25,6 @@ header{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap;
 #deckName{background:none; border:none; color:var(--paper); padding:0; display:block;
   font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:29px; font-weight:600; width:min(380px,70vw)}
-#deckName:hover{background:rgba(255,255,255,.04)}
 .legendline{display:flex; align-items:center; gap:7px; margin-top:5px; flex-wrap:wrap;
   font-size:13px; color:var(--mute)}
 .legendname{color:var(--brass); font-size:14px}
@@ -68,7 +67,6 @@ header{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap;
 .tile{margin:0; display:flex; flex-direction:column; gap:5px}
 .frame{position:relative; border:none; border-radius:6px; padding:2px; cursor:pointer;
   display:block; width:100%; line-height:0; box-shadow:0 2px 8px rgba(0,0,0,.4)}
-.frame:hover{filter:brightness(1.12)}
 .tile.flagged .frame{box-shadow:0 0 0 1px var(--warn)}
 .frame img,.frame svg{width:100%; height:auto; display:block; border-radius:4px;
   background:#1A1530; aspect-ratio:744/1039}
@@ -88,9 +86,7 @@ header{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap;
  
 .btn{background:transparent; border:1px solid var(--edge); color:var(--paper);
   border-radius:2px; padding:8px 12px; font-size:12px; cursor:pointer}
-.btn:hover{border-color:var(--brass); color:var(--brass)}
 .btn.go{background:var(--brass); border-color:var(--brass); color:var(--ink); font-weight:600}
-.btn.go:hover{color:var(--ink); filter:brightness(1.08)}
 .btn.sm{padding:3px 7px; font-size:10px}
 .btn.quiet{color:var(--mute)}
 #more,#showAll,#showLess{margin-top:14px}
@@ -100,7 +96,6 @@ header{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap;
   font-family:ui-monospace,Menlo,monospace; font-size:12px}
 .step{width:19px; height:19px; background:var(--panel); border:1px solid var(--edge);
   color:var(--paper); border-radius:2px; cursor:pointer; line-height:1; padding:0}
-.step:hover{border-color:var(--brass); color:var(--brass)}
  
 .onboard{text-align:center; padding:48px 20px; color:var(--mute)}
 .onboard p{margin:0 0 14px; font-size:14px}
@@ -159,6 +154,85 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
 .kw-timing{background:var(--teal); color:#0E1A19}
 .para{display:block}
 .para + .para{margin-top:.7em}
+
+/* ======================= responsive =======================
+   One layout, three axes — none of them a separate mobile site:
+     (hover:hover)   real pointer      → hover affordances
+     (hover:none)    touch             → bigger hit targets
+     (max-width)     narrow viewport   → tighter layout
+   A narrow desktop window gets the tight layout without the fat
+   touch targets, and a large tablet gets the targets without the
+   tight layout. Neither is true if you branch on width alone. */
+
+/* ---- pointer: hover states only where hover exists ----
+   On touch these stick after a tap — the tapped tile stays lit
+   until you tap elsewhere, which reads as a selection bug. */
+@media (hover:hover){
+  #deckName:hover{background:rgba(255,255,255,.04)}
+  .frame:hover{filter:brightness(1.12)}
+  .btn:hover{border-color:var(--brass); color:var(--brass)}
+  .btn.go:hover{color:var(--ink); filter:brightness(1.08)}
+  .step:hover{border-color:var(--brass); color:var(--brass)}
+}
+
+/* ---- touch: hit targets ----
+   Everything here is a finger-size problem, not a screen-size one. */
+@media (hover:none){
+  /* 19px is a mouse target. Apple's floor is 44px, Google's 48dp;
+     30px inside a padded row is the honest compromise on a card list
+     this dense. */
+  .step{width:30px; height:30px; font-size:15px}
+  .qty{gap:8px; font-size:14px}
+  .btn{padding:10px 14px}
+  .btn.sm{padding:7px 10px; font-size:11px}
+  .chip{padding:8px 11px; font-size:12px}
+  .mini{font-size:12px; padding:4px 0}
+  /* iOS zooms the whole page when you focus an input under 16px and
+     never zooms back out. This is the only reason for the size. */
+  #q,#deckName{font-size:16px}
+  #deckName{font-size:26px}
+  /* The tile actions are nowrap at desktop sizes because they fit.
+     With touch padding they don't, so let the second one drop. */
+  .acts{flex-wrap:wrap}
+  .acts .btn{flex:1 1 auto}
+}
+
+/* ---- narrow viewport: layout ---- */
+@media (max-width:640px){
+  body{padding:14px 12px 32px}
+  header{gap:12px; padding-bottom:12px}
+  #deckName{width:100%; font-size:24px}
+  /* Left to itself the legality strip wraps 3-and-1 and looks broken.
+     Four equal columns hold the row down to ~320px. */
+  .checks{display:grid; grid-template-columns:repeat(4,1fr); gap:5px}
+  .checks li{min-width:0; padding:6px 5px; text-align:center}
+  .checks li b{font-size:15px}
+  .shelf{grid-template-columns:repeat(auto-fill,minmax(94px,1fr)); gap:8px}
+  .shelf.sm{grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:6px}
+  .curve{min-height:72px}
+  h2{margin:18px 0 8px}
+  /* Full-width rows beat a ragged wrap of four differently-sized buttons. */
+  .actions{gap:6px}
+  .actions .btn{flex:1 1 calc(50% - 3px)}
+  .legal{font-size:11px}
+  /* Full-screen on a phone. Backdrop-tap-to-close goes away with the
+     backdrop, so the Close button below is the only pointer exit —
+     it is pinned, not left at the bottom of the rules text. Escape
+     still works for anyone on a keyboard. */
+  #modal{padding:0}
+  .box{max-width:none; border:none; border-radius:0;
+    padding:16px; gap:14px; align-content:start;
+    height:100vh; max-height:100vh;
+    height:100dvh; max-height:100dvh}  /* dvh: mobile URL bar steals vh */
+  .box img,.box svg{width:min(260px,55%); margin:0 auto}
+  .meta{min-width:0; flex-basis:100%; display:flex; flex-direction:column}
+  .meta h3{font-size:22px}
+  .meta .text{font-size:14px; line-height:1.75}
+  .meta .artist{margin-bottom:10px}
+  .modalacts{position:sticky; bottom:0; margin-top:auto;
+    background:var(--panel); box-shadow:0 -8px 12px -6px var(--panel);
+    padding:10px 0 2px}
+}
 </style>
 </head>
 <body>
@@ -318,9 +392,17 @@ window.imgFail = function(img, name){
   img.outerHTML = fallbackSvg(card);
 };
  
+/* Riot serves card art through Sanity's image CDN, which honours w/fm/q params.
+   Tiles render at ~112px, so a 240px webp is 15 KB against the original's 818 KB.
+   Still a hotlink — same asset, same host, just asking for the size we display.
+   The card modal keeps the full-size original. */
+function thumb(url, w = 240){
+  return url + (url.includes("?") ? "&" : "?") + `w=${w}&fm=webp`;
+}
+
 function tileHtml(c, acts){
   const art = c.image
-    ? `<img src="${esc(c.image)}" alt="${esc(c.name)}" loading="lazy"
+    ? `<img src="${esc(thumb(c.image))}" alt="${esc(c.name)}" loading="lazy"
          referrerpolicy="no-referrer"
          onerror="imgFail(this,'${esc(c.name).replace(/'/g,"\\'")}')">`
     : fallbackSvg(c);
