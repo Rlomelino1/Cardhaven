@@ -4,31 +4,18 @@ Each entry: the decision, the options, what was stubbed, what stays broken until
 
 ---
 
-## 1. Which SMTP sender (stage 3)
-
-**What it is.** The author has decided against Neon's shared sender
-(`auth@mail.myneon.app`) and wants password-reset mail to come from a real address.
-Which address is theirs to pick — it is their identity on the mail, and one option
-involves a work domain.
-
-**Options.**
-- **Gmail + app password** — `smtp.gmail.com:587`, sends as a Gmail address, proper SPF/DKIM because it really is Google sending it, 500/day, free, no domain or DNS work. Requires 2FA on the account to mint an app password.
-- **Brevo free tier** — 300/day, and a single sender address can be verified by clicking a link in it, so no domain or DNS is required.
-- **Resend free tier** — 3,000/month and a cleaner sending identity, but sending as anything other than a sandbox address needs a domain verified over DNS.
-
-Whichever is chosen, the account is a new one created for this project. No existing
-personal or work address is used.
-
-**What was stubbed.** Nothing. The shared sender works today, so password reset
-functions; it just arrives from a Neon address and is likelier to be filtered.
-
-**What stays broken until it's decided.** Nothing in code — SMTP is console
-configuration and no part of `index.html` references it. Stage 3 can be built and
-tested in full on the shared sender and switched over at any point.
+*Nothing is currently blocked.*
 
 ---
 
 ## Resolved
+
+**SMTP sender (was §1).** Settled 2026-08-14: a Gmail account created for this project,
+`smtp.gmail.com:587` with a 16-character app password. Chosen over Brevo and Resend
+because it needs no domain and no DNS, and deliverability is good because Google
+genuinely is the sender. Tested with `POST /auth/send_test_email` — which validates the
+config *without* saving it — before the config was written. No existing personal or
+work address is involved.
 
 **Merge on signup (was §1).** Decided by the author on 2026-08-14: **keep both.** A deck
 built signed out is imported as an additional deck on the account; nothing on either

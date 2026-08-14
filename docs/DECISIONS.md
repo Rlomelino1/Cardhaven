@@ -44,7 +44,11 @@ One line each: what was chosen, what was rejected.
 - Signed-out users stay on localStorage; rejected `allowAnonymous: true` (author's call) — an anonymous token would put every drive-by doodle in the database against a 0.5 GB cap, and the export button already covers signed-out backup.
 - Auth setup steps live in `docs/auth-setup.md`; rejected putting them in `CLAUDE.md`, which is instructions-for-Claude, not a runbook the author works from.
 - Probed the live auth endpoint rather than assuming provisioning state; rejected asking the author to check — the endpoint answers definitively and Managed Better Auth turned out to be already enabled.
-- Custom SMTP over a real sender (author's call); rejected Neon's shared `auth@mail.myneon.app`. Which provider is still open — see `docs/BLOCKED.md`.
+- Custom SMTP over a real sender (author's call); rejected Neon's shared `auth@mail.myneon.app`, which is the likeliest address to be spam-filtered and now carries the sign-up code.
+- Gmail + app password as the sender; rejected Brevo and Resend, both of which want a domain verified over DNS for a project that has none.
+- A Gmail account created for this project; rejected any existing address — the author's own addresses are not used anywhere in this repo.
+- Sent a test message through `send_test_email` before writing the config; rejected saving first and finding out later, because a bad app password would otherwise surface as a user who never received their code.
+- Turned on `send_verification_email_on_sign_up` to match `require_email_verification`, which was already on; rejected leaving the pair inconsistent — that combination creates accounts that can never sign in, and neither the console nor the API reports it as an error.
 - Stage 4 will handle "session arrives on a fresh page load" even though email verification is currently off; rejected coding to the current setting, which is a console toggle that can change without touching the repo.
 
 ## Stage 2 — schema
