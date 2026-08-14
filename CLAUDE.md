@@ -28,17 +28,24 @@ explain those more.
 - Git identity configured (commits use a GitHub noreply address — don't change it)
 - Neon CLI (`neonctl`) requires Node >= 20.19.0; current Node satisfies this
 
-## Files in this repo
+## Layout
 
-- `index.html` — the app. Was `riftbound-deckbuilder.html`; GitHub Pages needs
-  `index.html` at the repo root.
-- `ogn-pool.json` — 352 Origins cards with image URLs
-- `build-pool-v2.mjs` — the fetch script, for when new sets drop
-- `supabase/migrations/*_create_decks.sql` — **written and tested against Supabase.**
-  Adapt it; don't trust it as-is. See "Adapting the migration" below.
-- `.env` — gitignored. Never commit, never inline, never echo into a chat.
-- `.nojekyll` — empty file, required so GitHub Pages doesn't run Jekyll and silently
-  drop anything beginning with an underscore.
+```
+index.html              the app — must stay at the repo root, Pages serves from /
+.nojekyll               required, or Pages runs Jekyll and drops _-prefixed paths
+.env                    gitignored. Never commit, never inline, never echo to chat
+.env.example            the key names, no values
+CLAUDE.md               this file
+README.md               human-facing overview
+data/ogn-pool.json      352 Origins cards with image URLs
+scripts/                build-pool-v2.mjs — the fetch script, for when new sets drop
+migrations/             0001_create_decks.sql + tests/ (24 tests, all passing)
+docs/                   DECISIONS.md, BLOCKED.md, auth-setup.md, deployment.md,
+                        persistence-audit.md
+```
+
+**`index.html` and `.nojekyll` cannot move.** Pages is a branch deploy from `main` at
+`/`, so the app has to sit at the root. Everything else is free to reorganize.
 
 ---
 
@@ -112,31 +119,23 @@ convention (`neon env pull` writes the first two):
   When something behaves unexpectedly, check the current Neon docs before assuming the
   bug is in our code.
 
-## Adapting the migration
+## The migration
 
-The SQL in `supabase/migrations/` was written and tested against a Supabase-shaped
-Postgres. Before running it:
+`migrations/0001_create_decks.sql` is applied to the live database. It is Neon-native —
+`auth.user_id()` through a `public.app_user_id()` wrapper, `user_id uuid` with an
+`ON DELETE CASCADE` foreign key to `neon_auth."user"(id)`, four RLS policies per table,
+a trigger pinning `user_id` and `created_at`, and jsonb payload size and shape
+constraints. `migrations/README.md` has the details; `docs/DECISIONS.md` has the reasoning.
 
-- `auth.uid()` → `auth.user_id()` (Neon's Data API helper)
-- The foreign key targets `auth.users(id)`. Neon's Managed Better Auth stores identity
-  in the `neon_auth` schema. **Check the live Neon docs for the correct table**, and
-  determine whether `ON DELETE CASCADE` from our table to it is actually permitted. If
-  it isn't, account deletion needs an explicit cleanup path — that's a real
-  requirement, not an optional nicety. Flag it if you can't do it cleanly.
-- Run it over `DATABASE_URL_UNPOOLED`. The pooled endpoint runs PgBouncer in
-  transaction mode and does not support `SET`, `search_path`, or session state — and
-  our `set_updated_at()` trigger function uses `set search_path = ''`. Migrations
-  through the pooler will fail in confusing ways.
-- Everything else in it — the jsonb payload design, the size and shape constraints,
-  the four RLS policies, the trigger that pins `user_id` and `created_at` — was tested
-  against real Postgres with a simulated auth layer and 14 adversarial cases. Keep the
-  design; change only what Neon requires.
+**Run migrations over `DATABASE_URL_UNPOOLED`.** The pooled endpoint runs PgBouncer in
+transaction mode and does not support `SET`, `search_path`, or session state — and
+`set_updated_at()` uses `set search_path = ''`. Migrations through the pooler fail in
+confusing ways.
 
-**Start by auditing what the current `save()` / `load()` / `wipe()` actually persist.**
-The schema was designed from a description of the state shape, not from reading the
-file. Report what belongs in the deck row, what belongs in a separate per-user
-settings row, and what belongs nowhere near the database (transient UI state) before
-committing to the schema.
+What the app persists today, and where each field belongs, is written up in
+`docs/persistence-audit.md` — read from the file, not from a description of it. It also
+lists the payload shrink that has to land in stage 4 (`zones` currently stores a full
+card object per entry; the row needs `{ref, qty}`).
 
 ---
 
@@ -277,7 +276,7 @@ would accept either way:
 - Test structure and how much to test
 - Whether to refactor a function you're already editing
 
-Log each as **one line** in `DECISIONS.md`: what you chose, what you rejected.
+Log each as **one line** in `docs/DECISIONS.md`: what you chose, what you rejected.
 
 ### Major decisions → skip it, stub around it, log it, keep moving
 
@@ -296,7 +295,7 @@ behavior the author would visibly disagree with:
 
 For these: **do not guess and do not stop.** Pick the most conservative placeholder
 that keeps the build working — a stub, a safe hardcoded default, a disabled control
-with a tooltip — mark it `// TODO(decision): <one line>`, and log it in `BLOCKED.md`
+with a tooltip — mark it `// TODO(decision): <one line>`, and log it in `docs/BLOCKED.md`
 with:
 
 1. What the decision is
@@ -312,7 +311,7 @@ in the stage and say so clearly.
 
 Google OAuth credentials are configured in the Neon Console and won't exist until
 after stage 1. Don't wait on them. Write the code as if they were present, read config
-from a placeholder, note it in `BLOCKED.md`, and continue.
+from a placeholder, note it in `docs/BLOCKED.md`, and continue.
 
 ### At the end of every session
 

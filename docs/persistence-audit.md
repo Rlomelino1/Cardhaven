@@ -52,7 +52,7 @@ That is correct for localStorage — it is what lets the app reopen without re-i
 and it is exactly wrong for Postgres:
 
 - It is **identical for every user**. Storing it per-user is a straight duplication of
-  static data, and `docs/CLAUDE.md` already rules it out: *"The card pool stays a static
+  static data, and `CLAUDE.md` already rules it out: *"The card pool stays a static
   JSON file served alongside the HTML — never rows in the database."*
 - It is large. Each entry carries `text`, `image`, `artist`, `domains`, and nine more
   fields; 352 of them is a few hundred KB of JSON. Against a 0.5 GB storage cap and a
@@ -86,7 +86,7 @@ Two things to fix while doing it:
   (`index.html:540`). It is meaningless across devices and must not be persisted.
 - **`legend` is stored as an object but `champion` as a bare name string**
   (`index.html:536`). Inconsistent, and `champion` being a *name* collides directly with
-  the base/Showcase rule in `docs/CLAUDE.md`: identity keys on **collector number**.
+  the base/Showcase rule in `CLAUDE.md`: identity keys on **collector number**.
   Both should be a collector-number ref.
 
 The migration below does not enforce the reference shape, deliberately — the client

@@ -11,21 +11,18 @@
 -- ---------------------------------------------------------------------------
 -- Provenance
 -- ---------------------------------------------------------------------------
--- docs/CLAUDE.md refers to a tested Supabase-shaped migration at
--- supabase/migrations/*_create_decks.sql to be adapted. That file is not in the
--- repository and never has been (the baseline commit contains index.html,
--- .nojekyll and the docs only). This file therefore implements the design that
--- doc describes -- jsonb payload, size and shape constraints, four RLS
--- policies, and a trigger that pins user_id and created_at -- rather than
--- adapting existing SQL. It has not inherited the original's 14 adversarial
--- test cases; the checks that were run against it are listed at the bottom.
+-- Written fresh for Neon. An earlier migration for this project existed but was
+-- never committed to the repository, so nothing was adapted or carried across.
+-- This file implements the design CLAUDE.md describes -- jsonb payload,
+-- size and shape constraints, four RLS policies, and a trigger that pins
+-- user_id and created_at. The checks run against it are listed at the bottom.
 --
 -- ---------------------------------------------------------------------------
 -- What Neon required, and why (all verified against this database, not assumed)
 -- ---------------------------------------------------------------------------
 -- 1. auth.uid() -> auth.user_id(). Both exist here: pg_session_jwt 0.5.0
 --    provides auth.uid() returning uuid and auth.user_id() returning text.
---    docs/CLAUDE.md and Neon's own Data API docs both specify user_id(), so
+--    CLAUDE.md and Neon's own Data API docs both specify user_id(), so
 --    that is what the policies call.
 --
 -- 2. The identity table is neon_auth."user", not auth.users. Confirmed by
