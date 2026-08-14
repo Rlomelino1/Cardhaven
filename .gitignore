@@ -1,0 +1,42 @@
+# Secrets — Neon credentials, connection strings, API keys.
+# Never commit these; the app is public and the repo is the deploy target.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# OS cruft
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Editors / IDEs
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*~
+
+# Node — no build step today, but tooling (a formatter, a dev server) tends to show up
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+
+# Build/deploy output
+dist/
+build/
+.cache/
+
+# Local scratch: exported decks, collection dumps, scraped card pools you don't
+# want in git history. Keep the canonical pool JSON tracked, put throwaways here.
+local/
+scratch/
+tmp/
+*.local.json
