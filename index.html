@@ -1,0 +1,718 @@
+
+/
+Riftbound deck builder
+Riftbound deck builder
+Created by you
+·
+Private
+
+
+
+
+
+
+
+All chats are private unless shared
+Missing project files and database structure
+5 minutes ago
+Instructions
+Add instructions to tailor Claude’s responses
+
+Memory
+Only you
+Project memory will show here after a few chats.
+
+Context
+1% of project capacity used
+
+riftbound-deckbuilder.html
+679 lines
+
+html
+
+
+Scheduled
+Set up recurring tasks for this project.
+
+riftbound-deckbuilder.html
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Riftbound Deckbuilder</title>
+<style>
+:root{
+  --ink:#141024; --panel:#1F1936; --edge:#312A4C;
+  --paper:#EAE7F4; --mute:#948CAB; --brass:#C9A227; --teal:#3FA7A0; --warn:#D2564B;
+  --Fury:#D94A3D; --Calm:#4FA86B; --Mind:#3D7FD9;
+  --Body:#E08A2E; --Chaos:#8B5CD6; --Order:#D9B62E; --Colorless:#8A8397;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ink); color:var(--paper); padding:22px 18px 40px;
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+:focus-visible{outline:2px solid var(--brass); outline-offset:2px}
+button,input{font-family:inherit}
+ 
+header{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap;
+  border-bottom:1px solid var(--edge); padding-bottom:14px}
+.eyebrow{margin:0 0 5px; font-family:ui-monospace,Menlo,monospace; font-size:10px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--teal)}
+#deckName{background:none; border:none; color:var(--paper); padding:0; display:block;
+  font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:29px; font-weight:600; width:min(380px,70vw)}
+#deckName:hover{background:rgba(255,255,255,.04)}
+.legendline{display:flex; align-items:center; gap:7px; margin-top:5px; flex-wrap:wrap;
+  font-size:13px; color:var(--mute)}
+.legendname{color:var(--brass); font-size:14px}
+.pip{width:9px; height:9px; border-radius:50%; display:block}
+.mini{background:none; border:none; color:var(--mute); font-size:11px;
+  cursor:pointer; text-decoration:underline; padding:0}
+ 
+.checks{list-style:none; display:flex; gap:6px; margin:0; padding:0; flex-wrap:wrap}
+.checks li{background:var(--panel); border:1px solid var(--edge); border-radius:2px;
+  padding:7px 9px; min-width:74px; font-size:9px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--mute); font-family:ui-monospace,Menlo,monospace}
+.checks li b{display:block; font-size:18px; color:var(--paper); letter-spacing:0}
+.checks li b span{font-size:10px; color:var(--mute)}
+.checks li.ok{border-color:var(--teal)}
+.checks li.ok b{color:var(--teal)}
+ 
+#problems{list-style:none; margin:13px 0 0; padding:10px 12px; border-left:2px solid var(--warn);
+  background:rgba(210,86,75,.09); font-size:13px; line-height:1.5; color:#F2CBC6;
+  display:flex; flex-direction:column; gap:5px}
+#problems:empty{display:none}
+ 
+.controls{display:flex; flex-direction:column; gap:9px; margin:18px 0 0}
+#q{background:var(--panel); border:1px solid var(--edge); color:var(--paper);
+  border-radius:2px; padding:10px 12px; font-size:14px; width:100%}
+.row{display:flex; gap:5px; flex-wrap:wrap; align-items:center}
+.row > .lbl{font-family:ui-monospace,Menlo,monospace; font-size:9px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mute); margin-right:3px}
+.chip{background:var(--panel); border:1px solid var(--edge); color:var(--mute);
+  border-radius:2px; padding:5px 9px; font-size:11px; cursor:pointer}
+.chip.on{background:var(--edge); color:var(--paper)}
+.dchip{border-left:3px solid var(--c)}
+.dchip.on{background:var(--c); color:#12101c; font-weight:600}
+ 
+.count{font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--mute); margin:14px 0 0}
+ 
+.shelf{display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr));
+  gap:11px; margin:12px 0 0}
+.shelf.sm{grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:8px}
+.tile{margin:0; display:flex; flex-direction:column; gap:5px}
+.frame{position:relative; border:none; border-radius:6px; padding:2px; cursor:pointer;
+  display:block; width:100%; line-height:0; box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.frame:hover{filter:brightness(1.12)}
+.tile.flagged .frame{box-shadow:0 0 0 1px var(--warn)}
+.frame img,.frame svg{width:100%; height:auto; display:block; border-radius:4px;
+  background:#1A1530; aspect-ratio:744/1039}
+.orb{position:absolute; top:6px; left:6px; width:20px; height:20px; border-radius:50%;
+  background:rgba(10,8,18,.85); color:var(--brass); border:1px solid var(--brass);
+  font-family:ui-monospace,Menlo,monospace; font-size:11px; line-height:19px; text-align:center}
+.sig{position:absolute; top:6px; right:6px; width:16px; height:16px; border-radius:2px;
+  background:var(--brass); color:#12101c; font-family:ui-monospace,Menlo,monospace;
+  font-size:9px; line-height:16px; text-align:center; font-weight:700}
+.flagtag{font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--warn)}
+.variant{position:absolute; bottom:6px; left:6px; background:rgba(10,8,18,.85);
+  color:var(--paper); border:1px solid rgba(234,231,244,.35); border-radius:2px;
+  font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.08em;
+  text-transform:uppercase; padding:2px 5px; line-height:1.1}
+.acts{display:flex; gap:4px; align-items:center; flex-wrap:nowrap; min-height:22px}
+ 
+.btn{background:transparent; border:1px solid var(--edge); color:var(--paper);
+  border-radius:2px; padding:8px 12px; font-size:12px; cursor:pointer}
+.btn:hover{border-color:var(--brass); color:var(--brass)}
+.btn.go{background:var(--brass); border-color:var(--brass); color:var(--ink); font-weight:600}
+.btn.go:hover{color:var(--ink); filter:brightness(1.08)}
+.btn.sm{padding:3px 7px; font-size:10px}
+.btn.quiet{color:var(--mute)}
+#more,#showAll,#showLess{margin-top:14px}
+#pager{display:flex; gap:8px; justify-content:center; margin-top:0; flex-wrap:wrap}
+#pager[hidden],#more[hidden],#showAll[hidden],#showLess[hidden]{display:none}
+.qty{display:inline-flex; align-items:center; gap:5px;
+  font-family:ui-monospace,Menlo,monospace; font-size:12px}
+.step{width:19px; height:19px; background:var(--panel); border:1px solid var(--edge);
+  color:var(--paper); border-radius:2px; cursor:pointer; line-height:1; padding:0}
+.step:hover{border-color:var(--brass); color:var(--brass)}
+ 
+.onboard{text-align:center; padding:48px 20px; color:var(--mute)}
+.onboard p{margin:0 0 14px; font-size:14px}
+ 
+#deck{margin-top:30px; border-top:1px solid var(--edge); padding-top:18px}
+h2{font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--mute); font-weight:400; margin:24px 0 9px;
+  display:flex; justify-content:space-between; align-items:baseline}
+h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
+.empty{color:var(--mute); font-size:12px; margin:4px 0 0}
+ 
+.curve{display:flex; gap:5px; align-items:flex-end; min-height:92px}
+.col{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px}
+.stack{display:flex; flex-direction:column-reverse; gap:2px; width:100%}
+.brick{height:6px; background:var(--teal); border-radius:1px}
+.brick-ghost{height:6px; border:1px dashed var(--edge); border-radius:1px}
+.coln,.collbl{font-family:ui-monospace,Menlo,monospace; font-size:11px; min-height:14px}
+.collbl{color:var(--mute)}
+ 
+.actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:26px}
+.legal{margin:22px 0 0; font-size:10px; line-height:1.6; color:#6C6584; max-width:70ch}
+ 
+#modal{position:fixed; inset:0; background:rgba(8,6,14,.85); display:none;
+  place-items:center; padding:20px; z-index:50}
+#modal.open{display:grid}
+.box{background:var(--panel); border:1px solid var(--edge); border-radius:6px; padding:22px;
+  display:flex; gap:24px; max-width:980px; width:100%; flex-wrap:wrap;
+  align-items:flex-start; max-height:90vh; overflow:auto}
+.box img,.box svg{width:420px; max-width:100%; border-radius:8px; display:block}
+.meta{flex:1; min-width:260px}
+.meta h3{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:26px; margin:0 0 8px; font-weight:600}
+.meta .sub{font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--mute); margin:0 0 6px}
+.meta .text{font-size:15px; line-height:1.9; margin:16px 0; color:#C9C2DA}
+.meta .artist{font-size:12px; color:var(--mute); margin:0 0 18px}
+.modalacts{display:flex; gap:8px; flex-wrap:wrap}
+ 
+/* ---- inline card symbols ---- */
+.ic{display:inline-flex; align-items:center; justify-content:center;
+  vertical-align:-0.18em; margin:0 1px}
+.ic-e{width:1.25em; height:1.25em; border-radius:50%; background:#0E0B18;
+  border:1px solid var(--brass); color:var(--brass);
+  font-family:ui-monospace,Menlo,monospace; font-size:.78em; font-weight:700; line-height:1}
+.ic-r{width:1.05em; height:1.05em; border-radius:50%; border:1px solid rgba(0,0,0,.5);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.ic-rainbow{background:conic-gradient(var(--Fury),var(--Body),var(--Order),
+  var(--Calm),var(--Mind),var(--Chaos),var(--Fury))}
+.ic-g{width:1.15em; height:1.15em; color:var(--paper)}
+.ic-g svg{width:100%; height:100%; display:block; fill:currentColor}
+ 
+/* ---- keyword chips ---- */
+.kw{display:inline-block; padding:.05em .45em; border-radius:2px; font-size:.82em;
+  font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+  background:var(--edge); color:var(--paper); white-space:nowrap}
+.kw-timing{background:var(--teal); color:#0E1A19}
+.para{display:block}
+.para + .para{margin-top:.7em}
+</style>
+</head>
+<body>
+ 
+<header>
+  <div>
+    <p class="eyebrow" id="notice">Import a pool file to begin</p>
+    <input id="deckName" value="Untitled deck" aria-label="Deck name">
+    <div class="legendline" id="legendline"></div>
+  </div>
+  <ul class="checks" id="checks"></ul>
+</header>
+ 
+<ul id="problems"></ul>
+ 
+<div id="onboard" class="onboard">
+  <p>No card pool loaded.</p>
+  <button class="btn go" onclick="picker.click()">Import pool file</button>
+</div>
+ 
+<div id="browser" hidden>
+  <div class="controls">
+    <input id="q" placeholder="Search name, rules text, or artist">
+    <div class="row" id="domainRow"></div>
+    <div class="row" id="typeRow"></div>
+    <div class="row" id="rarityRow"></div>
+  </div>
+  <p class="count" id="resultCount"></p>
+  <div class="shelf" id="results"></div>
+  <div id="pager">
+    <button class="btn" id="more" hidden></button>
+    <button class="btn" id="showAll" hidden></button>
+    <button class="btn quiet" id="showLess" hidden></button>
+  </div>
+</div>
+ 
+<section id="deck">
+  <h2>Energy curve <span id="avg">avg 0.00</span></h2>
+  <div class="curve" id="curve"></div>
+  <div id="zoneLists"></div>
+  <div class="actions">
+    <button class="btn" onclick="exportDeck()">Export deck</button>
+    <button class="btn" onclick="copyText()">Copy as text</button>
+    <button class="btn" onclick="picker.click()">Import</button>
+    <button class="btn" onclick="wipe()">Reset</button>
+  </div>
+  <p class="legal">
+    Unofficial fan tool for personal use. Riftbound, League of Legends, and all card
+    assets belong to Riot Games. Created under Riot Games' &ldquo;Legal Jibber Jabber&rdquo;
+    policy using assets owned by Riot Games. Riot Games does not endorse or sponsor
+    this project.
+  </p>
+</section>
+ 
+<div id="modal"><div class="box" id="modalBox"></div></div>
+<input type="file" id="picker" accept="application/json,.json" hidden>
+ 
+<script>
+/* ------------------------------- constants ------------------------------ */
+const DOMAINS = ["Fury","Calm","Mind","Body","Chaos","Order"];
+const ALL_DOMAINS = [...DOMAINS, "Colorless"];
+const TYPES = ["Unit","Spell","Gear","Rune","Battlefield","Legend"];
+const RARITY_ORDER = ["Common","Uncommon","Rare","Epic","Showcase","Ultimate"];
+const ZONES = {
+  main:{label:"Main deck", short:"Main", target:40, rule:"min"},
+  runes:{label:"Rune deck", short:"Rune", target:12, rule:"exact"},
+  battlefields:{label:"Battlefields", short:"Field", target:3, rule:"exact"},
+  sideboard:{label:"Sideboard", short:"Side", target:8, rule:"zeroOrExact"}
+};
+const KEY = "riftbound-deckbuilder-v1";
+ 
+/* --------------------------------- state -------------------------------- */
+let S = {
+  deckName:"Untitled deck", pool:[], legend:null, champion:null,
+  zones:{main:[],runes:[],battlefields:[],sideboard:[]},
+  q:"", domainFilter:[], typeFilter:[], rarityFilter:[], variants:true, target:"main", limit:48
+};
+ 
+const uid = () => Math.random().toString(36).slice(2,10);
+const nk = s => String(s).trim().toLowerCase();
+const sum = l => l.reduce((n,c)=>n+c.qty,0);
+const tagOf = n => nk(String(n).split(" - ")[0].replace(/\(.*\)/,""));
+const zoneFor = t => {
+  t = String(t).toLowerCase();
+  return t==="legend" ? "legend" : t==="rune" ? "runes"
+       : t==="battlefield" ? "battlefields" : "main";
+};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, m =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+ 
+/* ------------------------------ persistence ----------------------------- */
+function save(){
+  try{
+    localStorage.setItem(KEY, JSON.stringify({
+      deckName:S.deckName, pool:S.pool, legend:S.legend,
+      champion:S.champion, zones:S.zones, variants:S.variants
+    }));
+  }catch(e){ note("Couldn't save locally: " + e.message); }
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return false;
+    Object.assign(S, JSON.parse(raw));
+    return true;
+  }catch{ return false; }
+}
+function wipe(){
+  if(!confirm("Clear the saved deck and pool from this browser?")) return;
+  localStorage.removeItem(KEY);
+  location.reload();
+}
+ 
+/* -------------------------------- helpers ------------------------------- */
+const note = t => document.getElementById("notice").textContent = t;
+ 
+function normalize(c){
+  return {
+    name:String(c.name), energy:Number(c.energy)||0,
+    might:c.might ?? null, power:c.power ?? null,
+    type:String(c.type ?? "Unit"), supertype:c.supertype ?? null,
+    rarity:c.rarity ?? null,
+    domains:(Array.isArray(c.domains)?c.domains:[]).filter(d=>ALL_DOMAINS.includes(d)),
+    set:c.set ?? "", number:c.number ?? null,
+    riftboundId:c.riftboundId ?? c.riftbound_id ?? null,
+    signature:!!c.signature, alternateArt:!!(c.alternateArt ?? c.alternate_art),
+    image:c.image ?? c.image_url ?? null, artist:c.artist ?? null,
+    text:c.text ?? null
+  };
+}
+ 
+const offDomain = c => S.legend && c.domains.length &&
+  !c.domains.every(d => d==="Colorless" || S.legend.domains.includes(d));
+ 
+function frameStyle(c){
+  const [a,b] = c.domains;
+  if(!a) return "#4A4360";
+  const A = `var(--${a})`, B = b ? `var(--${b})` : A;
+  return b ? `linear-gradient(135deg,${A} 0 47%,${B} 53% 100%)` : A;
+}
+ 
+function fallbackSvg(c){
+  let h = 2166136261;
+  for(const ch of c.name){ h ^= ch.charCodeAt(0); h = Math.imul(h,16777619); }
+  h = Math.abs(h);
+  const base = c.domains[0] ? `var(--${c.domains[0]})` : "#6B6382";
+  const circles = [0,1,2,3].map(i =>
+    `<circle cx="${12+((h>>(i*3))%50)}" cy="${20+((h>>(i*5))%64)}" r="${6+i*4}"
+      fill="none" stroke="${base}" stroke-opacity="0.4"/>`).join("");
+  return `<svg viewBox="0 0 74 104"><rect width="74" height="104" fill="#1A1530"/>
+    <rect width="74" height="104" fill="${base}" fill-opacity="0.16"/>${circles}</svg>`;
+}
+ 
+/* Images sometimes fail (offline, host blocking). Swap in the fallback. */
+window.imgFail = function(img, name){
+  const card = S.pool.find(c=>c.name===name) || {name, domains:[]};
+  img.outerHTML = fallbackSvg(card);
+};
+ 
+function tileHtml(c, acts){
+  const art = c.image
+    ? `<img src="${esc(c.image)}" alt="${esc(c.name)}" loading="lazy"
+         referrerpolicy="no-referrer"
+         onerror="imgFail(this,'${esc(c.name).replace(/'/g,"\\'")}')">`
+    : fallbackSvg(c);
+  const variant = c.rarity === "Showcase" ? "Showcase" : c.alternateArt ? "Alt art" : null;
+  return `<figure class="tile${offDomain(c)?" flagged":""}">
+    <button class="frame" style="background:${frameStyle(c)}"
+      title="${esc(c.name)}${variant?" — "+variant:""}"
+      onclick="openCard('${esc(c.riftboundId||c.name).replace(/'/g,"\\'")}')">
+      ${art}
+      ${c.energy>0?`<span class="orb">${c.energy}</span>`:""}
+      ${c.signature?`<span class="sig">S</span>`:""}
+      ${variant?`<span class="variant">${variant}</span>`:""}
+    </button>
+    ${offDomain(c)?`<figcaption class="flagtag">off-domain</figcaption>`:""}
+    <div class="acts">${acts}</div>
+  </figure>`;
+}
+ 
+/* --------------------------------- render ------------------------------- */
+function render(){
+  document.getElementById("deckName").value = S.deckName;
+  document.getElementById("onboard").hidden = S.pool.length > 0;
+  document.getElementById("browser").hidden = S.pool.length === 0;
+ 
+  // legend line
+  const ll = document.getElementById("legendline");
+  ll.innerHTML = S.legend
+    ? `<span class="legendname">${esc(S.legend.name)}</span>` +
+      S.legend.domains.map(d=>`<i class="pip" style="background:var(--${d})"></i>`).join("") +
+      `<button class="mini" onclick="clearLegend()">clear</button>`
+    : `No Legend — filter to Legend and pick one to lock your domains`;
+ 
+  // legality strip
+  document.getElementById("checks").innerHTML = Object.entries(ZONES).map(([k,z])=>{
+    const n = sum(S.zones[k]);
+    const ok = z.rule==="exact" ? n===z.target
+             : z.rule==="min" ? n>=z.target
+             : n===0 || n===z.target;
+    return `<li class="${ok?"ok":""}"><b>${n}<span>/${z.rule==="min"?z.target+"+":z.target}</span></b>${z.label}</li>`;
+  }).join("");
+ 
+  // problems
+  const probs = [];
+  const everywhere = [...S.zones.main, ...S.zones.runes, ...S.zones.sideboard];
+  const off = everywhere.filter(offDomain);
+  if(off.length) probs.push(`Outside ${esc(S.legend.name)}'s domains (${S.legend.domains.join(" / ")}): ${off.map(c=>esc(c.name)).join(", ")}`);
+  const over = S.zones.main.filter(c=>c.qty>3);
+  if(over.length) probs.push(`Over 3 copies: ${over.map(c=>esc(c.name)).join(", ")}`);
+  if(S.legend){
+    const t = tagOf(S.legend.name);
+    const sigs = S.zones.main.filter(c=>c.signature && tagOf(c.name)===t).reduce((n,c)=>n+c.qty,0);
+    if(sigs>3) probs.push(`${sigs} signature cards for ${esc(S.legend.name)} — the limit is 3.`);
+  }
+  if(S.champion && !S.zones.main.some(c=>nk(c.name)===nk(S.champion)))
+    probs.push("Your chosen Champion isn't in the main deck.");
+  if(S.champion && S.legend && tagOf(S.champion)!==tagOf(S.legend.name))
+    probs.push(`${esc(S.champion)} doesn't match your Legend — the Champion's tag must match.`);
+  document.getElementById("problems").innerHTML = probs.map(p=>`<li>${p}</li>`).join("");
+ 
+  // filters
+  document.getElementById("domainRow").innerHTML = DOMAINS.map(d=>
+    `<button class="chip dchip${S.domainFilter.includes(d)?" on":""}"
+      style="--c:var(--${d})" onclick="toggleFilter('domainFilter','${d}')">${d}</button>`).join("");
+  document.getElementById("typeRow").innerHTML = TYPES.map(t=>
+    `<button class="chip${S.typeFilter.includes(t)?" on":""}"
+      onclick="toggleFilter('typeFilter','${t}')">${t}</button>`).join("") +
+    `<button class="chip${S.variants?" on":""}" onclick="toggleVariants()">Variants</button>`;
+  // Rarities come from the pool itself, so a new set with new rarities still works.
+  const rarities = [...new Set(S.pool.map(c=>c.rarity).filter(Boolean))]
+    .sort((a,b)=>{
+      const ia = RARITY_ORDER.indexOf(a), ib = RARITY_ORDER.indexOf(b);
+      return (ia<0?99:ia) - (ib<0?99:ib) || a.localeCompare(b);
+    });
+  document.getElementById("rarityRow").innerHTML = `<span class="lbl">rarity</span>` +
+    rarities.map(r=>
+      `<button class="chip${S.rarityFilter.includes(r)?" on":""}"
+        onclick="toggleFilter('rarityFilter','${esc(r)}')">${esc(r)}</button>`).join("");
+ 
+  // results
+  const term = S.q.trim().toLowerCase();
+  // Asking for Showcase explicitly overrides the variants toggle — otherwise
+  // the filter would return nothing.
+  const wantsVariantRarity = S.rarityFilter.some(r => r === "Showcase");
+  const res = S.pool.filter(c=>{
+    if(!S.variants && !wantsVariantRarity && (c.alternateArt || c.rarity==="Showcase")) return false;
+    if(S.rarityFilter.length && !S.rarityFilter.includes(c.rarity)) return false;
+    if(S.domainFilter.length && !c.domains.some(d=>S.domainFilter.includes(d))) return false;
+    if(S.typeFilter.length && !S.typeFilter.includes(c.type)) return false;
+    if(!term) return true;
+    return c.name.toLowerCase().includes(term)
+      || (c.text||"").toLowerCase().includes(term)
+      || (c.artist||"").toLowerCase().includes(term);
+  });
+ 
+  // Never let the page size drift past the result count.
+  S.limit = Math.max(48, Math.min(S.limit, Math.max(48, res.length)));
+ 
+  document.getElementById("resultCount").textContent = `${res.length} card${res.length===1?"":"s"}`;
+  document.getElementById("results").innerHTML = res.slice(0,S.limit).map(c=>{
+    const id = esc(c.riftboundId||c.name).replace(/'/g,"\\'");
+    // Only offer destinations the card is actually legal in: Runes go to the
+    // rune deck, Battlefields to battlefields, everything else main or side.
+    const sug = zoneFor(c.type);
+    let acts;
+    if(sug === "legend")      acts = `<button class="btn sm" onclick="addCard('${id}','legend')">Legend</button>`;
+    else if(sug === "runes")  acts = `<button class="btn sm" onclick="addCard('${id}','runes')">+ Rune</button>`;
+    else if(sug === "battlefields") acts = `<button class="btn sm" onclick="addCard('${id}','battlefields')">+ Field</button>`;
+    else acts = `<button class="btn sm" onclick="addCard('${id}','main')">+ Main</button>`
+             + `<button class="btn sm quiet" onclick="addCard('${id}','sideboard')">+ Side</button>`;
+    return tileHtml(c, acts);
+  }).join("");
+ 
+  const remaining = Math.max(0, res.length - S.limit);
+  const expanded = S.limit > 48 && res.length > 48;
+  const more = document.getElementById("more");
+  const showAll = document.getElementById("showAll");
+  const showLess = document.getElementById("showLess");
+  more.hidden = remaining === 0;
+  more.textContent = `Show ${Math.min(48, remaining)} more`;
+  showAll.hidden = remaining === 0;
+  showAll.textContent = `Show all ${res.length}`;
+  showLess.hidden = !expanded;
+  showLess.textContent = `Show fewer`;
+  document.getElementById("pager").hidden = remaining === 0 && !expanded;
+ 
+  // curve
+  const buckets = [0,0,0,0,0,0,0,0];
+  S.zones.main.forEach(c => buckets[Math.min(7,c.energy)] += c.qty);
+  document.getElementById("curve").innerHTML = buckets.map((n,i)=>
+    `<div class="col"><div class="stack">${
+      n ? Array(n).fill('<span class="brick"></span>').join("") : '<span class="brick-ghost"></span>'
+    }</div><span class="coln">${n||""}</span><span class="collbl">${i===7?"7+":i}</span></div>`).join("");
+  const mc = sum(S.zones.main);
+  const avg = mc ? S.zones.main.reduce((n,c)=>n+c.energy*c.qty,0)/mc : 0;
+  document.getElementById("avg").textContent = "avg " + avg.toFixed(2);
+ 
+  // zone lists
+  document.getElementById("zoneLists").innerHTML = Object.entries(ZONES).map(([k,z])=>{
+    const list = [...S.zones[k]].sort((a,b)=>a.energy-b.energy||a.name.localeCompare(b.name));
+    const body = list.length
+      ? `<div class="shelf sm">${list.map(c=>tileHtml(c,
+          `<span class="qty">
+             <button class="step" onclick="bump('${k}','${c.id}',-1)">–</button>
+             <b>${c.qty}</b>
+             <button class="step" onclick="bump('${k}','${c.id}',1)">+</button>
+           </span>`)).join("")}</div>`
+      : `<p class="empty">Empty.</p>`;
+    return `<h2>${z.label} <span>${sum(S.zones[k])}</span></h2>${body}`;
+  }).join("");
+}
+ 
+/* --------------------------------- actions ------------------------------ */
+const findCard = id => S.pool.find(c => (c.riftboundId||c.name) === id);
+ 
+window.toggleFilter = (k,v) => {
+  S[k] = S[k].includes(v) ? S[k].filter(x=>x!==v) : [...S[k], v];
+  S.limit = 48; render();
+};
+window.toggleVariants = () => { S.variants = !S.variants; S.limit = 48; save(); render(); };
+window.clearLegend = () => { S.legend = null; save(); render(); };
+ 
+window.addCard = (id, zone) => {
+  const card = findCard(id); if(!card) return;
+  if(zone === "legend"){ S.legend = {...card}; save(); render(); return; }
+  const list = S.zones[zone];
+  const hit = list.find(c => nk(c.name) === nk(card.name));
+  if(hit) hit.qty = Math.min(3, hit.qty + 1);
+  else list.push({...card, id: uid(), qty: 1});
+  save(); render();
+};
+ 
+window.setChampion = id => {
+  const card = findCard(id); if(!card) return;
+  S.champion = card.name;
+  addCard(id, "main");
+};
+ 
+window.bump = (zone, id, d) => {
+  const list = S.zones[zone];
+  const c = list.find(x => x.id === id); if(!c) return;
+  c.qty = Math.min(3, c.qty + d);
+  S.zones[zone] = list.filter(x => x.qty > 0);
+  save(); render();
+};
+ 
+/* ------------------------- card text rendering -------------------------- */
+/* The API ships icons as literal placeholders (:rb_energy_1:) and keywords in
+   square brackets. Escape first, then substitute — order matters, or the
+   markup we inject would get escaped too. */
+ 
+const RUNE_DOMAIN = {fury:"Fury", calm:"Calm", mind:"Mind",
+  body:"Body", chaos:"Chaos", order:"Order"};
+ 
+const GLYPHS = {
+  rb_might:`<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 3 4v4.2c0 3 2.1 5.4 5 6.3 2.9-.9 5-3.3 5-6.3V4L8 1.5Zm0 2.2 3 1.5v3c0 2-1.2 3.6-3 4.3-1.8-.7-3-2.3-3-4.3v-3l3-1.5Z"/></svg>`,
+  rb_exhaust:`<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2a5.8 5.8 0 1 0 5.6 7.3l-1.7-.5A4.1 4.1 0 1 1 8 3.9v2.3l3.4-2.6L8 1v1.2Z"/></svg>`
+};
+ 
+const TIMING = new Set(["action","reaction"]);
+ 
+function inline(raw){
+  let s = esc(raw);
+ 
+  s = s.replace(/:rb_([a-z0-9_]+):/g, (m, key) => {
+    const energy = key.match(/^energy_(\d+)$/);
+    if(energy) return `<span class="ic ic-e" title="${energy[1]} energy">${energy[1]}</span>`;
+ 
+    if(key === "rune_rainbow")
+      return `<span class="ic ic-r ic-rainbow" title="Rune of any domain"></span>`;
+ 
+    const rune = key.match(/^rune_([a-z]+)$/);
+    if(rune && RUNE_DOMAIN[rune[1]]){
+      const d = RUNE_DOMAIN[rune[1]];
+      return `<span class="ic ic-r" style="background:var(--${d})" title="${d} rune"></span>`;
+    }
+ 
+    if(GLYPHS["rb_" + key])
+      return `<span class="ic ic-g" title="${key.replace(/_/g," ")}">${GLYPHS["rb_"+key]}</span>`;
+ 
+    // Unknown token — show it readably rather than leaving raw colons.
+    return `<span class="kw">${key.replace(/^rb_/,"").replace(/_/g," ")}</span>`;
+  });
+ 
+  s = s.replace(/\[([A-Za-z][A-Za-z' ]*\d?)\]/g, (m, word) => {
+    const cls = TIMING.has(word.trim().toLowerCase()) ? "kw kw-timing" : "kw";
+    return `<span class="${cls}">${word}</span>`;
+  });
+ 
+  return s;
+}
+ 
+/* The plain-text field joins the card's paragraphs with no separator, so
+   "...defender.)I can have..." runs together. Split only where punctuation is
+   immediately followed by a capital or a bracket — a real sentence break has a
+   space there, so this leaves normal prose alone. */
+function rich(raw){
+  return String(raw)
+    .replace(/([.)!?])(?=[A-Z\[])/g, "$1\u0000")
+    .split("\u0000")
+    .map(part => `<span class="para">${inline(part)}</span>`)
+    .join("");
+}
+ 
+window.openCard = id => {
+  const c = findCard(id) ||
+    Object.values(S.zones).flat().find(x => (x.riftboundId||x.name) === id);
+  if(!c) return;
+  const art = c.image
+    ? `<img src="${esc(c.image)}" alt="${esc(c.name)}" referrerpolicy="no-referrer"
+         onerror="imgFail(this,'${esc(c.name).replace(/'/g,"\\'")}')">`
+    : fallbackSvg(c);
+  document.getElementById("modalBox").innerHTML = `${art}
+    <div class="meta">
+      <h3>${esc(c.name)}</h3>
+      <p class="sub">${esc(c.type)}${c.supertype?" · "+esc(c.supertype):""}${c.rarity?" · "+esc(c.rarity):""}${c.set?" · "+esc(c.set):""}${c.number!=null?" #"+c.number:""}</p>
+      <p class="sub">energy ${c.energy}${c.might!=null?" · might "+c.might:""}${c.power!=null?" · power "+c.power:""}${c.domains.length?" · "+c.domains.join(" / "):""}</p>
+      ${c.text?`<p class="text">${rich(c.text)}</p>`:""}
+      ${c.artist?`<p class="artist">Art by ${esc(c.artist)}</p>`:""}
+      <div class="modalacts">
+        ${c.type === "Legend"
+          ? `<button class="btn" onclick="addCard('${esc(c.riftboundId||c.name).replace(/'/g,"\\'")}','legend');closeModal()">Set as Legend</button>`
+          : ""}
+        ${c.supertype === "Champion"
+          ? `<button class="btn" onclick="setChampion('${esc(c.riftboundId||c.name).replace(/'/g,"\\'")}');closeModal()">Set as Champion</button>`
+          : ""}
+        <button class="btn quiet" onclick="closeModal()">Close</button>
+      </div>
+    </div>`;
+  document.getElementById("modal").classList.add("open");
+};
+window.closeModal = () => document.getElementById("modal").classList.remove("open");
+ 
+/* ------------------------------ import/export --------------------------- */
+document.getElementById("picker").addEventListener("change", e => {
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const raw = JSON.parse(r.result);
+      const list = Array.isArray(raw) ? raw : (raw.pool || raw.cards || []);
+      if(!Array.isArray(list) || !list.length) throw new Error("no cards");
+      S.pool = list.filter(c => c && c.name).map(normalize);
+      if(raw.zones){
+        S.deckName = raw.name || raw.deckName || "Imported deck";
+        S.legend = raw.legend || null;
+        S.champion = raw.champion || null;
+        S.zones = {
+          main: raw.zones.main || [], runes: raw.zones.runes || [],
+          battlefields: raw.zones.battlefields || [], sideboard: raw.zones.sideboard || []
+        };
+      }
+      note(`${S.pool.length} cards loaded · ${S.pool.filter(c=>c.image).length} with art`);
+      save(); render();
+    }catch(err){
+      note("Couldn't read that file: " + err.message);
+    }
+    e.target.value = "";
+  };
+  r.readAsText(f);
+});
+ 
+function exportDeck(){
+  const payload = {kind:"riftbound", version:3, name:S.deckName,
+    legend:S.legend, champion:S.champion, zones:S.zones};
+  const url = URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],
+    {type:"application/json"}));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = (S.deckName.replace(/\s+/g,"-").toLowerCase() || "deck") + ".json";
+  a.click(); URL.revokeObjectURL(url);
+}
+ 
+function copyText(){
+  const lines = ["// " + S.deckName];
+  if(S.legend) lines.push("Legend: " + S.legend.name);
+  if(S.champion) lines.push("Champion: " + S.champion);
+  for(const [k,z] of Object.entries(ZONES)){
+    if(!S.zones[k].length) continue;
+    lines.push("", z.label + ":");
+    [...S.zones[k]].sort((a,b)=>a.energy-b.energy||a.name.localeCompare(b.name))
+      .forEach(c => lines.push(`${c.qty} ${c.name}`));
+  }
+  navigator.clipboard.writeText(lines.join("\n"))
+    .then(()=>note("Decklist copied."))
+    .catch(()=>note("Clipboard blocked — use Export instead."));
+}
+ 
+/* --------------------------------- wiring ------------------------------- */
+document.getElementById("q").addEventListener("input", e => {
+  S.q = e.target.value; S.limit = 48; render();
+});
+document.getElementById("deckName").addEventListener("input", e => {
+  S.deckName = e.target.value; save();
+});
+document.getElementById("more").addEventListener("click", () => {
+  S.limit += 48; render();
+});
+document.getElementById("showAll").addEventListener("click", () => {
+  S.limit = S.pool.length; render();
+});
+document.getElementById("showLess").addEventListener("click", () => {
+  S.limit = 48; render();
+  // Collapsing a 352-card grid otherwise leaves you stranded far below it.
+  document.getElementById("q").scrollIntoView({behavior:"smooth", block:"start"});
+});
+document.getElementById("modal").addEventListener("click", e => {
+  if(e.target.id === "modal") closeModal();
+});
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+ 
+if(load()) note(`${S.pool.length} cards restored from this browser`);
+render();
+</script>
+</body>
+</html>
+ 
