@@ -110,13 +110,28 @@ with `{}` is a no-op that returns current state, which is a safe way to read it 
 The secret belongs in the Neon Console or in gitignored `.env`, never in `index.html`
 and never in a commit.
 
-## 3. Custom SMTP sender
+## 3. Custom SMTP sender — done ✅
 
-Current state, read from the API:
+Set 2026-08-14 to a Gmail account created for this project:
 
 ```json
-{"type":"shared","sender_email":"auth@mail.myneon.app","sender_name":"Neon Auth"}
+{"type":"standard","host":"smtp.gmail.com","port":587,
+ "username":"riftbound.deckbuilder@gmail.com","password":"****",
+ "sender_email":"riftbound.deckbuilder@gmail.com",
+ "sender_name":"Riftbound Deckbuilder"}
 ```
+
+**Test before you save.** `POST /auth/send_test_email` takes the full config plus a
+`recipient_email` and sends a real message *without* persisting anything. A wrong app
+password fails there instead of surfacing later as a user who never got their code:
+
+```
+POST .../auth/send_test_email
+{ host, port, username, password, sender_email, sender_name, recipient_email }
+  → 200 {"success":true}
+```
+
+The reference below is kept for rotating the app password or changing provider.
 
 **These fields are not invented — they are credentials issued by a third-party mail
 service.** Neon does not send the mail itself; it hands it to an SMTP server you have
@@ -161,7 +176,30 @@ PATCH /api/v2/projects/{project_id}/branches/{branch_id}/auth/email_provider
 
 See `docs/BLOCKED.md` for the open choice of provider.
 
-## 4. Email verification is OFF by default
+## 4. Email verification — ON as of 2026-08-14
+
+```json
+{"enabled":true,"email_verification_method":"otp",
+ "require_email_verification":true,
+ "send_verification_email_on_sign_up":true,
+ "auto_sign_in_after_verification":true}
+```
+
+**These two flags must be turned on together, send first.** The console exposes them
+as separate switches with unrelated labels, and the intermediate state
+`require_email_verification: true` + `send_verification_email_on_sign_up: false` is a
+door with no key: accounts are created, no code is ever sent, and nobody can sign in.
+This project sat in exactly that state briefly. There is no error and nothing in the
+console flags it — it only shows up as a user who cannot get in.
+
+If the two ever disagree again:
+
+```
+PATCH .../auth/email_and_password
+{ "send_verification_email_on_sign_up": true, "require_email_verification": true }
+```
+
+### Original default, for reference
 
 The production checklist states it plainly: *"Email verification is not enabled by
 default."* This matters beyond security — **it decides whether stage 4's hard case
@@ -206,7 +244,7 @@ Also readable: `/auth/domains`, `/auth/email_and_password`, `/auth/allow_localho
 | `require_email_verification` | `false` |
 | `send_verification_email_on_sign_up` | `false` |
 | `allow_localhost` | `true` — turn off when stage 4 ships |
-| `email_provider` | `shared` (`auth@mail.myneon.app`) — pending a sender choice |
+| `email_provider` | `standard` — Gmail SMTP, test message delivered ✅ |
 
 Google OAuth confirmed working from the production origin. `POST /sign-in/social`
 with the Pages `callbackURL` returned `200` (previously `403 INVALID_CALLBACKURL`), and
