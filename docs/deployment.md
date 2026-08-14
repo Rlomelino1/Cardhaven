@@ -4,7 +4,7 @@
 
 ## How it is configured
 
-Branch deploy, not a build workflow — per the standing decision in `docs/CLAUDE.md`.
+Branch deploy, not a build workflow — per the standing decision in `CLAUDE.md`.
 
 ```
 POST /repos/Rlomelino1/Riftbound-deck-builder/pages
@@ -30,7 +30,7 @@ underscore-prefixed paths.
 
 ## Card art over HTTPS — the stage 1 caveat
 
-`docs/CLAUDE.md` flags this as a redesign risk: art that loads from a `file://` page can
+`CLAUDE.md` flags this as a redesign risk: art that loads from a `file://` page can
 fail from an HTTPS origin if the CDN sends restrictive CORS or hotlink-protection
 headers.
 
@@ -52,8 +52,8 @@ reading pixels back through a canvas, neither of which the app does.
 **Conclusion: no redesign needed.** Hotlinking works from the Pages origin exactly as it
 does from `file://`.
 
-The test used a real asset hash rather than the app's own pool, because `ogn-pool.json`
-is not in the repo yet (`BLOCKED.md` §1). URL shape:
+The test used a real asset hash rather than the app's own pool, because `data/ogn-pool.json`
+is not in the repo yet (`docs/BLOCKED.md` §1). URL shape:
 
 ```
 https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/{HASH}-744x1039.png?accountingTag=RB
@@ -61,7 +61,7 @@ https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/{HASH}-744x1039
 
 One thing that surfaced while testing: those images are **818 KB each** and the grid
 renders 48 of them at ~112 px wide. The same CDN returns a 240 px WebP of the same asset
-in **15 KB**. That is logged as `BLOCKED.md` §3 — it changes how card art is requested,
+in **15 KB**. That is logged as `docs/BLOCKED.md` §3 — it changes how card art is requested,
 which is the author's call.
 
 ## Not done, deliberately

@@ -1,0 +1,65 @@
+# Decisions
+
+One line each: what was chosen, what was rejected.
+
+## Stage 0 — repo setup
+
+- Kept `CLAUDE.md` at `CLAUDE.md` where it was placed; rejected moving it to the repo root, even though root is the Claude Code auto-load convention — relocating a file the author just placed is their call.
+- `.gitignore` ignores `.env*` with a `!.env.example` escape hatch; rejected a bare `.env` line, so a future `.env.local` can't leak.
+- `.gitignore` covers `node_modules/` and `dist/` despite there being no build step; rejected a minimal ignore file, because dev-time tooling produces them and they must never be committed.
+- Committed the baseline straight to `main`; rejected opening a PR for it, because the repo had zero commits and there was no base branch to target. Everything after it goes through a PR.
+- Committed `index.html` with its pasted UI chrome intact and fixed it in PR #1; rejected cleaning it silently inside the baseline, so the fix reads as a reviewable diff.
+
+## Stage 1 — deploy
+
+- Enabled Pages via `gh api` as a branch deploy (`main` / `/`); rejected a build workflow, per the standing decision.
+- Verified card art against a real asset hash found in a public card database repo; rejected waiting for `data/ogn-pool.json`, because the CDN's behaviour is a property of the CDN and does not need our data to test.
+- Logged the 818 KB → 15 KB thumbnail finding in `docs/BLOCKED.md` instead of implementing it; rejected just doing it, because card art handling is a decision reserved to the author.
+
+## Card art sizing (author decision, 2026-08-14)
+
+- Grid tiles request `&w=240&fm=webp`; rejected leaving the originals, per the author's call on `docs/BLOCKED.md` §3 — 779 KB → 14 KB measured live, and the revert is a one-line change to `thumb()`.
+- The card modal keeps the full-size original; rejected shrinking it too, so there is always an unmodified reference to compare tile quality against.
+- `thumb()` picks `?` or `&` by inspecting the URL; rejected hardcoding `&`, because 14 of the 352 pool entries carry no query tag and would have produced a malformed URL.
+- Width fixed at 240 for a ~112 px tile; rejected matching the CSS width exactly, so the tiles stay sharp on a 2× phone screen — which is the primary use case.
+
+## Responsive / phone (2026-08-14)
+
+- One stylesheet with media queries; rejected a separate mobile page or a `/m/` route, per the author — the site adapts, it does not fork.
+- Split the breakpoints three ways — `(hover:hover)`, `(hover:none)`, `(max-width:640px)`; rejected branching on width alone, which would give a narrow desktop window fat touch targets and a tablet mouse-sized ones.
+- Moved all five `:hover` rules inside `@media (hover:hover)`; rejected leaving them, because tapped elements keep the hover state on touch and read as a stuck selection.
+- `#q` and `#deckName` go to 16px on touch; rejected keeping 14px — iOS zooms the page on focus below 16px and does not zoom back out.
+- `.step` goes 19px → 30px on touch; rejected 44px (Apple's floor) — it wrecks the density of the deck list, and 30px inside a padded row is reachable.
+- Legality strip becomes a 4-column grid under 640px; rejected letting it wrap, which breaks 3-and-1.
+- Card modal goes full-screen under 640px with a sticky action bar; rejected the centred box, which left ~20px of tappable backdrop on a phone.
+- Sized the modal in `dvh` with a `vh` fallback; rejected `vh` alone, which is the mobile URL-bar clipping bug.
+- Tile action buttons may wrap on touch; rejected keeping `nowrap`, because touch padding overflows a 94px tile.
+
+## Stage 4 — merge on signup (author decision, 2026-08-14)
+
+- Keep both: a signed-out deck is imported as an additional deck on the account; rejected overwrite-server and discard-local, both of which destroy data with no undo.
+
+## Stage 3 — auth (2026-08-14)
+
+- Signed-out users stay on localStorage; rejected `allowAnonymous: true` (author's call) — an anonymous token would put every drive-by doodle in the database against a 0.5 GB cap, and the export button already covers signed-out backup.
+- Auth setup steps live in `docs/auth-setup.md`; rejected putting them in `CLAUDE.md`, which is instructions-for-Claude, not a runbook the author works from.
+- Probed the live auth endpoint rather than assuming provisioning state; rejected asking the author to check — the endpoint answers definitively and Managed Better Auth turned out to be already enabled.
+- Custom SMTP over a real sender (author's call); rejected Neon's shared `auth@mail.myneon.app`. Which provider is still open — see `docs/BLOCKED.md`.
+- Stage 4 will handle "session arrives on a fresh page load" even though email verification is currently off; rejected coding to the current setting, which is a console toggle that can change without touching the repo.
+
+## Stage 2 — schema
+
+- Wrote `migrations/0001_create_decks.sql` fresh from the design described in `CLAUDE.md`; rejected pretending to adapt the earlier migration `CLAUDE.md` pointed at, which is not in the repo.
+- Put migrations in `migrations/`; rejected the `supabase/migrations/` path `CLAUDE.md` named — this project runs on Neon, and that directory would read as a mistake six months from now.
+- `user_id` is `uuid` with an FK to `neon_auth."user"(id)`; rejected the `text` column in Neon's own docs example, because uuid is what that table's primary key actually is and it is what makes `ON DELETE CASCADE` possible.
+- Policies call a wrapper, `public.app_user_id()`, rather than `auth.user_id()::uuid` inline; rejected the bare cast, which raises `22P02` on a non-uuid `sub` and would turn a denied read into a 500 instead of an empty result.
+- Kept `auth.user_id()` as the underlying helper; rejected `auth.uid()` (which also exists here and returns uuid directly), because `CLAUDE.md` and Neon's Data API docs both specify `user_id()`.
+- Four policies per table, one per verb; rejected a single `FOR ALL` policy, so each verb is independently auditable and `USING` vs `WITH CHECK` is explicit.
+- Granted `anonymous` nothing on either table; rejected granting it `SELECT` and relying on policy absence alone — test T9 proves RLS alone would suffice, so this is a second independent reason a signed-out read returns nothing.
+- `name` is a column on `decks`, not a payload key; rejected burying it in jsonb, so stage 5 can list and rename decks without parsing blobs.
+- `payload` constraints check size, type, and zone shape but *not* card-entry shape; rejected a strict card schema, which would reject the fat objects the current client writes and break stage 4 before the shrink lands.
+- Added an explicit `check (not (payload ? 'pool'))`; rejected relying on the size limit alone, so an accidental full-state POST fails loudly rather than depending on how big the pool happens to be.
+- Created `user_settings.collection` now, empty, rather than in stage 6; rejected deferring it, because adding a column later means a schema change against live data.
+- `FORCE ROW LEVEL SECURITY` left on even though `neondb_owner` holds `BYPASSRLS` and overrides it; rejected removing it, so the guarantee doesn't silently depend on who owns the table later.
+- Migration runner is a throwaway Node script + `pg` in a scratch directory outside the repo; rejected installing `psql` or `neonctl` (neither is on this machine) and rejected adding `node_modules` to the repo.
+- Ran every test inside a transaction that is rolled back, seeding real rows in `neon_auth."user"`; rejected testing against permanently-inserted fixtures, so the database is left with zero rows.
