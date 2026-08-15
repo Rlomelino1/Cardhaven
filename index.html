@@ -155,6 +155,47 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
 .para{display:block}
 .para + .para{margin-top:.7em}
 
+/* ------------------------------- auth ---------------------------------- */
+.acct{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--mute)}
+.acct .who{color:var(--paper); max-width:22ch; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
+#authModal{position:fixed; inset:0; background:rgba(8,6,14,.85); display:none;
+  place-items:center; padding:20px; z-index:60}
+#authModal.open{display:grid}
+.authbox{background:var(--panel); border:1px solid var(--edge); border-radius:6px;
+  padding:26px; width:100%; max-width:392px; max-height:92vh; overflow:auto}
+.authbox h3{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:23px; margin:0 0 6px; font-weight:600}
+.authbox .lede{font-size:13px; line-height:1.6; color:var(--mute); margin:0 0 18px}
+.field{display:block; margin:0 0 13px}
+.field span{display:block; font-family:ui-monospace,Menlo,monospace; font-size:9px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mute); margin:0 0 5px}
+.field input{background:var(--ink); border:1px solid var(--edge); color:var(--paper);
+  border-radius:2px; padding:10px 12px; font-size:14px; width:100%}
+.field input:disabled{opacity:.5}
+/* Six digits, spaced out, so a code is easy to check against the email. */
+.otp{font-family:ui-monospace,Menlo,monospace; font-size:23px; letter-spacing:.42em;
+  text-align:center}
+.authacts{display:flex; flex-direction:column; gap:9px; margin-top:18px}
+.authacts .btn{width:100%; padding:11px}
+.sep{display:flex; align-items:center; gap:10px; margin:16px 0;
+  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--mute)}
+.sep::before,.sep::after{content:""; flex:1; height:1px; background:var(--edge)}
+.alt{margin:16px 0 0; font-size:12px; color:var(--mute); text-align:center; line-height:1.9}
+.authmsg{margin:0 0 14px; padding:9px 11px; font-size:12.5px; line-height:1.55;
+  border-left:2px solid var(--warn); background:rgba(210,86,75,.09); color:#F2CBC6}
+.authmsg.ok{border-left-color:var(--teal); background:rgba(63,167,160,.1); color:#B7E4E0}
+.authmsg:empty{display:none}
+/* The verification code is the one thing that must not be missed. Neon Auth's
+   stock template lands in Gmail's spam folder on a new sender - measured, not
+   assumed - and verification is required, so a missed code is a blocked signup. */
+.spamnote{margin:13px 0 0; padding:10px 12px; font-size:12px; line-height:1.6;
+  background:rgba(201,162,39,.09); border-left:2px solid var(--brass); color:#E4D7A8}
+.spamnote b{color:var(--brass)}
+.gbtn{display:flex; align-items:center; justify-content:center; gap:9px}
+.gbtn svg{width:16px; height:16px; display:block}
+
 /* ======================= responsive =======================
    One layout, three axes — none of them a separate mobile site:
      (hover:hover)   real pointer      → hover affordances
@@ -243,7 +284,10 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
     <input id="deckName" value="Untitled deck" aria-label="Deck name">
     <div class="legendline" id="legendline"></div>
   </div>
-  <ul class="checks" id="checks"></ul>
+  <div>
+    <div class="acct" id="acct" hidden></div>
+    <ul class="checks" id="checks"></ul>
+  </div>
 </header>
  
 <ul id="problems"></ul>
@@ -288,6 +332,16 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
 </section>
  
 <div id="modal"><div class="box" id="modalBox"></div></div>
+
+<div id="authModal">
+  <div class="authbox">
+    <h3 id="authTitle"></h3>
+    <p class="lede" id="authLede"></p>
+    <p class="authmsg" id="authMsg"></p>
+    <form id="authForm" autocomplete="on"></form>
+  </div>
+</div>
+
 <input type="file" id="picker" accept="application/json,.json" hidden>
  
 <script>
@@ -755,6 +809,338 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal();
  
 if(load()) note(`${S.pool.length} cards restored from this browser`);
 render();
+</script>
+
+<script type="module">
+/* =========================================================================
+   Auth (stage 3)
+
+   Accounts only. Nothing here reads or writes deck state - signed-out users
+   stay on localStorage by decision, and moving save()/load() to the Data API
+   is stage 4. Signing in currently changes who you are, not where your deck
+   lives.
+
+   Config sits here rather than in an env var because there is no build step.
+   Both URLs are public by design: nothing behind them works without a valid
+   JWT plus RLS, and RLS is the security boundary.
+   ========================================================================= */
+/* Imported from @neondatabase/auth, NOT the @neondatabase/neon-js root.
+   Both expose the same client, but the neon-js root also pulls
+   better-auth/react - and therefore React itself - into a page that has no
+   React and never calls those adapters. Verified: this pair loads
+   vanilla.mjs only. Stage 4 needs the Data API client too; get it from
+   @neondatabase/postgrest-js rather than reaching for the neon-js root.
+   Versions pinned exact - these are pre-1.0 and the Data API is in beta. */
+import { createAuthClient }        from "https://esm.sh/@neondatabase/auth@0.5.0-beta";
+import { BetterAuthVanillaAdapter } from "https://esm.sh/@neondatabase/auth@0.5.0-beta/vanilla";
+
+const NEON = {
+  authUrl:    "https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech/neondb/auth",
+  dataApiUrl: "https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech/neondb/rest/v1",
+};
+
+const auth = createAuthClient(NEON.authUrl, {
+  adapter: BetterAuthVanillaAdapter(),
+  // allowAnonymous stays false: an anonymous token would put every drive-by
+  // doodle in Postgres against a 0.5 GB cap, and Export already covers
+  // signed-out backup.
+  allowAnonymous: false,
+});
+
+/* The Better Auth client is a Proxy - every property resolves to a function,
+   so a typo becomes a 404 at runtime rather than "undefined is not a
+   function". Verified against the live server: these five paths exist.
+   Errors THROW; they are not returned as {error}. */
+const api = {
+  signUp:   d => auth.signUp.email(d),                  // /sign-up/email
+  signIn:   d => auth.signIn.email(d),                  // /sign-in/email
+  google:   d => auth.signIn.social(d),                 // /sign-in/social
+  verify:   d => auth.emailOtp.verifyEmail(d),          // /email-otp/verify-email
+  resend:   d => auth.emailOtp.sendVerificationOtp(d),  // /email-otp/send-verification-otp
+  forgot:   d => auth.forgetPassword.emailOtp(d),       // /forget-password/email-otp
+  reset:    d => auth.emailOtp.resetPassword(d),        // /email-otp/reset-password
+};
+
+let session = null;      // the signed-in user, or null
+let pending  = "";       // email awaiting a verification / reset code
+let busy     = false;
+
+const $ = id => document.getElementById(id);
+const esc2 = s => String(s ?? "").replace(/[&<>"']/g, m =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+
+/* ------------------------------ error text ------------------------------ */
+/* Better Auth codes are machine-readable but not readable. Map the ones a
+   user can actually hit; fall back to the server's message otherwise. */
+const MESSAGES = {
+  INVALID_EMAIL_OR_PASSWORD: "That email and password don't match an account.",
+  USER_ALREADY_EXISTS:       "There's already an account with that email. Try signing in.",
+  user_not_found:            "No account with that email.",
+  INVALID_OTP:               "That code isn't right. Check it and try again.",
+  OTP_EXPIRED:               "That code has expired - send a new one.",
+  validation_failed:         "That code isn't right, or it has expired.",
+  PASSWORD_TOO_SHORT:        "Passwords need to be at least 8 characters.",
+  EMAIL_NOT_VERIFIED:        "Verify your email first - we'll send you a new code.",
+};
+function humanError(e){
+  if(e?.code && MESSAGES[e.code]) return MESSAGES[e.code];
+  if(e?.status === 429) return "Too many attempts. Wait a minute and try again.";
+  if(e?.message && !/fetch|network/i.test(e.message)) return e.message;
+  return "Something went wrong reaching the server. Check your connection.";
+}
+
+/* -------------------------------- views -------------------------------- */
+const GOOGLE_MARK = `<svg viewBox="0 0 48 48" aria-hidden="true">
+  <path fill="#4285F4" d="M45 24.5c0-1.6-.15-3.15-.42-4.64H24v8.78h11.77c-.5 2.73-2.05 5.04-4.37 6.59v5.48h7.07C42.6 36.86 45 31.15 45 24.5z"/>
+  <path fill="#34A853" d="M24 46c5.9 0 10.86-1.96 14.47-5.29l-7.07-5.48c-1.96 1.32-4.47 2.1-7.4 2.1-5.7 0-10.52-3.85-12.24-9.02H4.46v5.66C8.05 41.07 15.4 46 24 46z"/>
+  <path fill="#FBBC05" d="M11.76 28.31A13.2 13.2 0 0 1 11.06 24c0-1.5.26-2.95.7-4.31v-5.66H4.46A21.97 21.97 0 0 0 2 24c0 3.55.85 6.91 2.46 9.97l7.3-5.66z"/>
+  <path fill="#EA4335" d="M24 10.67c3.21 0 6.09 1.1 8.36 3.27l6.27-6.27C34.85 4.14 29.89 2 24 2 15.4 2 8.05 6.93 4.46 14.03l7.3 5.66C13.48 14.52 18.3 10.67 24 10.67z"/>
+</svg>`;
+
+const googleButton = `
+  <button type="button" class="btn gbtn" data-act="google">
+    ${GOOGLE_MARK}<span>Continue with Google</span>
+  </button>`;
+
+const VIEWS = {
+  signin: () => ({
+    title: "Sign in",
+    lede:  "Your decks follow you to any device you sign in on.",
+    body: `
+      <label class="field"><span>Email</span>
+        <input name="email" type="email" autocomplete="email" required></label>
+      <label class="field"><span>Password</span>
+        <input name="password" type="password" autocomplete="current-password" required></label>
+      <div class="authacts">
+        <button type="submit" class="btn go">Sign in</button>
+      </div>
+      <div class="sep">or</div>
+      ${googleButton}
+      <p class="alt">
+        <a href="#" data-view="signup">Create an account</a><br>
+        <a href="#" data-view="forgot">Forgotten your password?</a>
+      </p>`,
+  }),
+
+  signup: () => ({
+    title: "Create an account",
+    lede:  "So your decks and collection are on your phone as well as here.",
+    body: `
+      <label class="field"><span>Name</span>
+        <input name="name" type="text" autocomplete="name" placeholder="Optional"></label>
+      <label class="field"><span>Email</span>
+        <input name="email" type="email" autocomplete="email" required></label>
+      <label class="field"><span>Password</span>
+        <input name="password" type="password" autocomplete="new-password"
+               minlength="8" required></label>
+      <div class="authacts">
+        <button type="submit" class="btn go">Create account</button>
+      </div>
+      <div class="sep">or</div>
+      ${googleButton}
+      <p class="alt"><a href="#" data-view="signin">I already have an account</a></p>`,
+  }),
+
+  verify: () => ({
+    title: "Check your email",
+    lede:  `We sent a six-digit code to <b>${esc2(pending)}</b>. It expires in 10 minutes.`,
+    body: `
+      <label class="field"><span>Verification code</span>
+        <input name="otp" class="otp" inputmode="numeric" autocomplete="one-time-code"
+               pattern="[0-9]{6}" maxlength="6" required></label>
+      <div class="authacts">
+        <button type="submit" class="btn go">Verify</button>
+        <button type="button" class="btn quiet" data-act="resend">Send a new code</button>
+      </div>
+      <p class="spamnote">
+        <b>Not in your inbox?</b> Check your spam folder - these codes often land
+        there. Marking the message <b>Not spam</b> keeps the next one out of it.
+      </p>
+      <p class="alt"><a href="#" data-view="signin">Back to sign in</a></p>`,
+  }),
+
+  forgot: () => ({
+    title: "Reset your password",
+    lede:  "We'll email you a six-digit code to set a new one.",
+    body: `
+      <label class="field"><span>Email</span>
+        <input name="email" type="email" autocomplete="email" required></label>
+      <div class="authacts">
+        <button type="submit" class="btn go">Send code</button>
+      </div>
+      <p class="alt"><a href="#" data-view="signin">Back to sign in</a></p>`,
+  }),
+
+  reset: () => ({
+    title: "Set a new password",
+    lede:  `Enter the code sent to <b>${esc2(pending)}</b> and choose a new password.`,
+    body: `
+      <label class="field"><span>Verification code</span>
+        <input name="otp" class="otp" inputmode="numeric" autocomplete="one-time-code"
+               pattern="[0-9]{6}" maxlength="6" required></label>
+      <label class="field"><span>New password</span>
+        <input name="password" type="password" autocomplete="new-password"
+               minlength="8" required></label>
+      <div class="authacts">
+        <button type="submit" class="btn go">Set password</button>
+      </div>
+      <p class="spamnote">
+        <b>No code?</b> Check your spam folder, then mark it <b>Not spam</b>.
+      </p>
+      <p class="alt"><a href="#" data-view="forgot">Send another code</a></p>`,
+  }),
+};
+
+let view = "signin";
+
+function openAuth(next = "signin"){
+  view = next;
+  const v = VIEWS[view]();
+  $("authTitle").textContent = v.title;
+  $("authLede").innerHTML = v.lede;
+  $("authForm").innerHTML = v.body;
+  setMsg("");
+  $("authModal").classList.add("open");
+  const first = $("authForm").querySelector("input:not([type=hidden])");
+  if(first) first.focus();
+}
+function closeAuth(){ $("authModal").classList.remove("open"); }
+function setMsg(text, ok){
+  const el = $("authMsg");
+  el.textContent = text || "";
+  el.classList.toggle("ok", !!ok);
+}
+function setBusy(on){
+  busy = on;
+  $("authForm").querySelectorAll("button,input").forEach(el => { el.disabled = on; });
+}
+
+/* ------------------------------- actions -------------------------------- */
+/* Every handler funnels through here so no path can leave the form disabled
+   or an error unreported. */
+async function run(fn){
+  if(busy) return;
+  setMsg(""); setBusy(true);
+  try { await fn(); }
+  catch(e){ setMsg(humanError(e)); }
+  finally { setBusy(false); }
+}
+
+const fields = () => Object.fromEntries(new FormData($("authForm")).entries());
+
+async function onSubmit(e){
+  e.preventDefault();
+  const f = fields();
+  await run(async () => {
+    if(view === "signin"){
+      try {
+        await api.signIn({ email: f.email, password: f.password });
+        await refresh(); closeAuth();
+      } catch(err){
+        // An unverified account can't sign in. Send a fresh code rather than
+        // dead-ending on an error the user can't act on.
+        if(err?.code === "EMAIL_NOT_VERIFIED"){
+          pending = f.email;
+          await api.resend({ email: f.email, type: "email-verification" });
+          openAuth("verify");
+          setMsg("Verify your email first - we've sent you a new code.", true);
+          return;
+        }
+        throw err;
+      }
+    }
+
+    else if(view === "signup"){
+      await api.signUp({ email: f.email, password: f.password, name: f.name || f.email });
+      pending = f.email;
+      openAuth("verify");
+    }
+
+    else if(view === "verify"){
+      await api.verify({ email: pending, otp: f.otp });
+      await refresh();
+      closeAuth();
+    }
+
+    else if(view === "forgot"){
+      // Always reports success - the server does not reveal whether an
+      // address is registered, and neither should the UI.
+      await api.forgot({ email: f.email });
+      pending = f.email;
+      openAuth("reset");
+    }
+
+    else if(view === "reset"){
+      await api.reset({ email: pending, otp: f.otp, password: f.password });
+      openAuth("signin");
+      setMsg("Password updated. Sign in with it.", true);
+    }
+  });
+}
+
+async function onClick(e){
+  const link = e.target.closest("[data-view]");
+  if(link){ e.preventDefault(); openAuth(link.dataset.view); return; }
+
+  const act = e.target.closest("[data-act]")?.dataset.act;
+  if(act === "google"){
+    // Full-page redirect away and back. Nothing after this line runs.
+    await run(() => api.google({
+      provider: "google",
+      callbackURL: location.href.split("#")[0],
+    }));
+  }
+  if(act === "resend"){
+    await run(async () => {
+      await api.resend({ email: pending, type: "email-verification" });
+      setMsg("New code sent. Check spam if it isn't in your inbox.", true);
+    });
+  }
+}
+
+/* ------------------------------- session -------------------------------- */
+async function refresh(){
+  try {
+    const r = await auth.getSession();
+    session = r?.data?.user ?? r?.data?.session?.user ?? null;
+  } catch { session = null; }
+  paintAccount();
+}
+
+function paintAccount(){
+  const el = $("acct");
+  el.hidden = false;
+  if(session){
+    const who = session.name && session.name !== session.email ? session.name : session.email;
+    el.innerHTML = `<span class="who" title="${esc2(session.email)}">${esc2(who)}</span>
+      <button class="mini" data-auth="out">Sign out</button>`;
+  } else {
+    el.innerHTML = `<button class="mini" data-auth="in">Sign in</button>`;
+  }
+}
+
+$("acct").addEventListener("click", async e => {
+  const a = e.target.closest("[data-auth]")?.dataset.auth;
+  if(a === "in")  openAuth("signin");
+  if(a === "out"){
+    try { await auth.signOut(); } catch {}
+    session = null; paintAccount();
+  }
+});
+
+$("authForm").addEventListener("submit", onSubmit);
+$("authForm").addEventListener("click", onClick);
+$("authModal").addEventListener("click", e => {
+  if(e.target.id === "authModal" && !busy) closeAuth();
+});
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape" && !busy) closeAuth();
+});
+
+/* Runs on every load, which is the only way the Google redirect can be
+   noticed - it returns to a brand new page, not to a callback. Stage 4 hangs
+   the deck merge off this same point for the same reason. */
+refresh();
 </script>
 </body>
 </html>
