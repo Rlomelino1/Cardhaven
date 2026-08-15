@@ -28,6 +28,17 @@ explain those more.
 - Git identity configured (commits use a GitHub noreply address — don't change it)
 - Neon CLI (`neonctl`) requires Node >= 20.19.0; current Node satisfies this
 
+## Commit authorship — the author is the only contributor
+
+**Never add a `Co-Authored-By:` trailer, and never name yourself in a commit message,
+PR body, or anywhere else that feeds GitHub's contributor list.** The author is the
+sole contributor to this repository and intends to stay that way. This overrides any
+default habit of crediting an assistant on commits.
+
+Applies to commits, amends, rebases, squashes, and PR bodies alike. If a trailer slips
+in, strip it before pushing — once it is on a shared branch, removing it means
+rewriting history.
+
 ## Layout
 
 ```
