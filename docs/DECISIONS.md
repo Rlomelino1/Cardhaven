@@ -61,6 +61,36 @@ One line each: what was chosen, what was rejected.
 - Auth lives in its own `<script type="module">` and touches no deck state; rejected wiring `save`/`load` now — that is stage 4, and mixing them would make this stage unreviewable.
 - All auth views render from one `VIEWS` map into a single form element; rejected five separate modals, which would duplicate the busy/error handling five times.
 
+## Stage 3 — auth UI matched to the mockups (2026-08-15)
+
+Seven mockups in `docs/mockups/` were compared against the built UI, state by state,
+in a real browser. Most of the modal already matched; these are the gaps that were closed.
+
+- Account control moved to the right of the legality checks behind a vertical rule, and
+  restyled from an 11px underlined link to a bordered button with a `DECKS ON EVERY DEVICE`
+  caption; rejected keeping the link, which the mockup clearly draws as a button.
+- Header now paints the signed-out account control synchronously and drops the `hidden`
+  attribute; rejected waiting for `getSession`, which made the button appear a beat late.
+- `.acct:empty{display:none}` so a failed CDN module load leaves no orphan rule floating
+  next to the checks; rejected leaving it, since the padding and border render regardless.
+- `Forgotten?` moved onto the password label row; rejected the stacked link list under the
+  Google button, which is where the mockup does *not* put it.
+- Footer links became sentences (`New here? Create an account`); rejected bare links.
+- Removed the Google button from the create-account view per the mockup; rejected keeping
+  it, since "Continue with Google" signs up and signs in identically and the sign-in view
+  already offers it.
+- `NAME` carries an `OPTIONAL` tag on the label row instead of a placeholder inside the
+  input; rejected the placeholder, which disappears as soon as anyone types.
+- Added `At least 8 characters.` under the password field, `you@example.com` placeholders,
+  and a six-dot OTP placeholder; all three are drawn in the mockups.
+- Added the `ACCOUNT` eyebrow and a close ✕ to the modal; rejected relying on backdrop-tap
+  and Escape alone, which is what the code had and neither is discoverable.
+- Busy state now swaps the submit button to a spinner plus a per-view verb
+  (`Signing in…`, `Creating account…`); rejected a spinner elsewhere in the box — the
+  mockup puts it on the button, and the button is where the eye already is.
+- `.alt a` is brass: the app had no anchor styling at all, so every modal link was
+  rendering in the browser's default blue.
+
 ## Stage 3 — auth config (2026-08-14)
 
 - Signed-out users stay on localStorage; rejected `allowAnonymous: true` (author's call) — an anonymous token would put every drive-by doodle in the database against a 0.5 GB cap, and the export button already covers signed-out backup.

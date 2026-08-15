@@ -29,9 +29,7 @@ header{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap;
   font-size:13px; color:var(--mute)}
 .legendname{color:var(--brass); font-size:14px}
 .pip{width:9px; height:9px; border-radius:50%; display:block}
-.mini{background:none; border:none; color:var(--mute); font-size:11px;
-  cursor:pointer; text-decoration:underline; padding:0}
- 
+
 .checks{list-style:none; display:flex; gap:6px; margin:0; padding:0; flex-wrap:wrap}
 .checks li{background:var(--panel); border:1px solid var(--edge); border-radius:2px;
   padding:7px 9px; min-width:74px; font-size:9px; letter-spacing:.08em;
@@ -156,20 +154,49 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
 .para + .para{margin-top:.7em}
 
 /* ------------------------------- auth ---------------------------------- */
-.acct{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--mute)}
-.acct .who{color:var(--paper); max-width:22ch; overflow:hidden;
+/* The account control sits to the right of the deck-legality checks, behind a
+   rule, so the header reads left-to-right as deck → legality → who you are. */
+.headright{display:flex; align-items:flex-start; gap:15px}
+.acct{display:flex; flex-direction:column; align-items:flex-end; gap:7px;
+  padding-left:15px; border-left:1px solid var(--edge); align-self:stretch;
+  justify-content:center}
+.acct .btn{font-size:13px; padding:9px 15px}
+.acct .who{color:var(--paper); font-size:13px; max-width:22ch; overflow:hidden;
   text-overflow:ellipsis; white-space:nowrap}
+/* Says what an account buys before anyone clicks - phone access is the whole
+   reason accounts exist here. */
+.acct .pitch{font-family:ui-monospace,Menlo,monospace; font-size:9px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
+/* Nothing has painted it yet, or the auth module failed to load from the CDN.
+   Without this the padding and the rule still render - a stray vertical line
+   floating next to the checks. */
+.acct:empty{display:none}
 #authModal{position:fixed; inset:0; background:rgba(8,6,14,.85); display:none;
   place-items:center; padding:20px; z-index:60}
 #authModal.open{display:grid}
 .authbox{background:var(--panel); border:1px solid var(--edge); border-radius:6px;
   padding:26px; width:100%; max-width:392px; max-height:92vh; overflow:auto}
+.authhead{display:flex; justify-content:space-between; align-items:flex-start;
+  margin:0 0 18px}
+.authhead .eyebrow{margin:0}
+.authclose{background:none; border:none; color:var(--mute); padding:0; cursor:pointer;
+  width:22px; height:22px; margin:-4px -2px 0 0}
+.authclose svg{width:100%; height:100%; display:block}
 .authbox h3{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:23px; margin:0 0 6px; font-weight:600}
 .authbox .lede{font-size:13px; line-height:1.6; color:var(--mute); margin:0 0 18px}
 .field{display:block; margin:0 0 13px}
 .field span{display:block; font-family:ui-monospace,Menlo,monospace; font-size:9px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute); margin:0 0 5px}
+/* Label row that carries a second thing on the right: OPTIONAL, or the
+   forgotten-password escape hatch parked where a stuck user looks for it.
+   Scoped under .field because the plain `.field span` rule above is equally
+   specific and would otherwise win the display fight. */
+.field .flabel{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.field .flabel > span{margin:0}
+.field .flabel a{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:12px; letter-spacing:0; text-transform:none; color:var(--mute)}
+.hint{margin:-5px 0 0; font-size:12.5px; color:var(--mute)}
 .field input{background:var(--ink); border:1px solid var(--edge); color:var(--paper);
   border-radius:2px; padding:10px 12px; font-size:14px; width:100%}
 .field input:disabled{opacity:.5}
@@ -182,7 +209,17 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
   font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.14em;
   text-transform:uppercase; color:var(--mute)}
 .sep::before,.sep::after{content:""; flex:1; height:1px; background:var(--edge)}
-.alt{margin:16px 0 0; font-size:12px; color:var(--mute); text-align:center; line-height:1.9}
+.alt{margin:16px 0 0; font-size:13px; color:var(--mute); text-align:center; line-height:1.9}
+/* No global anchor rule exists - the app had no links until this modal. */
+.alt a{color:var(--brass); text-decoration:none}
+/* Busy: the submit button carries the whole loading state. Everything else in
+   the form is disabled but left alone, so the box doesn't flash grey. */
+.spin{width:14px; height:14px; border-radius:50%; display:inline-block;
+  vertical-align:-2px; margin-right:9px; border:2px solid rgba(20,16,36,.3);
+  border-top-color:var(--ink); animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
+.btn.go:disabled{opacity:.72}
 .authmsg{margin:0 0 14px; padding:9px 11px; font-size:12.5px; line-height:1.55;
   border-left:2px solid var(--warn); background:rgba(210,86,75,.09); color:#F2CBC6}
 .authmsg.ok{border-left-color:var(--teal); background:rgba(63,167,160,.1); color:#B7E4E0}
@@ -193,7 +230,12 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
 .spamnote{margin:13px 0 0; padding:10px 12px; font-size:12px; line-height:1.6;
   background:rgba(201,162,39,.09); border-left:2px solid var(--brass); color:#E4D7A8}
 .spamnote b{color:var(--brass)}
-.gbtn{display:flex; align-items:center; justify-content:center; gap:9px}
+/* Sits outside .authacts, so it misses that rule's width:100% - and a button
+   shrinks to its content even as a flex container. Without this it hangs left,
+   narrower than the submit button it lines up under. */
+.gbtn{display:flex; width:100%; align-items:center; justify-content:center; gap:9px}
+.gbtn:disabled{opacity:.4; cursor:not-allowed}
+.gnote{margin:9px 0 0; font-size:12px; line-height:1.5; color:var(--mute); text-align:center}
 .gbtn svg{width:16px; height:16px; display:block}
 
 /* ======================= responsive =======================
@@ -227,7 +269,6 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
   .btn{padding:10px 14px}
   .btn.sm{padding:7px 10px; font-size:11px}
   .chip{padding:8px 11px; font-size:12px}
-  .mini{font-size:12px; padding:4px 0}
   /* iOS zooms the whole page when you focus an input under 16px and
      never zooms back out. This is the only reason for the size. */
   #q,#deckName{font-size:16px}
@@ -247,6 +288,11 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
      Four equal columns hold the row down to ~320px. */
   .checks{display:grid; grid-template-columns:repeat(4,1fr); gap:5px}
   .checks li{min-width:0; padding:6px 5px; text-align:center}
+  /* The vertical rule only works while the checks and the account control sit
+     side by side. Stacked, it becomes a line across nothing. */
+  .headright{flex-direction:column; gap:12px; width:100%}
+  .acct{border-left:none; padding-left:0; align-self:flex-start;
+    flex-direction:row; align-items:center; gap:11px}
   .checks li b{font-size:15px}
   .shelf{grid-template-columns:repeat(auto-fill,minmax(94px,1fr)); gap:8px}
   .shelf.sm{grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:6px}
@@ -284,9 +330,9 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
     <input id="deckName" value="Untitled deck" aria-label="Deck name">
     <div class="legendline" id="legendline"></div>
   </div>
-  <div>
-    <div class="acct" id="acct" hidden></div>
+  <div class="headright">
     <ul class="checks" id="checks"></ul>
+    <div class="acct" id="acct"></div>
   </div>
 </header>
  
@@ -336,6 +382,13 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
 
 <div id="authModal">
   <div class="authbox">
+    <div class="authhead">
+      <p class="eyebrow">Account</p>
+      <button type="button" class="authclose" id="authClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
     <h3 id="authTitle"></h3>
     <p class="lede" id="authLede"></p>
     <p class="authmsg" id="authMsg"></p>
@@ -913,14 +966,30 @@ const esc2 = s => String(s ?? "").replace(/[&<>"']/g, m =>
 
 /* ------------------------------ error text ------------------------------ */
 /* Better Auth codes are machine-readable but not readable. Map the ones a
-   user can actually hit; fall back to the server's message otherwise. */
+   user can actually hit; fall back to the server's message otherwise.
+
+   The catch, measured against the live endpoint rather than assumed: the SDK
+   does NOT hand back the server's code. The endpoint answers a bad sign-in
+   with {code:"INVALID_EMAIL_OR_PASSWORD"}, and the thrown AuthApiError carries
+   code:"invalid_credentials" - a different, snake_case vocabulary. It rewrites
+   the message too ("Password too short" arrives as "Password does not meet
+   security requirements"), so matching on message text is no safer. Both
+   spellings are listed: the client one is what actually fires. */
 const MESSAGES = {
-  INVALID_EMAIL_OR_PASSWORD: "That email and password don't match an account.",
+  // Verified: thrown by the live endpoint on 2026-08-15.
+  invalid_credentials:  "Email or password is incorrect.",                 // 401 sign-in
+  validation_failed:    "That code isn't right, or it has expired.",       // 400 bad OTP
+  weak_password:        "Passwords need to be at least 8 characters.",     // 400 sign-up
+  // Not reproducible without a real account in that state - see docs/BLOCKED.md.
+  user_already_exists:  "There's already an account with that email. Try signing in.",
+  email_not_confirmed:  "Verify your email first - we'll send you a new code.",
+  otp_expired:          "That code has expired - send a new one.",
+  user_not_found:       "No account with that email.",
+  // Server-side spellings, kept in case the SDK ever passes one through.
+  INVALID_EMAIL_OR_PASSWORD: "Email or password is incorrect.",
   USER_ALREADY_EXISTS:       "There's already an account with that email. Try signing in.",
-  user_not_found:            "No account with that email.",
   INVALID_OTP:               "That code isn't right. Check it and try again.",
   OTP_EXPIRED:               "That code has expired - send a new one.",
-  validation_failed:         "That code isn't right, or it has expired.",
   PASSWORD_TOO_SHORT:        "Passwords need to be at least 8 characters.",
   EMAIL_NOT_VERIFIED:        "Verify your email first - we'll send you a new code.",
 };
@@ -931,6 +1000,17 @@ function humanError(e){
   return "Something went wrong reaching the server. Check your connection.";
 }
 
+/* Same problem, but this one changes behaviour rather than wording: an
+   unverified account can't sign in, and the handler below turns that into a
+   fresh code instead of a dead end. Matching only the server's spelling meant
+   it never fired. Accepts every spelling until a real unverified account
+   confirms which one arrives. */
+function isUnverified(e){
+  return e?.code === "email_not_confirmed"
+      || e?.code === "EMAIL_NOT_VERIFIED"
+      || /not verified|not confirmed/i.test(e?.message || "");
+}
+
 /* -------------------------------- views -------------------------------- */
 const GOOGLE_MARK = `<svg viewBox="0 0 48 48" aria-hidden="true">
   <path fill="#4285F4" d="M45 24.5c0-1.6-.15-3.15-.42-4.64H24v8.78h11.77c-.5 2.73-2.05 5.04-4.37 6.59v5.48h7.07C42.6 36.86 45 31.15 45 24.5z"/>
@@ -939,74 +1019,98 @@ const GOOGLE_MARK = `<svg viewBox="0 0 48 48" aria-hidden="true">
   <path fill="#EA4335" d="M24 10.67c3.21 0 6.09 1.1 8.36 3.27l6.27-6.27C34.85 4.14 29.89 2 24 2 15.4 2 8.05 6.93 4.46 14.03l7.3 5.66C13.48 14.52 18.3 10.67 24 10.67z"/>
 </svg>`;
 
+/* TODO(decision): re-enable when Neon's OAuth callback delivers a session
+   cookie - drop `disabled data-locked` and the note. Everything behind the
+   button works; the sign-in succeeds and the session is unreachable. Measured
+   five times over, see docs/BLOCKED.md §2.
+
+   Disabled rather than deleted: the flow is correct and the day Neon fixes
+   their end, this is a one-line revert. `data-locked` keeps setBusy() from
+   handing it back on the way out of a request. A tooltip alone would not do -
+   phones have no hover, and the phone is the point of accounts here. */
 const googleButton = `
-  <button type="button" class="btn gbtn" data-act="google">
+  <button type="button" class="btn gbtn" data-act="google" data-locked disabled
+          title="Temporarily unavailable - the provider is not returning a session">
     ${GOOGLE_MARK}<span>Continue with Google</span>
-  </button>`;
+  </button>
+  <p class="gnote">Google sign-in is temporarily unavailable. Email and password works.</p>`;
 
 const VIEWS = {
   signin: () => ({
     title: "Sign in",
+    busy:  "Signing in",
     lede:  "Your decks follow you to any device you sign in on.",
     body: `
       <label class="field"><span>Email</span>
-        <input name="email" type="email" autocomplete="email" required></label>
-      <label class="field"><span>Password</span>
-        <input name="password" type="password" autocomplete="current-password" required></label>
+        <input name="email" type="email" autocomplete="email"
+               placeholder="you@example.com" required></label>
+      <div class="field">
+        <span class="flabel"><label for="authPassword">Password</label>
+          <a href="#" data-view="forgot">Forgotten?</a></span>
+        <input id="authPassword" name="password" type="password"
+               autocomplete="current-password" required>
+      </div>
       <div class="authacts">
         <button type="submit" class="btn go">Sign in</button>
       </div>
       <div class="sep">or</div>
       ${googleButton}
-      <p class="alt">
-        <a href="#" data-view="signup">Create an account</a><br>
-        <a href="#" data-view="forgot">Forgotten your password?</a>
-      </p>`,
+      <p class="alt">New here? <a href="#" data-view="signup">Create an account</a></p>`,
   }),
 
+  /* No Google button here on purpose: "Continue with Google" creates an account
+     as readily as it signs into one, so the sign-in view covers both and this
+     view stays a single path. */
   signup: () => ({
     title: "Create an account",
+    busy:  "Creating account",
     lede:  "So your decks and collection are on your phone as well as here.",
     body: `
-      <label class="field"><span>Name</span>
-        <input name="name" type="text" autocomplete="name" placeholder="Optional"></label>
+      <div class="field">
+        <span class="flabel"><label for="authName">Name</label><span>Optional</span></span>
+        <input id="authName" name="name" type="text" autocomplete="name">
+      </div>
       <label class="field"><span>Email</span>
-        <input name="email" type="email" autocomplete="email" required></label>
+        <input name="email" type="email" autocomplete="email"
+               placeholder="you@example.com" required></label>
       <label class="field"><span>Password</span>
         <input name="password" type="password" autocomplete="new-password"
                minlength="8" required></label>
+      <p class="hint">At least 8 characters.</p>
       <div class="authacts">
         <button type="submit" class="btn go">Create account</button>
       </div>
-      <div class="sep">or</div>
-      ${googleButton}
-      <p class="alt"><a href="#" data-view="signin">I already have an account</a></p>`,
+      <p class="alt">Already have one? <a href="#" data-view="signin">Sign in</a></p>`,
   }),
 
   verify: () => ({
     title: "Check your email",
+    busy:  "Verifying",
     lede:  `We sent a six-digit code to <b>${esc2(pending)}</b>. It expires in 10 minutes.`,
     body: `
       <label class="field"><span>Verification code</span>
         <input name="otp" class="otp" inputmode="numeric" autocomplete="one-time-code"
-               pattern="[0-9]{6}" maxlength="6" required></label>
+               pattern="[0-9]{6}" maxlength="6" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;"
+               required></label>
       <div class="authacts">
         <button type="submit" class="btn go">Verify</button>
         <button type="button" class="btn quiet" data-act="resend">Send a new code</button>
       </div>
       <p class="spamnote">
-        <b>Not in your inbox?</b> Check your spam folder - these codes often land
-        there. Marking the message <b>Not spam</b> keeps the next one out of it.
+        <b>Not in your inbox?</b> Check spam &mdash; these codes often land there.
+        Marking it <b>Not spam</b> keeps the next one out.
       </p>
       <p class="alt"><a href="#" data-view="signin">Back to sign in</a></p>`,
   }),
 
   forgot: () => ({
     title: "Reset your password",
+    busy:  "Sending code",
     lede:  "We'll email you a six-digit code to set a new one.",
     body: `
       <label class="field"><span>Email</span>
-        <input name="email" type="email" autocomplete="email" required></label>
+        <input name="email" type="email" autocomplete="email"
+               placeholder="you@example.com" required></label>
       <div class="authacts">
         <button type="submit" class="btn go">Send code</button>
       </div>
@@ -1015,11 +1119,13 @@ const VIEWS = {
 
   reset: () => ({
     title: "Set a new password",
+    busy:  "Saving",
     lede:  `Enter the code sent to <b>${esc2(pending)}</b> and choose a new password.`,
     body: `
       <label class="field"><span>Verification code</span>
         <input name="otp" class="otp" inputmode="numeric" autocomplete="one-time-code"
-               pattern="[0-9]{6}" maxlength="6" required></label>
+               pattern="[0-9]{6}" maxlength="6" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;"
+               required></label>
       <label class="field"><span>New password</span>
         <input name="password" type="password" autocomplete="new-password"
                minlength="8" required></label>
@@ -1052,9 +1158,25 @@ function setMsg(text, ok){
   el.textContent = text || "";
   el.classList.toggle("ok", !!ok);
 }
+/* Disable the whole form, and say what is happening on the submit button
+   itself - a spinner somewhere else in the box gets missed. The original
+   label is parked on the element so the caller never has to know it. */
 function setBusy(on){
   busy = on;
-  $("authForm").querySelectorAll("button,input").forEach(el => { el.disabled = on; });
+  // data-locked survives the round trip: a control disabled for its own reasons
+  // must not come back enabled just because a request finished.
+  $("authForm").querySelectorAll("button,input").forEach(el => {
+    el.disabled = on || el.hasAttribute("data-locked");
+  });
+  const go = $("authForm").querySelector(".btn.go");
+  if(!go) return;
+  if(on){
+    go.dataset.idle = go.innerHTML;
+    go.innerHTML = `<span class="spin"></span>${esc2(VIEWS[view]().busy)}&hellip;`;
+  } else if(go.dataset.idle){
+    go.innerHTML = go.dataset.idle;
+    delete go.dataset.idle;
+  }
 }
 
 /* ------------------------------- actions -------------------------------- */
@@ -1081,7 +1203,7 @@ async function onSubmit(e){
       } catch(err){
         // An unverified account can't sign in. Send a fresh code rather than
         // dead-ending on an error the user can't act on.
-        if(err?.code === "EMAIL_NOT_VERIFIED"){
+        if(isUnverified(err)){
           pending = f.email;
           await api.resend({ email: f.email, type: "email-verification" });
           openAuth("verify");
@@ -1127,6 +1249,7 @@ async function onClick(e){
   const act = e.target.closest("[data-act]")?.dataset.act;
   if(act === "google"){
     // Full-page redirect away and back. Nothing after this line runs.
+    mark();
     await run(() => api.google({
       provider: "google",
       callbackURL: location.href.split("#")[0],
@@ -1141,23 +1264,39 @@ async function onClick(e){
 }
 
 /* ------------------------------- session -------------------------------- */
+/* Set before leaving for Google so the return trip can tell "never went" from
+   "went, came back, and no session arrived". */
+const OAUTH_PENDING = "rb.oauth-pending";
+const mark   = () => { try { sessionStorage.setItem(OAUTH_PENDING, "1"); } catch {} };
+const claim  = () => { try {
+  const v = sessionStorage.getItem(OAUTH_PENDING) === "1";
+  sessionStorage.removeItem(OAUTH_PENDING);
+  return v;
+} catch { return false; } };
+
 async function refresh(){
   try {
     const r = await auth.getSession();
     session = r?.data?.user ?? r?.data?.session?.user ?? null;
-  } catch { session = null; }
+  } catch(e) {
+    // Not the same thing as "signed out": a blocked cookie, a CORS failure and
+    // an expired session all land here, and painting "Sign in" for all three
+    // hides which one happened.
+    session = null;
+    console.warn("[auth] getSession failed:", e);
+  }
   paintAccount();
 }
 
 function paintAccount(){
   const el = $("acct");
-  el.hidden = false;
   if(session){
     const who = session.name && session.name !== session.email ? session.name : session.email;
     el.innerHTML = `<span class="who" title="${esc2(session.email)}">${esc2(who)}</span>
-      <button class="mini" data-auth="out">Sign out</button>`;
+      <button class="btn" data-auth="out">Sign out</button>`;
   } else {
-    el.innerHTML = `<button class="mini" data-auth="in">Sign in</button>`;
+    el.innerHTML = `<button class="btn" data-auth="in">Sign in</button>
+      <span class="pitch">Decks on every device</span>`;
   }
 }
 
@@ -1172,6 +1311,7 @@ $("acct").addEventListener("click", async e => {
 
 $("authForm").addEventListener("submit", onSubmit);
 $("authForm").addEventListener("click", onClick);
+$("authClose").addEventListener("click", () => { if(!busy) closeAuth(); });
 $("authModal").addEventListener("click", e => {
   if(e.target.id === "authModal" && !busy) closeAuth();
 });
@@ -1179,10 +1319,24 @@ document.addEventListener("keydown", e => {
   if(e.key === "Escape" && !busy) closeAuth();
 });
 
+/* Paint the signed-out header first: getSession is a network round trip, and
+   an account control that appears a second late reads as a layout glitch. */
+paintAccount();
+
 /* Runs on every load, which is the only way the Google redirect can be
    noticed - it returns to a brand new page, not to a callback. Stage 4 hangs
    the deck merge off this same point for the same reason. */
-refresh();
+refresh().then(() => {
+  /* Came back from Google with nothing to show for it. The cause is a cookie
+     the browser won't hand back across sites, not a typo the user can fix -
+     so say what happened and point at the path that does work, rather than
+     silently painting "Sign in" as though the trip never happened.
+     See docs/BLOCKED.md. */
+  if(claim() && !session){
+    openAuth("signin");
+    setMsg("Google sent you back, but no session arrived. Email and password works - this one is a known problem, not something you did.");
+  }
+});
 </script>
 </body>
 </html>
