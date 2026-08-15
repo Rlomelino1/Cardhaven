@@ -39,7 +39,20 @@ One line each: what was chosen, what was rejected.
 
 - Keep both: a signed-out deck is imported as an additional deck on the account; rejected overwrite-server and discard-local, both of which destroy data with no undo.
 
-## Stage 3 — auth (2026-08-14)
+## Stage 3 — auth UI (2026-08-14)
+
+- Imported `createAuthClient` from `@neondatabase/auth` + `BetterAuthVanillaAdapter` from its `/vanilla` export; rejected `createClient` from the `@neondatabase/neon-js` root, which also pulls `better-auth/react` and therefore React into a page that has none. Verified both construct an identical client against the live server.
+- Every endpoint verified by probing the live server before writing against it; rejected trusting Better Auth's documented defaults — `/verify-email` and plain `/forget-password` behave differently here than the generic docs suggest.
+- Password reset uses the OTP pair (`forgetPassword.emailOtp` → `emailOtp.resetPassword`); rejected the emailed-link flow, so every step stays in one tab and there is no session-arrives-after-reload case to handle for reset.
+- Errors are caught from `throw`, not read off a returned `{error}`; rejected the returned-error shape — the Better Auth proxy throws, and assuming otherwise would have swallowed every failure silently.
+- A `MESSAGES` map translates the error codes a user can actually hit, falling back to the server's own text; rejected showing raw codes like `INVALID_OTP`.
+- An `EMAIL_NOT_VERIFIED` sign-in sends a fresh code and jumps to the verify view; rejected showing the error alone, which dead-ends a user who cannot act on it.
+- The verify and reset views carry a spam-folder note (author's request); rejected leaving it implicit — Neon's stock template lands in Gmail spam on a new sender, measured, and verification is required, so a missed code is a blocked signup.
+- Forgotten-password always reports success; rejected revealing whether an address is registered, matching what the server already does.
+- Auth lives in its own `<script type="module">` and touches no deck state; rejected wiring `save`/`load` now — that is stage 4, and mixing them would make this stage unreviewable.
+- All auth views render from one `VIEWS` map into a single form element; rejected five separate modals, which would duplicate the busy/error handling five times.
+
+## Stage 3 — auth config (2026-08-14)
 
 - Signed-out users stay on localStorage; rejected `allowAnonymous: true` (author's call) — an anonymous token would put every drive-by doodle in the database against a 0.5 GB cap, and the export button already covers signed-out backup.
 - Auth setup steps live in `docs/auth-setup.md`; rejected putting them in `CLAUDE.md`, which is instructions-for-Claude, not a runbook the author works from.
