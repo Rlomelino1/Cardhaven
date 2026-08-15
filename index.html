@@ -293,8 +293,9 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
 <ul id="problems"></ul>
  
 <div id="onboard" class="onboard">
-  <p>No card pool loaded.</p>
-  <button class="btn go" onclick="picker.click()">Import pool file</button>
+  <p id="onboardMsg">Loading cards&hellip;</p>
+  <button class="btn go" id="onboardRetry" onclick="loadPool()" hidden>Try again</button>
+  <button class="btn quiet" id="onboardPick" onclick="picker.click()" hidden>Import a pool file instead</button>
 </div>
  
 <div id="browser" hidden>
@@ -378,10 +379,14 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, m =>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
  
 /* ------------------------------ persistence ----------------------------- */
+/* The pool is NOT persisted. It is identical for every user, it is served
+   from this origin, and the browser HTTP-caches it - so storing a private
+   copy per browser bought nothing and cost ~240 KB of the localStorage quota
+   rewritten on every single +1. */
 function save(){
   try{
     localStorage.setItem(KEY, JSON.stringify({
-      deckName:S.deckName, pool:S.pool, legend:S.legend,
+      deckName:S.deckName, legend:S.legend,
       champion:S.champion, zones:S.zones, variants:S.variants
     }));
   }catch(e){ note("Couldn't save locally: " + e.message); }
@@ -390,12 +395,17 @@ function load(){
   try{
     const raw = localStorage.getItem(KEY);
     if(!raw) return false;
-    Object.assign(S, JSON.parse(raw));
+    const saved = JSON.parse(raw);
+    // Blobs written before the pool was served from this origin carry a copy
+    // of it. Drop it: POOL_URL is the only source of truth now, and a stale
+    // one would quietly shadow a newly released set.
+    delete saved.pool;
+    Object.assign(S, saved);
     return true;
   }catch{ return false; }
 }
 function wipe(){
-  if(!confirm("Clear the saved deck and pool from this browser?")) return;
+  if(!confirm("Clear the saved deck from this browser?")) return;
   localStorage.removeItem(KEY);
   location.reload();
 }
@@ -807,8 +817,40 @@ document.getElementById("modal").addEventListener("click", e => {
 });
 document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
  
-if(load()) note(`${S.pool.length} cards restored from this browser`);
-render();
+/* ------------------------------- startup -------------------------------- */
+/* The pool ships with the site. Nobody should have to find a JSON file to
+   use a deckbuilder - and nobody else could, since the file only exists in
+   this repo. The picker stays as a fallback for a failed fetch and as the
+   way to load a set that hasn't been committed yet. */
+const POOL_URL = "./data/ogn-pool.json";
+
+window.loadPool = async function loadPool(){
+  const msg   = document.getElementById("onboardMsg");
+  const retry = document.getElementById("onboardRetry");
+  const pick  = document.getElementById("onboardPick");
+  msg.textContent = "Loading cards…";
+  retry.hidden = pick.hidden = true;
+  try{
+    // cache: "default" on purpose - this file changes only when a set drops,
+    // and Pages serves it with an ETag, so repeat visits revalidate cheaply.
+    const res = await fetch(POOL_URL, { cache: "default" });
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const raw  = await res.json();
+    const list = Array.isArray(raw) ? raw : (raw.pool || raw.cards || []);
+    if(!Array.isArray(list) || !list.length) throw new Error("no cards in the pool file");
+    S.pool = list.filter(c => c && c.name).map(normalize);
+    note(`${S.pool.length} cards · ${S.pool.filter(c=>c.image).length} with art`);
+    render();
+  }catch(err){
+    msg.textContent = `Couldn't load the card pool (${err.message}).`;
+    retry.hidden = pick.hidden = false;
+    note("Card pool unavailable");
+  }
+};
+
+if(load()) note("Deck restored from this browser");
+render();      // paint the saved deck immediately; the pool fills in behind it
+loadPool();
 </script>
 
 <script type="module">

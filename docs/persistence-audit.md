@@ -60,8 +60,14 @@ and it is exactly wrong for Postgres:
   expensive thing the app could do.
 - It would break the payload size constraint in the migration on the first save.
 
-So `pool` stays in localStorage as a client-side cache and never reaches the Data API.
-The deck row references cards; it does not contain them.
+So `pool` never reaches the Data API. The deck row references cards; it does not
+contain them.
+
+**Update (2026-08-14):** it no longer reaches localStorage either. The app now fetches
+`data/ogn-pool.json` from its own origin on startup, so a per-browser copy bought
+nothing — the browser HTTP-caches the file, and writing ~240 KB back to localStorage on
+every `+1` was pure cost. `save()` no longer writes `pool`, and `load()` deletes the key
+from any blob written before this change, so a stale copy cannot shadow a new set.
 
 ## Shrink the payload before it ships (stage 4, not now)
 

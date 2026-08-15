@@ -39,6 +39,15 @@ One line each: what was chosen, what was rejected.
 
 - Keep both: a signed-out deck is imported as an additional deck on the account; rejected overwrite-server and discard-local, both of which destroy data with no undo.
 
+## Card pool served from the site (2026-08-14)
+
+- The app fetches `data/ogn-pool.json` from its own origin on startup; rejected the manual file picker, which was a stopgap from before the pool was in the repo and could never have worked for anyone else — the file only exists here.
+- `save()` no longer persists `pool`; rejected keeping the localStorage cache, which rewrote ~240 KB on every `+1` to duplicate a file the browser already caches.
+- `load()` deletes `pool` from restored blobs; rejected trusting old data, because a cached copy would silently shadow a newly released set.
+- The picker is kept as a fallback shown only on fetch failure, plus a "Try again"; rejected removing it, since it is also how an uncommitted pool gets tested.
+- `render()` runs before the fetch so a saved deck paints immediately; rejected blocking the first paint on the network.
+- `fetch(..., {cache:"default"})`; rejected cache-busting — the file changes only when a set drops and Pages serves an ETag, so revalidation is cheap.
+
 ## Stage 3 — auth UI (2026-08-14)
 
 - Imported `createAuthClient` from `@neondatabase/auth` + `BetterAuthVanillaAdapter` from its `/vanilla` export; rejected `createClient` from the `@neondatabase/neon-js` root, which also pulls `better-auth/react` and therefore React into a page that has none. Verified both construct an identical client against the live server.

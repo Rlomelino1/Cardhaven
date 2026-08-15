@@ -12,14 +12,15 @@ Security as the authorization layer and no backend service of our own.
 
 ## Running it locally
 
-The app needs an `http://` origin rather than `file://`. Anything that serves static
-files will do:
+The app needs an `http://` origin rather than `file://`, because it fetches its card
+pool from its own origin. Anything that serves static files will do:
 
 ```
 npx serve .
 ```
 
-Then open the printed URL and use **Import pool file** to load `data/ogn-pool.json`.
+Open the printed URL — the cards load on their own. The file picker is a fallback for
+a failed fetch, or for trying a pool that isn't committed yet.
 
 ## Layout
 
