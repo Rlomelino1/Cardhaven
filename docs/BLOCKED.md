@@ -4,7 +4,96 @@ Each entry: the decision, the options, what was stubbed, what stays broken until
 
 ---
 
-*Nothing is currently blocked.*
+## 1. Does the header mockup also respecify the legality checks?
+
+`docs/mockups/singin-button.png` was matched for the account control, which is plainly
+what it is about. But the same image draws the legality strip differently from the built
+app, and that is a rules change, not a styling one — so it was left alone.
+
+| | Mockup | Built |
+|---|---|---|
+| Tiles | `LEGEND`, `MAIN`, `RUNES`, `BATTLEFIELD` | `MAIN DECK`, `RUNE DECK`, `BATTLEFIELDS`, `SIDEBOARD` |
+| Order | label on top, value below | value on top, label below |
+| Sideboard | absent | present, `0/8` |
+| Legend | present, reads `SET` | shown in the legend line under the deck name instead |
+
+**Options.** (a) The mockup is a frame for the Sign in button and its checks are
+placeholder art — change nothing. (b) The mockup respecifies the strip — then the
+sideboard counter goes away, a Legend tile arrives, and label/value flip.
+
+**Stubbed:** nothing. The legality strip is untouched and correct as built.
+
+**Blocked until decided:** only whether option (b) is wanted. Dropping the sideboard
+tile changes what the app reports as a legal deck, which is why it was not done on the
+strength of a mockup aimed at the sign-in button.
+
+## 2. Google sign-in never delivers a session cookie — a Neon-side defect
+
+**Conclusion first:** the OAuth callback creates a valid session in the database and
+does not give the browser a session cookie. Nothing in this repo can fix it. Verified
+2026-08-15 on both `http://localhost:8080` and `https://rlomelino1.github.io`.
+
+Evidence, in the order it was gathered:
+
+| Check | Result |
+|---|---|
+| `neon_auth."account"` after signing in | row with `providerId = google`, linked to the existing user |
+| `neon_auth."session"` | **5 sessions** created across the attempts, correct IP, week-long expiry |
+| Browser cookie jar for the auth domain | `state`, `aid`, `session_challenge` present — **no `session_token`** |
+| Top-level `GET /get-session` (the one context a `SameSite=Lax` cookie *is* sent) | `null` on HTTP **and** on HTTPS |
+| HTTPS attempt | created session #5, still `null` — so scheme is not the variable |
+| `POST /sign-in/social` with `idToken` | ignored; Neon's wrapper rewrites the endpoint into its `/sign-in/social/init?token=` bridge and returns a redirect even for a garbage token |
+| Auth server's own OpenAPI (`/open-api/generate-schema`, 78 endpoints) | no session-exchange endpoint |
+| SDK bundle | no `URLSearchParams` / `location.search` handling — the client reads the session from the cookie only |
+
+So the sign-in genuinely succeeds and the result is unreachable. Neon bridges the
+*outbound* partition problem with a one-time token in the URL; there is no matching
+bridge on the return leg.
+
+**An earlier version of this entry blamed CHIPS cookie partitioning.** That was wrong.
+The partitioned cookies are real but incidental — a partitioned cookie would still be
+*stored*, and no session cookie is stored at all.
+
+**Options now.**
+1. **Ship email/password, drop or disable the Google button.** Unblocked today. Costs
+   one-tap sign-in on the phone. ← recommended until Neon fixes it
+2. **Report it and wait.** The Data API and Managed Better Auth are both beta; the
+   evidence table above is a complete report. Costs an unknown amount of time.
+3. **One site for app and auth.** Removes every cross-site question at once, but needs a
+   custom domain, and Neon's managed auth base URL is not customisable on this plan.
+
+**Email/password is confirmed working** (author, 2026-08-15) — signed in and stayed
+signed in. So the cookie problem is specific to the OAuth callback, the no-backend
+architecture holds, and stage 4 is not blocked by any of this.
+
+**Stubbed:** the Google button is **disabled**, with a note under it and a tooltip. The
+code behind it is untouched and correct — re-enabling is deleting `disabled data-locked`
+and the note, marked `TODO(decision)` in `index.html`. Returning from a redirect still
+reports *"Google sent you back, but no session arrived"*, which now only fires if the
+button is re-enabled.
+
+## 3. Which error code arrives for an unverified sign-in
+
+The SDK does not pass the server's error code through. Measured against the live
+endpoint on 2026-08-15: the server answers a bad sign-in with
+`code: "INVALID_EMAIL_OR_PASSWORD"`, and the thrown `AuthApiError` carries
+`code: "invalid_credentials"`. It rewrites messages too — `Password too short` arrives as
+`Password does not meet security requirements` under `code: "weak_password"`.
+
+Verified client codes: `invalid_credentials` (401), `validation_failed` (400, bad OTP),
+`weak_password` (400). Not reproducible without an account in that state:
+`user_already_exists`, `email_not_confirmed`, `otp_expired`.
+
+This mattered beyond wording: the sign-in handler auto-sends a fresh code when an
+unverified account tries to sign in, and it was gated on `err.code === "EMAIL_NOT_VERIFIED"`,
+which can never fire.
+
+**Stubbed:** `isUnverified()` accepts `email_not_confirmed`, `EMAIL_NOT_VERIFIED`, or a
+message matching `/not verified|not confirmed/i`. Nothing is disabled.
+
+**To close:** on the first real sign-up, try signing in before entering the code. If the
+banner reads *"Verify your email first"*, the guess is right and the extra spellings can
+be dropped.
 
 ---
 
