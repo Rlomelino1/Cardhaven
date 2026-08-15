@@ -18,7 +18,7 @@ One line each: what was chosen, what was rejected.
 
 ## Card art sizing (author decision, 2026-08-14)
 
-- Grid tiles request `&w=240&fm=webp`; rejected leaving the originals, per the author's call on `docs/BLOCKED.md` §3 — 779 KB → 14 KB measured live, and the revert is a one-line change to `thumb()`.
+- Grid tiles request `&w=240&fm=webp`; rejected leaving the originals, per the author's call on "Thumbnail sizing" in `docs/BLOCKED.md` — 779 KB → 14 KB measured live, and the revert is a one-line change to `thumb()`.
 - The card modal keeps the full-size original; rejected shrinking it too, so there is always an unmodified reference to compare tile quality against.
 - `thumb()` picks `?` or `&` by inspecting the URL; rejected hardcoding `&`, because 14 of the 352 pool entries carry no query tag and would have produced a malformed URL.
 - Width fixed at 240 for a ~112 px tile; rejected matching the CSS width exactly, so the tiles stay sharp on a 2× phone screen — which is the primary use case.

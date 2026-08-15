@@ -174,7 +174,7 @@ PATCH /api/v2/projects/{project_id}/branches/{branch_id}/auth/email_provider
 
 `{"type":"shared"}` switches back to Neon's sender.
 
-See `docs/BLOCKED.md` for the open choice of provider.
+The provider is settled — see "SMTP sender" under Resolved in `docs/BLOCKED.md`.
 
 ## 4. Email verification — ON as of 2026-08-14
 

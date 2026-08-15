@@ -53,7 +53,8 @@ reading pixels back through a canvas, neither of which the app does.
 does from `file://`.
 
 The test used a real asset hash rather than the app's own pool, because `data/ogn-pool.json`
-is not in the repo yet (`docs/BLOCKED.md` §1). URL shape:
+was not in the repo at the time ("Pool files" under Resolved in `docs/BLOCKED.md`; it is
+in the repo now). URL shape:
 
 ```
 https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/{HASH}-744x1039.png?accountingTag=RB
@@ -61,8 +62,8 @@ https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/{HASH}-744x1039
 
 One thing that surfaced while testing: those images are **818 KB each** and the grid
 renders 48 of them at ~112 px wide. The same CDN returns a 240 px WebP of the same asset
-in **15 KB**. That is logged as `docs/BLOCKED.md` §3 — it changes how card art is requested,
-which is the author's call.
+in **15 KB**. Since settled — see "Thumbnail sizing" under Resolved in `docs/BLOCKED.md`;
+grid tiles now request the WebP.
 
 ## Not done, deliberately
 
