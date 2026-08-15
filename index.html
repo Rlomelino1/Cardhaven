@@ -1019,21 +1019,16 @@ const GOOGLE_MARK = `<svg viewBox="0 0 48 48" aria-hidden="true">
   <path fill="#EA4335" d="M24 10.67c3.21 0 6.09 1.1 8.36 3.27l6.27-6.27C34.85 4.14 29.89 2 24 2 15.4 2 8.05 6.93 4.46 14.03l7.3 5.66C13.48 14.52 18.3 10.67 24 10.67z"/>
 </svg>`;
 
-/* TODO(decision): re-enable when Neon's OAuth callback delivers a session
-   cookie - drop `disabled data-locked` and the note. Everything behind the
-   button works; the sign-in succeeds and the session is unreachable. Measured
-   five times over, see docs/BLOCKED.md §2.
-
-   Disabled rather than deleted: the flow is correct and the day Neon fixes
-   their end, this is a one-line revert. `data-locked` keeps setBusy() from
-   handing it back on the way out of a request. A tooltip alone would not do -
-   phones have no hover, and the phone is the point of accounts here. */
+/* Was disabled through 2026-08-15: the OAuth callback created a session row
+   and never set a session cookie, so sign-in succeeded and the result was
+   unreachable. Confirmed working on localhost:8080 on 2026-08-16 with no
+   change on this side, so the fix was Neon's. Re-enabled to verify the same
+   holds on the live origin - if it does not, the return-trip handler at the
+   bottom of this file still explains itself. History in docs/BLOCKED.md §2. */
 const googleButton = `
-  <button type="button" class="btn gbtn" data-act="google" data-locked disabled
-          title="Temporarily unavailable - the provider is not returning a session">
+  <button type="button" class="btn gbtn" data-act="google">
     ${GOOGLE_MARK}<span>Continue with Google</span>
-  </button>
-  <p class="gnote">Google sign-in is temporarily unavailable. Email and password works.</p>`;
+  </button>`;
 
 const VIEWS = {
   signin: () => ({

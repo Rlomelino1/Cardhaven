@@ -29,9 +29,20 @@ strength of a mockup aimed at the sign-in button.
 
 ## 2. Google sign-in never delivers a session cookie — a Neon-side defect
 
-**Conclusion first:** the OAuth callback creates a valid session in the database and
-does not give the browser a session cookie. Nothing in this repo can fix it. Verified
-2026-08-15 on both `http://localhost:8080` and `https://rlomelino1.github.io`.
+**Status 2026-08-16: apparently fixed on Neon's end, live verification outstanding.**
+The author signed in with Google on `http://localhost:8080` and the session stuck. No
+code in this repo changed between the failing and passing runs, so whatever moved,
+moved on Neon's side — there is no local commit to point at. The button is re-enabled
+and pushed so the same can be checked on `https://rlomelino1.github.io`, which is the
+origin that actually matters and which failed identically before.
+
+**This entry stays open until the live origin is confirmed.** If it passes there, move
+the whole thing to Resolved; if it fails there, the disable is a one-line revert and
+the evidence below is still the report to file.
+
+**Original conclusion (2026-08-15):** the OAuth callback creates a valid session in the
+database and does not give the browser a session cookie. Nothing in this repo can fix
+it. Verified on both `http://localhost:8080` and `https://rlomelino1.github.io`.
 
 Evidence, in the order it was gathered:
 
@@ -54,23 +65,29 @@ bridge on the return leg.
 The partitioned cookies are real but incidental — a partitioned cookie would still be
 *stored*, and no session cookie is stored at all.
 
-**Options now.**
+**Options as they stood on 2026-08-15.**
 1. **Ship email/password, drop or disable the Google button.** Unblocked today. Costs
-   one-tap sign-in on the phone. ← recommended until Neon fixes it
+   one-tap sign-in on the phone. ← taken, and now unwound
 2. **Report it and wait.** The Data API and Managed Better Auth are both beta; the
    evidence table above is a complete report. Costs an unknown amount of time.
 3. **One site for app and auth.** Removes every cross-site question at once, but needs a
    custom domain, and Neon's managed auth base URL is not customisable on this plan.
 
-**Email/password is confirmed working** (author, 2026-08-15) — signed in and stayed
-signed in. So the cookie problem is specific to the OAuth callback, the no-backend
-architecture holds, and stage 4 is not blocked by any of this.
+Option 2 is effectively what happened, without the reporting: it started working on its
+own inside a day.
 
-**Stubbed:** the Google button is **disabled**, with a note under it and a tooltip. The
-code behind it is untouched and correct — re-enabling is deleting `disabled data-locked`
-and the note, marked `TODO(decision)` in `index.html`. Returning from a redirect still
-reports *"Google sent you back, but no session arrived"*, which now only fires if the
-button is re-enabled.
+**Email/password is confirmed working** (author, 2026-08-15) — signed in and stayed
+signed in. So the cookie problem was specific to the OAuth callback, the no-backend
+architecture holds, and stage 4 was never blocked by any of this.
+
+**No longer stubbed.** The button is enabled, the tooltip and the note under it are
+gone, and the `TODO(decision)` in `index.html` is replaced by a comment recording the
+history. Returning from a redirect with nothing still reports *"Google sent you back,
+but no session arrived"* — that path is now the live-origin test's failure signal
+rather than a permanent state.
+
+**To close this entry:** sign in with Google on `https://rlomelino1.github.io/Riftbound-deck-builder/`.
+Session sticks → move to Resolved. Banner appears → re-disable and file the report.
 
 ## 3. Which error code arrives for an unverified sign-in
 

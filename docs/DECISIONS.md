@@ -119,3 +119,10 @@ in a real browser. Most of the modal already matched; these are the gaps that we
 - `FORCE ROW LEVEL SECURITY` left on even though `neondb_owner` holds `BYPASSRLS` and overrides it; rejected removing it, so the guarantee doesn't silently depend on who owns the table later.
 - Migration runner is a throwaway Node script + `pg` in a scratch directory outside the repo; rejected installing `psql` or `neonctl` (neither is on this machine) and rejected adding `node_modules` to the repo.
 - Ran every test inside a transaction that is rolled back, seeding real rows in `neon_auth."user"`; rejected testing against permanently-inserted fixtures, so the database is left with zero rows.
+
+## Google sign-in re-enabled (2026-08-16)
+
+- Re-enabled the Google button on the author's instruction after they confirmed the flow working on `http://localhost:8080`; rejected leaving it disabled pending a live check, because the live origin is the only place the check can happen and the button has to be enabled to run it.
+- `docs/BLOCKED.md` §2 stays open rather than moving to Resolved; rejected closing it on the strength of the local pass, since localhost passed the trust check all along and `https://rlomelino1.github.io` is the origin that failed.
+- The `TODO(decision)` block in `index.html` became a plain history comment; rejected deleting it, so the next reader learns the failure existed and that nothing here fixed it.
+- Kept the "Google sent you back, but no session arrived" return-trip handler untouched; rejected removing it as obsolete — it is exactly the signal the live test needs if the defect is still present there.
