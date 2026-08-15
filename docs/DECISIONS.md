@@ -120,9 +120,14 @@ in a real browser. Most of the modal already matched; these are the gaps that we
 - Migration runner is a throwaway Node script + `pg` in a scratch directory outside the repo; rejected installing `psql` or `neonctl` (neither is on this machine) and rejected adding `node_modules` to the repo.
 - Ran every test inside a transaction that is rolled back, seeding real rows in `neon_auth."user"`; rejected testing against permanently-inserted fixtures, so the database is left with zero rows.
 
-## Google sign-in re-enabled (2026-08-16)
+## Google sign-in re-enabled (2026-08-15)
 
-- Re-enabled the Google button on the author's instruction after they confirmed the flow working on `http://localhost:8080`; rejected leaving it disabled pending a live check, because the live origin is the only place the check can happen and the button has to be enabled to run it.
-- `docs/BLOCKED.md` §2 stays open rather than moving to Resolved; rejected closing it on the strength of the local pass, since localhost passed the trust check all along and `https://rlomelino1.github.io` is the origin that failed.
-- The `TODO(decision)` block in `index.html` became a plain history comment; rejected deleting it, so the next reader learns the failure existed and that nothing here fixed it.
-- Kept the "Google sent you back, but no session arrived" return-trip handler untouched; rejected removing it as obsolete — it is exactly the signal the live test needs if the defect is still present there.
+- Re-enabled the Google button after the author verified the flow end to end on the live Pages URL and on iOS Safari; rejected keeping it disabled, since the blocking defect was Neon's and Neon fixed it.
+- Left `@neondatabase/auth` pinned at `0.5.0-beta`; rejected bumping it — it is the latest published version and was unchanged across the failing and passing runs, so a bump would have been cargo-culting a server-side fix.
+- Left the load path alone rather than adding verifier handling; established by test that the SDK's own `getSession` interceptor reads `neon_auth_session_verifier` from `location.search` and appends it to the request, so `refresh()` already drives the exchange.
+- Verified that by mirroring the published bundle and driving it against a stubbed transport; rejected reading the minified source alone, which is how the previous investigation concluded "no `location.search` handling" — it had missed `dist/adapter-core-*.mjs` entirely.
+- Added a verifier strip on the failure path only; rejected stripping unconditionally, which would duplicate the `history.replaceState` the SDK already does on success, and rejected doing nothing, which leaves a burned single-use token in the address bar after a failed return.
+- Reworded the return-trip banner to a plain "didn't complete, try again"; rejected deleting the handler, because a redirect returning with no session is the exact fingerprint of the defect coming back.
+- `docs/BLOCKED.md` §2 moved to Resolved with the evidence table, and the CHIPS correction was corrected rather than deleted — partitioning turned out to be the mechanism that makes it work, not an incidental detail.
+- Recorded the partition consequence in `docs/auth-setup.md`: the cookie is partitioned to `https://rlomelino1.github.io`, so a future custom domain signs every user out once. Rejected leaving it implicit — it is invisible until launch day.
+- Kept `.gbtn:disabled` while deleting `.gnote`; the disabled style is still reached through `setBusy()`, the note's element no longer exists.

@@ -234,8 +234,7 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
    shrinks to its content even as a flex container. Without this it hangs left,
    narrower than the submit button it lines up under. */
 .gbtn{display:flex; width:100%; align-items:center; justify-content:center; gap:9px}
-.gbtn:disabled{opacity:.4; cursor:not-allowed}
-.gnote{margin:9px 0 0; font-size:12px; line-height:1.5; color:var(--mute); text-align:center}
+.gbtn:disabled{opacity:.4; cursor:not-allowed}   /* setBusy() still uses this */
 .gbtn svg{width:16px; height:16px; display:block}
 
 /* ======================= responsive =======================
@@ -1019,12 +1018,13 @@ const GOOGLE_MARK = `<svg viewBox="0 0 48 48" aria-hidden="true">
   <path fill="#EA4335" d="M24 10.67c3.21 0 6.09 1.1 8.36 3.27l6.27-6.27C34.85 4.14 29.89 2 24 2 15.4 2 8.05 6.93 4.46 14.03l7.3 5.66C13.48 14.52 18.3 10.67 24 10.67z"/>
 </svg>`;
 
-/* Was disabled through 2026-08-15: the OAuth callback created a session row
-   and never set a session cookie, so sign-in succeeded and the result was
-   unreachable. Confirmed working on localhost:8080 on 2026-08-16 with no
-   change on this side, so the fix was Neon's. Re-enabled to verify the same
-   holds on the live origin - if it does not, the return-trip handler at the
-   bottom of this file still explains itself. History in docs/BLOCKED.md §2. */
+/* Disabled until 2026-08-15, when the OAuth callback set no session cookie and
+   sign-in succeeded into a session nobody could reach. Neon shipped a return
+   leg: the callback now lands back here with ?neon_auth_session_verifier=..,
+   and getSession() trades it for a partitioned session cookie. The SDK does
+   that itself - see the note on refresh() - so re-enabling really is just this
+   button. Version stayed at 0.5.0-beta throughout; it was a server change.
+   Full evidence in docs/BLOCKED.md §2. */
 const googleButton = `
   <button type="button" class="btn gbtn" data-act="google">
     ${GOOGLE_MARK}<span>Continue with Google</span>
@@ -1269,6 +1269,16 @@ const claim  = () => { try {
   return v;
 } catch { return false; } };
 
+/* getSession() is also the OAuth return leg, not just a session read. Measured
+   against the 0.5.0-beta bundle: its getSession interceptor reads
+   neon_auth_session_verifier out of location.search, appends it to the
+   /get-session request, and sends credentials, which is what gets the
+   partitioned session cookie set. Nothing here has to hand it the verifier -
+   calling getSession() on load is the whole integration.
+
+   It also clears the param from the address bar via history.replaceState, but
+   only when a session actually comes back. A failed exchange leaves it in the
+   URL, which is why the return-trip handler below strips it. */
 async function refresh(){
   try {
     const r = await auth.getSession();
@@ -1322,15 +1332,26 @@ paintAccount();
    noticed - it returns to a brand new page, not to a callback. Stage 4 hangs
    the deck merge off this same point for the same reason. */
 refresh().then(() => {
-  /* Came back from Google with nothing to show for it. The cause is a cookie
-     the browser won't hand back across sites, not a typo the user can fix -
-     so say what happened and point at the path that does work, rather than
-     silently painting "Sign in" as though the trip never happened.
-     See docs/BLOCKED.md. */
+  /* Came back from Google with nothing to show for it. This is a plain error
+     now - the flow works - so it reads as one, rather than as the standing
+     defect it described while the button was disabled. Kept rather than
+     deleted because it is the only signal that would surface a regression:
+     the symptom is exactly this, a redirect that returns without a session. */
   if(claim() && !session){
     openAuth("signin");
-    setMsg("Google sent you back, but no session arrived. Email and password works - this one is a known problem, not something you did.");
+    setMsg("Google sign-in didn't complete. Try again, or use your email and password.");
   }
+
+  /* The SDK strips the verifier only on a successful exchange. Sweep up after
+     a failed one so a burned single-use token can't be bookmarked or shared,
+     and a retry can't start from a URL that already carries one. */
+  try {
+    const u = new URL(location.href);
+    if(u.searchParams.has("neon_auth_session_verifier")){
+      u.searchParams.delete("neon_auth_session_verifier");
+      history.replaceState(history.state, "", u.href);
+    }
+  } catch {}
 });
 </script>
 </body>

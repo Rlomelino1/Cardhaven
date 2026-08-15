@@ -267,6 +267,43 @@ Stage 4 still has to handle a session arriving on a fresh page load, because
 **Google sign-in is itself a full-page redirect away and back.** That path exists no
 matter how email verification is configured.
 
+## The Google session cookie is partitioned — two consequences
+
+Google sign-in works as of 2026-08-15 (`docs/BLOCKED.md`, Resolved). It works through a
+return-leg exchange: the callback lands back on the app with a one-time
+`neon_auth_session_verifier` in the query string, and the SDK's next `get-session` call
+trades it for `__Secure-neon-auth.session_token` — `HttpOnly`, `Secure`, `SameSite=None`,
+and **`Partitioned`**.
+
+### A custom domain would sign everybody out, once
+
+The cookie's partition key is the top-level site, `https://rlomelino1.github.io`. A
+partitioned cookie is scoped to the site the user is *on*, not just the domain that set
+it, so moving the app to a custom domain creates a different partition. Every existing
+session cookie becomes unreachable and every signed-in user is signed out exactly once.
+
+Not a blocker and not data loss — decks live in Postgres keyed by user, so signing back
+in restores everything. But it should not be a surprise on launch day, and it is a reason
+to pick the final hostname before inviting anyone. It also compounds with the
+`INVALID_CALLBACKURL` trap in §1: a new domain needs adding to trusted domains *and* to
+Google's authorized JavaScript origins before it will work at all.
+
+### If it regresses, this is the fingerprint
+
+This rides on the behaviour of a beta service that changed under us once already, in the
+good direction, without a version bump. If it changes back, the symptom is specific:
+
+- `__Secure-neon-auth.session_token` **absent** from the auth domain's cookie jar
+- `neon_auth."session"` **still gaining rows** on each attempt — the sign-in itself
+  succeeds server-side
+- a top-level `GET /neondb/auth/get-session` returning `null` right after
+
+That combination — sessions created, no cookie stored — is the same fingerprint as the
+original defect, and it means the return leg stopped working rather than anything here
+breaking. The client-side half is one line to undo: put `disabled` back on the Google
+button in `index.html`. Email and password is unaffected either way; it never depended on
+this path.
+
 ## Sources
 
 - <https://neon.com/docs/auth/overview>

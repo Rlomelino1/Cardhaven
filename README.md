@@ -52,7 +52,7 @@ CLAUDE.md               working agreement and architecture notes
 | 0 · Repo baseline | done |
 | 1 · Deploy to Pages, verify card art over HTTPS | done |
 | 2 · Audit persisted state, schema + RLS | done |
-| 3 · Auth UI — sign up / in / out / reset, email + Google | in progress |
+| 3 · Auth UI — sign up / in / out / reset, email + Google | done |
 | 4 · `save`/`load` → Data API, anonymous path, merge on signup | |
 | 5 · Multiple named decks | |
 | 6 · Collection tracker + "what am I missing" | |

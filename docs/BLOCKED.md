@@ -27,69 +27,7 @@ sideboard counter goes away, a Legend tile arrives, and label/value flip.
 tile changes what the app reports as a legal deck, which is why it was not done on the
 strength of a mockup aimed at the sign-in button.
 
-## 2. Google sign-in never delivers a session cookie — a Neon-side defect
-
-**Status 2026-08-16: apparently fixed on Neon's end, live verification outstanding.**
-The author signed in with Google on `http://localhost:8080` and the session stuck. No
-code in this repo changed between the failing and passing runs, so whatever moved,
-moved on Neon's side — there is no local commit to point at. The button is re-enabled
-and pushed so the same can be checked on `https://rlomelino1.github.io`, which is the
-origin that actually matters and which failed identically before.
-
-**This entry stays open until the live origin is confirmed.** If it passes there, move
-the whole thing to Resolved; if it fails there, the disable is a one-line revert and
-the evidence below is still the report to file.
-
-**Original conclusion (2026-08-15):** the OAuth callback creates a valid session in the
-database and does not give the browser a session cookie. Nothing in this repo can fix
-it. Verified on both `http://localhost:8080` and `https://rlomelino1.github.io`.
-
-Evidence, in the order it was gathered:
-
-| Check | Result |
-|---|---|
-| `neon_auth."account"` after signing in | row with `providerId = google`, linked to the existing user |
-| `neon_auth."session"` | **5 sessions** created across the attempts, correct IP, week-long expiry |
-| Browser cookie jar for the auth domain | `state`, `aid`, `session_challenge` present — **no `session_token`** |
-| Top-level `GET /get-session` (the one context a `SameSite=Lax` cookie *is* sent) | `null` on HTTP **and** on HTTPS |
-| HTTPS attempt | created session #5, still `null` — so scheme is not the variable |
-| `POST /sign-in/social` with `idToken` | ignored; Neon's wrapper rewrites the endpoint into its `/sign-in/social/init?token=` bridge and returns a redirect even for a garbage token |
-| Auth server's own OpenAPI (`/open-api/generate-schema`, 78 endpoints) | no session-exchange endpoint |
-| SDK bundle | no `URLSearchParams` / `location.search` handling — the client reads the session from the cookie only |
-
-So the sign-in genuinely succeeds and the result is unreachable. Neon bridges the
-*outbound* partition problem with a one-time token in the URL; there is no matching
-bridge on the return leg.
-
-**An earlier version of this entry blamed CHIPS cookie partitioning.** That was wrong.
-The partitioned cookies are real but incidental — a partitioned cookie would still be
-*stored*, and no session cookie is stored at all.
-
-**Options as they stood on 2026-08-15.**
-1. **Ship email/password, drop or disable the Google button.** Unblocked today. Costs
-   one-tap sign-in on the phone. ← taken, and now unwound
-2. **Report it and wait.** The Data API and Managed Better Auth are both beta; the
-   evidence table above is a complete report. Costs an unknown amount of time.
-3. **One site for app and auth.** Removes every cross-site question at once, but needs a
-   custom domain, and Neon's managed auth base URL is not customisable on this plan.
-
-Option 2 is effectively what happened, without the reporting: it started working on its
-own inside a day.
-
-**Email/password is confirmed working** (author, 2026-08-15) — signed in and stayed
-signed in. So the cookie problem was specific to the OAuth callback, the no-backend
-architecture holds, and stage 4 was never blocked by any of this.
-
-**No longer stubbed.** The button is enabled, the tooltip and the note under it are
-gone, and the `TODO(decision)` in `index.html` is replaced by a comment recording the
-history. Returning from a redirect with nothing still reports *"Google sent you back,
-but no session arrived"* — that path is now the live-origin test's failure signal
-rather than a permanent state.
-
-**To close this entry:** sign in with Google on `https://rlomelino1.github.io/Riftbound-deck-builder/`.
-Session sticks → move to Resolved. Banner appears → re-disable and file the report.
-
-## 3. Which error code arrives for an unverified sign-in
+## 2. Which error code arrives for an unverified sign-in
 
 The SDK does not pass the server's error code through. Measured against the live
 endpoint on 2026-08-15: the server answers a bad sign-in with
@@ -115,6 +53,65 @@ be dropped.
 ---
 
 ## Resolved
+
+**Google sign-in (was §2).** Closed 2026-08-15. Neon shipped a return-leg session
+exchange and the flow works end to end — verified by the author on the live Pages URL
+and on iOS Safari. The only code change was removing `disabled` from the button.
+
+The session no longer depends on a cookie set during the callback redirect. The callback
+returns to the app with a one-time verifier in the query string, and the next
+`getSession()` trades it for a session cookie:
+
+| Observation | Value |
+|---|---|
+| Session endpoint call | `GET /neondb/auth/get-session?neon_auth_session_verifier=<opaque>` |
+| Cookies sent up | two `__Secure-neon-auth.session_challange` cookies |
+| Cookie set in response | `__Secure-neon-auth.session_token`, 7 days |
+| Its attributes | `HttpOnly`, `Secure`, `SameSite=None`, **`Partitioned`** |
+| Its partition key | `https://rlomelino1.github.io` (the top-level site) |
+| The challenge cookies, same response | expiry `0 ms` — burned on use |
+| CORS | `Access-Control-Allow-Origin: https://rlomelino1.github.io`, `Allow-Credentials: true` |
+
+Neon spells it **`session_challange`**. Grepping for `challenge` finds nothing.
+
+**On the CHIPS correction — the earlier entry corrected itself in the wrong direction.**
+Version one blamed CHIPS cookie partitioning. Version two called that wrong, on the
+reasoning that a partitioned cookie would still be *stored* and none was. The reasoning
+was sound and the conclusion was right *for that cookie*: the callback genuinely set
+nothing. But partitioning is not incidental here — `Partitioned` is precisely the
+mechanism that now makes it work, because it is what lets a cookie survive in a
+third-party context at all. The right reading is that the cookie was missing because
+there was no return leg to set it, and the fix Neon shipped is a partitioned cookie set
+by a credentialed same-site-of-the-partition request. Both earlier versions were
+reasoning about the right mechanism and mislocating the fault.
+
+`@neondatabase/auth` stayed pinned at `0.5.0-beta` (latest published, npm 2026-08-11)
+across the failing and passing runs. This was a server-side change; the version was not
+bumped and does not need to be.
+
+**Who consumes the verifier.** Measured against the published bundle, not assumed — the
+old entry's "the SDK has no `location.search` handling" was read off a module graph that
+missed `dist/adapter-core-*.mjs`, which is where this lives. Its `getSession`
+interceptor reads `neon_auth_session_verifier` from `location.search`, appends it to the
+`/get-session` request, sends `credentials: include`, and on success deletes the param
+via `history.replaceState`. So calling `auth.getSession()` on load *is* the integration —
+`index.html` already did, which is why re-enabling the button was the only change needed.
+
+Three scenarios, driven against a stubbed transport:
+
+| `location.search` | Server answers | Request the SDK made | Param cleaned after |
+|---|---|---|---|
+| *(empty)* | signed out | `GET /get-session` | n/a |
+| verifier present | session + user | `GET /get-session?neon_auth_session_verifier=…` | **yes** |
+| verifier present | signed out | `GET /get-session?neon_auth_session_verifier=…` | **no** |
+
+The third row is why `index.html` strips the param itself after a failed return: a burned
+single-use verifier should not stay in the address bar to be bookmarked or shared.
+Accumulation across retries is not a risk either way — the SDK uses `searchParams.set`,
+which overwrites.
+
+**If it regresses**, the fingerprint is in `docs/auth-setup.md` alongside the partition
+consequence for a future custom domain.
 
 **SMTP sender (was §1).** Settled 2026-08-14: a Gmail account created for this project,
 `smtp.gmail.com:587` with a 16-character app password. Chosen over Brevo and Resend
