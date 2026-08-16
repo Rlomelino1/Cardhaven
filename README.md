@@ -53,8 +53,8 @@ CLAUDE.md               working agreement and architecture notes
 | 1 · Deploy to Pages, verify card art over HTTPS | done |
 | 2 · Audit persisted state, schema + RLS | done |
 | 3 · Auth UI — sign up / in / out / reset, email + Google | done |
-| 4 · `save`/`load` → Data API, anonymous path, merge on signup | |
-| 5 · Multiple named decks | |
+| 4 · `save`/`load` → Data API, anonymous path, merge on signup | done |
+| 5 · Multiple named decks, Paper/Midnight themes, validation banners | done |
 | 6 · Collection tracker + "what am I missing" | |
 | 7 · Showcase / base-card 3-copy limit | |
 
