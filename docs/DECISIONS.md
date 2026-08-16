@@ -2,6 +2,23 @@
 
 One line each: what was chosen, what was rejected.
 
+## Stage 4 — persistence over the Data API (2026-08-16)
+
+- Deck payloads store `{ref, qty}` keyed on `riftboundId` (collector-number identity, name as fallback for pool-less cards); rejected name keys, which the base/Showcase rule in `CLAUDE.md` forbids.
+- The champion stays a name in memory (the legality checks compare names) and becomes a ref only at the persistence boundary; rejected converting the in-memory model, which would have rippled through every check for no user-visible gain.
+- Serialized zones are sorted by ref so the dirty check compares content; rejected insertion order, where remove-and-re-add would read as an unsaved change forever.
+- A ref that no longer resolves stays in the deck, shows a problem banner with a "Remove them" button, counts toward zone totals, and is written back on save; rejected dropping it silently, and rejected keeping it invisible with no way to clear it.
+- The localStorage blob moved to the same slim shape (schema 2) on the same key, and legacy fat blobs still hydrate; rejected a new key, which would have stranded existing browsers' decks.
+- The `variants` toggle moved to its own localStorage key (`rb.variants`) like a device preference; rejected the `user_settings` row the audit suggested — cross-device sync of one boolean isn't worth a table round-trip yet, and the key survives the deck blob being claimed by a signup.
+- Signed-out users keep autosave-on-every-mutation; signed-in users write only on the Save button; rejected any autosave/interval against the CU-hours budget.
+- The merge runs on any session arrival with an unclaimed non-empty local deck, not only on signup; rejected signup-only, since a sign-in over a local doodle has the identical data-loss shape. Imported decks get an `(imported)` name suffix; the blob is cleared only after the insert succeeds; an empty untitled deck is not imported.
+- Data API access is `@neondatabase/postgrest-js@0.2.0-beta` + `fetchWithToken` with the JWT read from `getSession().data.session.token`; verified against the published `neon-js@0.7.0-beta` source that this is exactly what its integrated client does, and against the postgrest bundle that queries resolve `{data, error}` and never throw.
+- Import now accepts deck-only files (fixes the broken Export→Import round-trip: exports carry no pool and the importer threw "no cards"); an imported deck opens as a new unsaved deck rather than overwriting the open row.
+- Sign-out clears the table to a fresh untitled deck after a confirm if unsaved changes exist; rejected keeping account data painted on a signed-out screen.
+- Reset clears the working deck in memory (and the blob when signed out) but never deletes database rows; rejected wiring it to row deletion, which stage 5 handles explicitly per deck.
+- Removed the dead `S.target` field flagged in the stage-2 audit; rejected keeping it now that the state object was being reshaped anyway.
+- Verified with a 35-check Playwright suite driving the real page over localhost (slim round-trip, legacy blobs, unresolved refs, merge-once, dirty tracking, failed saves, sign-out) with a mocked `window.cloud`; the PostgREST wire itself is verified separately against the published bundle and live on the deployed site.
+
 ## Stage 0 — repo setup
 
 - Kept `CLAUDE.md` at `CLAUDE.md` where it was placed; rejected moving it to the repo root, even though root is the Claude Code auto-load convention — relocating a file the author just placed is their call.
