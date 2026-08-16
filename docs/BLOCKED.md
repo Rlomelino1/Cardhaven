@@ -4,30 +4,7 @@ Each entry: the decision, the options, what was stubbed, what stays broken until
 
 ---
 
-## 1. Does the header mockup also respecify the legality checks?
-
-`docs/mockups/singin-button.png` was matched for the account control, which is plainly
-what it is about. But the same image draws the legality strip differently from the built
-app, and that is a rules change, not a styling one — so it was left alone.
-
-| | Mockup | Built |
-|---|---|---|
-| Tiles | `LEGEND`, `MAIN`, `RUNES`, `BATTLEFIELD` | `MAIN DECK`, `RUNE DECK`, `BATTLEFIELDS`, `SIDEBOARD` |
-| Order | label on top, value below | value on top, label below |
-| Sideboard | absent | present, `0/8` |
-| Legend | present, reads `SET` | shown in the legend line under the deck name instead |
-
-**Options.** (a) The mockup is a frame for the Sign in button and its checks are
-placeholder art — change nothing. (b) The mockup respecifies the strip — then the
-sideboard counter goes away, a Legend tile arrives, and label/value flip.
-
-**Stubbed:** nothing. The legality strip is untouched and correct as built.
-
-**Blocked until decided:** only whether option (b) is wanted. Dropping the sideboard
-tile changes what the app reports as a legal deck, which is why it was not done on the
-strength of a mockup aimed at the sign-in button.
-
-## 2. Which error code arrives for an unverified sign-in
+## 1. Which error code arrives for an unverified sign-in
 
 The SDK does not pass the server's error code through. Measured against the live
 endpoint on 2026-08-15: the server answers a bad sign-in with
@@ -53,6 +30,14 @@ be dropped.
 ---
 
 ## Resolved
+
+**The legality-strip question (was §1, "Does the header mockup also respecify the
+legality checks?").** Closed 2026-08-16 by the deck-management mockups
+(`docs/mockups/darkmode1–3.png`, `lightmode.png`), which answer it directly and split
+the earlier mockup's difference: the strip moved into the deck panel as label-left /
+value-right rows with progress bars, the **sideboard row stays** (`0/8`), and the
+Legend got its own box above the strip rather than a tile in it. Nothing about what
+the app reports as a legal deck changed.
 
 **Google sign-in (was §2).** Closed 2026-08-15. Neon shipped a return-leg session
 exchange and the flow works end to end — verified by the author on the live Pages URL

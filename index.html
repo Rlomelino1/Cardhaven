@@ -5,74 +5,215 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>Riftbound Deckbuilder</title>
+<script>
+/* Theme class before first paint, or Paper users get a Midnight flash. */
+try{ if(localStorage.getItem("rb.theme")==="paper")
+  document.documentElement.classList.add("paper"); }catch(e){}
+</script>
 <style>
+/* Two themes, one variable set. Midnight is the original palette; Paper is
+   the light counterpart from the mockups — warm off-white, dark ink, same
+   domain accents. --text is the page text color (historically named --paper,
+   renamed when a theme actually called Paper arrived). */
 :root{
   --ink:#141024; --panel:#1F1936; --edge:#312A4C;
-  --paper:#EAE7F4; --mute:#948CAB; --brass:#C9A227; --teal:#3FA7A0; --warn:#D2564B;
+  --text:#EAE7F4; --text2:#C9C2DA; --mute:#948CAB;
+  --brass:#C9A227; --teal:#3FA7A0; --warn:#D2564B;
+  --go-bg:var(--brass); --go-fg:var(--ink);
+  --tile-bg:#1A1530;
+  --warn-ink:#F2CBC6; --ok-ink:#B7E4E0; --note-ink:#E4D7A8;
+  --warn-wash:rgba(210,86,75,.09); --ok-wash:rgba(63,167,160,.1);
+  --note-wash:rgba(201,162,39,.09); --hover-wash:rgba(255,255,255,.04);
+  --chip-on-ink:#12101c;
   --Fury:#D94A3D; --Calm:#4FA86B; --Mind:#3D7FD9;
   --Body:#E08A2E; --Chaos:#8B5CD6; --Order:#D9B62E; --Colorless:#8A8397;
 }
+:root.paper{
+  --ink:#F2EDE3; --panel:#FBF8F1; --edge:#DCD5C5;
+  --text:#211D15; --text2:#3D372B; --mute:#867D69;
+  --brass:#8C6D1F; --teal:#2E7D77; --warn:#B0392E;
+  --go-bg:#211D15; --go-fg:#F2EDE3;
+  --tile-bg:#E5DFCF;
+  --warn-ink:#7A2A22; --ok-ink:#1F5C57; --note-ink:#6B5416;
+  --warn-wash:rgba(176,57,46,.08); --ok-wash:rgba(46,125,119,.09);
+  --note-wash:rgba(140,109,31,.1); --hover-wash:rgba(0,0,0,.05);
+  --chip-on-ink:#FFFFFF;
+}
 *{box-sizing:border-box}
-body{margin:0; background:var(--ink); color:var(--paper); padding:22px 18px 40px;
+body{margin:0; background:var(--ink); color:var(--text); padding:22px 18px 40px;
   font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
 :focus-visible{outline:2px solid var(--brass); outline-offset:2px}
 button,input{font-family:inherit}
  
-header{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap;
-  border-bottom:1px solid var(--edge); padding-bottom:14px}
+/* ------------------------------- topbar --------------------------------- */
+header{position:relative; z-index:40; display:flex; align-items:center; gap:14px;
+  flex-wrap:wrap; background:var(--panel); border:1px solid var(--edge);
+  border-radius:4px; padding:9px 14px}
 .eyebrow{margin:0 0 5px; font-family:ui-monospace,Menlo,monospace; font-size:10px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--teal)}
-#deckName{background:none; border:none; color:var(--paper); padding:0; display:block;
+.brand{display:flex; align-items:baseline; gap:8px; padding-right:14px;
+  border-right:1px solid var(--edge)}
+.wordmark{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:21px; font-weight:700; color:var(--text)}
+.brandsub{font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--mute)}
+.deckid{display:flex; align-items:center; gap:10px; flex:1 1 260px; min-width:0}
+#deckName{background:none; border:none; color:var(--text); padding:2px 4px;
   font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
-  font-size:29px; font-weight:600; width:min(380px,70vw)}
-.legendline{display:flex; align-items:center; gap:7px; margin-top:5px; flex-wrap:wrap;
-  font-size:13px; color:var(--mute)}
-.saverow{display:flex; align-items:center; gap:10px; margin-top:9px}
-.saverow[hidden]{display:none}   /* display:flex beats the UA [hidden] rule */
+  font-size:20px; font-weight:600; width:min(300px,42vw); min-width:110px;
+  border-radius:2px}
 .savestate{font-family:ui-monospace,Menlo,monospace; font-size:9px;
-  letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mute);
+  white-space:nowrap}
 .savestate.dirty{color:var(--warn)}
-.legendname{color:var(--brass); font-size:14px}
+.topright{margin-left:auto; display:flex; align-items:center; gap:9px}
+.themebtn{font-family:ui-monospace,Menlo,monospace; font-size:10px;
+  letter-spacing:.12em; text-transform:uppercase}
+.themebtn .dot{width:7px; height:7px; border-radius:50%; background:var(--text);
+  display:inline-block; margin-right:7px; vertical-align:1px}
 .pip{width:9px; height:9px; border-radius:50%; display:block}
 
-.checks{list-style:none; display:flex; gap:6px; margin:0; padding:0; flex-wrap:wrap}
-.checks li{background:var(--panel); border:1px solid var(--edge); border-radius:2px;
-  padding:7px 9px; min-width:74px; font-size:9px; letter-spacing:.08em;
-  text-transform:uppercase; color:var(--mute); font-family:ui-monospace,Menlo,monospace}
-.checks li b{display:block; font-size:18px; color:var(--paper); letter-spacing:0}
-.checks li b span{font-size:10px; color:var(--mute)}
-.checks li.ok{border-color:var(--teal)}
+/* --------------------------- deck switcher menu -------------------------- */
+.switchwrap{position:relative}
+.caret{width:27px; height:27px; background:var(--ink); border:1px solid var(--edge);
+  border-radius:2px; color:var(--text); cursor:pointer; font-size:9px; line-height:1;
+  padding:0; flex:none}
+.deckmenu{position:absolute; top:calc(100% + 9px); left:0; width:340px; max-width:88vw;
+  background:var(--panel); border:1px solid var(--edge); border-radius:4px;
+  box-shadow:0 14px 34px rgba(0,0,0,.45); z-index:60; padding:5px}
+.deckmenu[hidden]{display:none}
+.dmhead{display:flex; justify-content:space-between; gap:10px; padding:8px 11px 7px;
+  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--mute)}
+.dmrow{position:relative; display:flex; align-items:center; gap:10px; width:100%;
+  padding:8px 8px 8px 15px; border-radius:2px}
+.dmrow .accent{position:absolute; left:4px; top:7px; bottom:7px; width:3px;
+  border-radius:1px}
+.dmmain{background:none; border:none; color:var(--text); text-align:left; padding:0;
+  cursor:pointer; flex:1; min-width:0}
+.dmname{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:15px; font-weight:600; display:block; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
+.dmsub{font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--mute); display:block; margin-top:3px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.dmmeta{font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--mute); white-space:nowrap}
+.dmmeta.open{color:var(--teal)}
+.dmdel{background:none; border:none; color:var(--mute); cursor:pointer; font-size:13px;
+  padding:3px 6px; line-height:1; border-radius:2px}
+.dmacts{display:flex; gap:6px; padding:9px 6px 5px; border-top:1px solid var(--edge);
+  margin-top:5px}
+.dmacts .btn{flex:1}
+.dmacts .btn:disabled{opacity:.4; cursor:not-allowed}
+.dmempty{padding:16px 13px; font-size:13px; color:var(--mute); line-height:1.65}
+.dmempty .btn{margin-top:10px}
+
+/* ------------------------------- layout ---------------------------------- */
+.layout{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:22px;
+  align-items:start; margin-top:16px}
+.deckpanel{background:var(--panel); border:1px solid var(--edge); border-radius:4px;
+  padding:15px; display:flex; flex-direction:column; gap:15px;
+  position:sticky; top:12px; max-height:calc(100vh - 24px); overflow:auto}
+
+/* ------------------------- deck panel components ------------------------- */
+.legendbox{display:flex; gap:12px; align-items:center; padding:10px;
+  background:var(--ink); border:1px solid var(--edge); border-radius:4px}
+.lthumb{width:46px; height:64px; border-radius:3px; background:var(--tile-bg);
+  border:1px solid var(--edge); overflow:hidden; flex:none}
+.lthumb img{width:100%; height:100%; object-fit:cover; display:block}
+.lbody{min-width:0; flex:1}
+.leyebrow{margin:0; font-family:ui-monospace,Menlo,monospace; font-size:8px;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--mute)}
+.lname{margin:3px 0; font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:17px; font-weight:600; color:var(--brass)}
+.ldomains{margin:0; font-size:11.5px; color:var(--mute); display:flex; gap:6px;
+  align-items:center; flex-wrap:wrap}
+.lclear{background:none; border:none; color:var(--mute); cursor:pointer; padding:4px;
+  font-size:13px; line-height:1; align-self:flex-start}
+
+.ztabs{display:flex; gap:4px; border-top:1px solid var(--edge); padding-top:12px}
+.ztab{flex:1; background:none; border:none; border-radius:3px; padding:7px 2px;
+  color:var(--mute); font-size:12px; cursor:pointer; white-space:nowrap}
+.ztab b{font-size:10px; margin-left:3px; font-weight:400}
+.ztab.on{background:var(--text); color:var(--ink); font-weight:600}
+.ztab.on b{color:var(--ink)}
+
+.dlist{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;
+  min-height:110px}
+.dlist li{display:flex; align-items:center; gap:9px; padding:6px 2px}
+.dlist .dot{width:8px; height:8px; border-radius:50%; flex:none}
+.dname{background:none; border:none; color:var(--text); font-size:13.5px;
+  text-align:left; cursor:pointer; padding:0; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; flex:1; min-width:0}
+.denergy{font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--mute);
+  min-width:13px; text-align:right}
+.dempty{color:var(--mute); font-size:13px; text-align:center; padding:30px 0; margin:0}
+
+/* ------------------------------ ask dialog ------------------------------- */
+#askModal{position:fixed; inset:0; background:rgba(8,6,14,.6); display:none;
+  place-items:center; padding:20px; z-index:70}
+#askModal.open{display:grid}
+.askbox{background:var(--panel); border:1px solid var(--edge); border-radius:6px;
+  padding:22px; max-width:430px; width:100%}
+.askbox h3{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:19px; font-weight:600; margin:0 0 10px}
+.askbox p{font-size:13.5px; line-height:1.65; color:var(--text2); margin:0 0 18px}
+.askacts{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+
+.checks{list-style:none; display:flex; flex-direction:column; gap:10px; margin:0; padding:0}
+.checks li{font-family:ui-monospace,Menlo,monospace; font-size:9px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--mute)}
+.checks .crow{display:flex; justify-content:space-between; align-items:baseline;
+  margin-bottom:5px}
+.checks li b{font-size:12px; color:var(--text); letter-spacing:.05em}
+.checks li b span{color:var(--mute)}
 .checks li.ok b{color:var(--teal)}
- 
-#problems{list-style:none; margin:13px 0 0; padding:10px 12px; border-left:2px solid var(--warn);
-  background:rgba(210,86,75,.09); font-size:13px; line-height:1.5; color:#F2CBC6;
-  display:flex; flex-direction:column; gap:5px}
+.checks .bar{height:2px; background:var(--edge); border-radius:1px; overflow:hidden}
+.checks .bar i{display:block; height:100%; background:var(--mute)}
+.checks li.ok .bar i{background:var(--teal)}
+
+/* -------------------------- validation banners --------------------------- */
+#problems{list-style:none; margin:0 0 14px; padding:0;
+  display:flex; flex-direction:column; gap:8px}
+#problems li{border-left:3px solid var(--warn); background:var(--warn-wash);
+  color:var(--warn-ink); font-size:13px; line-height:1.5; padding:10px 14px;
+  border-radius:0 2px 2px 0}
 #problems:empty{display:none}
- 
-.controls{display:flex; flex-direction:column; gap:9px; margin:18px 0 0}
-#q{background:var(--panel); border:1px solid var(--edge); color:var(--paper);
+
+.controls{display:flex; flex-direction:column; gap:9px; margin:0}
+.searchrow{display:flex; align-items:center; gap:14px}
+.searchrow #q{flex:1}
+.rescount{font-family:ui-monospace,Menlo,monospace; font-size:10px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mute);
+  white-space:nowrap}
+#q{background:var(--panel); border:1px solid var(--edge); color:var(--text);
   border-radius:2px; padding:10px 12px; font-size:14px; width:100%}
 .row{display:flex; gap:5px; flex-wrap:wrap; align-items:center}
 .row > .lbl{font-family:ui-monospace,Menlo,monospace; font-size:9px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute); margin-right:3px}
 .chip{background:var(--panel); border:1px solid var(--edge); color:var(--mute);
   border-radius:2px; padding:5px 9px; font-size:11px; cursor:pointer}
-.chip.on{background:var(--edge); color:var(--paper)}
-.dchip{border-left:3px solid var(--c)}
-.dchip.on{background:var(--c); color:#12101c; font-weight:600}
- 
-.count{font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.12em;
-  text-transform:uppercase; color:var(--mute); margin:14px 0 0}
- 
-.shelf{display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr));
-  gap:11px; margin:12px 0 0}
-.shelf.sm{grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:8px}
-.tile{margin:0; display:flex; flex-direction:column; gap:5px}
+.chip.on{background:var(--edge); color:var(--text)}
+/* Domain chips: colorless at rest, filled with the domain color when active.
+   --dt is the per-domain label ink, set inline where the chip is built —
+   light domains carry dark text, dark domains white. */
+.dchip.on{background:var(--c); border-color:var(--c); color:var(--dt,#12101c);
+  font-weight:600}
+
+.shelf{display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr));
+  gap:12px; margin:14px 0 0}
+.tile{margin:0; display:flex; flex-direction:column; gap:4px}
+.tname{font-size:12.5px; color:var(--text); margin:3px 0 0; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
+.ttype{font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--mute); margin:0; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
 .frame{position:relative; border:none; border-radius:6px; padding:2px; cursor:pointer;
   display:block; width:100%; line-height:0; box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .tile.flagged .frame{box-shadow:0 0 0 1px var(--warn)}
 .frame img,.frame svg{width:100%; height:auto; display:block; border-radius:4px;
-  background:#1A1530; aspect-ratio:744/1039}
+  background:var(--tile-bg); aspect-ratio:744/1039}
 .orb{position:absolute; top:6px; left:6px; width:20px; height:20px; border-radius:50%;
   background:rgba(10,8,18,.85); color:var(--brass); border:1px solid var(--brass);
   font-family:ui-monospace,Menlo,monospace; font-size:11px; line-height:19px; text-align:center}
@@ -82,14 +223,15 @@ header{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap;
 .flagtag{font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.1em;
   text-transform:uppercase; color:var(--warn)}
 .variant{position:absolute; bottom:6px; left:6px; background:rgba(10,8,18,.85);
-  color:var(--paper); border:1px solid rgba(234,231,244,.35); border-radius:2px;
+  color:var(--text); border:1px solid rgba(234,231,244,.35); border-radius:2px;
   font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.08em;
   text-transform:uppercase; padding:2px 5px; line-height:1.1}
 .acts{display:flex; gap:4px; align-items:center; flex-wrap:nowrap; min-height:22px}
  
-.btn{background:transparent; border:1px solid var(--edge); color:var(--paper);
+.btn{background:transparent; border:1px solid var(--edge); color:var(--text);
   border-radius:2px; padding:8px 12px; font-size:12px; cursor:pointer}
-.btn.go{background:var(--brass); border-color:var(--brass); color:var(--ink); font-weight:600}
+.btn.go{background:var(--go-bg); border-color:var(--go-bg); color:var(--go-fg); font-weight:600}
+.btn.danger{border-color:var(--warn); color:var(--warn)}
 .btn.sm{padding:3px 7px; font-size:10px}
 .btn.quiet{color:var(--mute)}
 #more,#showAll,#showLess{margin-top:14px}
@@ -98,16 +240,15 @@ header{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap;
 .qty{display:inline-flex; align-items:center; gap:5px;
   font-family:ui-monospace,Menlo,monospace; font-size:12px}
 .step{width:19px; height:19px; background:var(--panel); border:1px solid var(--edge);
-  color:var(--paper); border-radius:2px; cursor:pointer; line-height:1; padding:0}
+  color:var(--text); border-radius:2px; cursor:pointer; line-height:1; padding:0}
  
 .onboard{text-align:center; padding:48px 20px; color:var(--mute)}
 .onboard p{margin:0 0 14px; font-size:14px}
  
-#deck{margin-top:30px; border-top:1px solid var(--edge); padding-top:18px}
 h2{font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.16em;
-  text-transform:uppercase; color:var(--mute); font-weight:400; margin:24px 0 9px;
+  text-transform:uppercase; color:var(--mute); font-weight:400; margin:0;
   display:flex; justify-content:space-between; align-items:baseline}
-h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
+h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
 .empty{color:var(--mute); font-size:12px; margin:4px 0 0}
  
 .curve{display:flex; gap:5px; align-items:flex-end; min-height:92px}
@@ -118,8 +259,10 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
 .coln,.collbl{font-family:ui-monospace,Menlo,monospace; font-size:11px; min-height:14px}
 .collbl{color:var(--mute)}
  
-.actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:26px}
-.legal{margin:22px 0 0; font-size:10px; line-height:1.6; color:#6C6584; max-width:70ch}
+.actions{display:flex; gap:7px; flex-wrap:wrap; margin-top:auto;
+  border-top:1px solid var(--edge); padding-top:13px}
+.legal{margin:36px auto 0; font-size:10px; line-height:1.7; color:var(--mute);
+  max-width:64ch; text-align:center}
  
 #modal{position:fixed; inset:0; background:rgba(8,6,14,.85); display:none;
   place-items:center; padding:20px; z-index:50}
@@ -133,7 +276,7 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
   font-size:26px; margin:0 0 8px; font-weight:600}
 .meta .sub{font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.09em;
   text-transform:uppercase; color:var(--mute); margin:0 0 6px}
-.meta .text{font-size:15px; line-height:1.9; margin:16px 0; color:#C9C2DA}
+.meta .text{font-size:15px; line-height:1.9; margin:16px 0; color:var(--text2)}
 .meta .artist{font-size:12px; color:var(--mute); margin:0 0 18px}
 .modalacts{display:flex; gap:8px; flex-wrap:wrap}
  
@@ -147,31 +290,30 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
 .ic-rainbow{background:conic-gradient(var(--Fury),var(--Body),var(--Order),
   var(--Calm),var(--Mind),var(--Chaos),var(--Fury))}
-.ic-g{width:1.15em; height:1.15em; color:var(--paper)}
+.ic-g{width:1.15em; height:1.15em; color:var(--text)}
 .ic-g svg{width:100%; height:100%; display:block; fill:currentColor}
  
 /* ---- keyword chips ---- */
 .kw{display:inline-block; padding:.05em .45em; border-radius:2px; font-size:.82em;
   font-weight:700; letter-spacing:.04em; text-transform:uppercase;
-  background:var(--edge); color:var(--paper); white-space:nowrap}
-.kw-timing{background:var(--teal); color:#0E1A19}
+  background:var(--edge); color:var(--text); white-space:nowrap}
+.kw-timing{background:var(--teal); color:var(--ink)}
 .para{display:block}
 .para + .para{margin-top:.7em}
 
 /* ------------------------------- auth ---------------------------------- */
-/* The account control sits to the right of the deck-legality checks, behind a
-   rule, so the header reads left-to-right as deck → legality → who you are. */
-.headright{display:flex; align-items:flex-start; gap:15px}
-.acct{display:flex; flex-direction:column; align-items:flex-end; gap:7px;
-  padding-left:15px; border-left:1px solid var(--edge); align-self:stretch;
-  justify-content:center}
-.acct .btn{font-size:13px; padding:9px 15px}
-.acct .who{color:var(--paper); font-size:13px; max-width:22ch; overflow:hidden;
+/* The account control lives at the right end of the topbar. */
+.acct{display:flex; align-items:center; gap:9px}
+.acct .btn{font-size:12px; padding:7px 13px}
+.acct .who{color:var(--text); font-size:13px; max-width:16ch; overflow:hidden;
   text-overflow:ellipsis; white-space:nowrap}
+.avatar{width:27px; height:27px; border-radius:50%; background:var(--brass);
+  color:var(--ink); font-size:12px; font-weight:700; display:inline-flex;
+  align-items:center; justify-content:center; flex:none}
 /* Says what an account buys before anyone clicks - phone access is the whole
    reason accounts exist here. */
-.acct .pitch{font-family:ui-monospace,Menlo,monospace; font-size:9px;
-  letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
+.acct .pitch{font-family:ui-monospace,Menlo,monospace; font-size:8px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--mute)}
 /* Nothing has painted it yet, or the auth module failed to load from the CDN.
    Without this the padding and the rule still render - a stray vertical line
    floating next to the checks. */
@@ -202,7 +344,7 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
 .field .flabel a{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   font-size:12px; letter-spacing:0; text-transform:none; color:var(--mute)}
 .hint{margin:-5px 0 0; font-size:12.5px; color:var(--mute)}
-.field input{background:var(--ink); border:1px solid var(--edge); color:var(--paper);
+.field input{background:var(--ink); border:1px solid var(--edge); color:var(--text);
   border-radius:2px; padding:10px 12px; font-size:14px; width:100%}
 .field input:disabled{opacity:.5}
 /* Six digits, spaced out, so a code is easy to check against the email. */
@@ -220,20 +362,20 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
 /* Busy: the submit button carries the whole loading state. Everything else in
    the form is disabled but left alone, so the box doesn't flash grey. */
 .spin{width:14px; height:14px; border-radius:50%; display:inline-block;
-  vertical-align:-2px; margin-right:9px; border:2px solid rgba(20,16,36,.3);
-  border-top-color:var(--ink); animation:spin .7s linear infinite}
+  vertical-align:-2px; margin-right:9px; border:2px solid rgba(127,127,127,.3);
+  border-top-color:var(--go-fg); animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
 .btn.go:disabled{opacity:.72}
 .authmsg{margin:0 0 14px; padding:9px 11px; font-size:12.5px; line-height:1.55;
-  border-left:2px solid var(--warn); background:rgba(210,86,75,.09); color:#F2CBC6}
-.authmsg.ok{border-left-color:var(--teal); background:rgba(63,167,160,.1); color:#B7E4E0}
+  border-left:2px solid var(--warn); background:var(--warn-wash); color:var(--warn-ink)}
+.authmsg.ok{border-left-color:var(--teal); background:var(--ok-wash); color:var(--ok-ink)}
 .authmsg:empty{display:none}
 /* The verification code is the one thing that must not be missed. Neon Auth's
    stock template lands in Gmail's spam folder on a new sender - measured, not
    assumed - and verification is required, so a missed code is a blocked signup. */
 .spamnote{margin:13px 0 0; padding:10px 12px; font-size:12px; line-height:1.6;
-  background:rgba(201,162,39,.09); border-left:2px solid var(--brass); color:#E4D7A8}
+  background:var(--note-wash); border-left:2px solid var(--brass); color:var(--note-ink)}
 .spamnote b{color:var(--brass)}
 /* Sits outside .authacts, so it misses that rule's width:100% - and a button
    shrinks to its content even as a flex container. Without this it hangs left,
@@ -255,10 +397,10 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
    On touch these stick after a tap — the tapped tile stays lit
    until you tap elsewhere, which reads as a selection bug. */
 @media (hover:hover){
-  #deckName:hover{background:rgba(255,255,255,.04)}
+  #deckName:hover{background:var(--hover-wash)}
   .frame:hover{filter:brightness(1.12)}
   .btn:hover{border-color:var(--brass); color:var(--brass)}
-  .btn.go:hover{color:var(--ink); filter:brightness(1.08)}
+  .btn.go:hover{color:var(--go-fg); filter:brightness(1.08)}
   .step:hover{border-color:var(--brass); color:var(--brass)}
 }
 
@@ -283,25 +425,26 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
   .acts .btn{flex:1 1 auto}
 }
 
+/* ---- mid viewport: one column, deck panel below the browser ---- */
+@media (max-width:940px){
+  .layout{grid-template-columns:1fr}
+  .deckpanel{position:static; max-height:none}
+}
+
 /* ---- narrow viewport: layout ---- */
 @media (max-width:640px){
-  body{padding:14px 12px 32px}
-  header{gap:12px; padding-bottom:12px}
-  #deckName{width:100%; font-size:24px}
-  /* Left to itself the legality strip wraps 3-and-1 and looks broken.
-     Four equal columns hold the row down to ~320px. */
-  .checks{display:grid; grid-template-columns:repeat(4,1fr); gap:5px}
-  .checks li{min-width:0; padding:6px 5px; text-align:center}
-  /* The vertical rule only works while the checks and the account control sit
-     side by side. Stacked, it becomes a line across nothing. */
-  .headright{flex-direction:column; gap:12px; width:100%}
-  .acct{border-left:none; padding-left:0; align-self:flex-start;
-    flex-direction:row; align-items:center; gap:11px}
-  .checks li b{font-size:15px}
+  body{padding:12px 10px 32px}
+  header{gap:10px; padding:8px 10px}
+  .brand{border-right:none; padding-right:0}
+  .brandsub{display:none}
+  .deckid{flex:1 1 100%; order:3}
+  #deckName{width:100%; min-width:0; flex:1; font-size:19px}
+  .topright{margin-left:auto}
+  .acct .pitch{display:none}
+  .savestate{display:none}   /* the Save button itself still carries the state */
+  .deckmenu{left:auto; right:-40px}
   .shelf{grid-template-columns:repeat(auto-fill,minmax(94px,1fr)); gap:8px}
-  .shelf.sm{grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:6px}
   .curve{min-height:72px}
-  h2{margin:18px 0 8px}
   /* Full-width rows beat a ragged wrap of four differently-sized buttons. */
   .actions{gap:6px}
   .actions .btn{flex:1 1 calc(50% - 3px)}
@@ -329,64 +472,90 @@ h2 span{color:var(--paper); font-size:12px; letter-spacing:.03em}
 <body>
  
 <header>
-  <div>
-    <p class="eyebrow" id="notice">Import a pool file to begin</p>
-    <input id="deckName" value="Untitled deck" aria-label="Deck name">
-    <div class="legendline" id="legendline"></div>
-    <div class="saverow" id="saveRow" hidden>
-      <button class="btn sm" id="saveBtn" onclick="saveDeckCloud()">Save deck</button>
-      <span class="savestate" id="saveState"></span>
-    </div>
+  <div class="brand">
+    <span class="wordmark">Riftbound</span><span class="brandsub">Deckbuilder</span>
   </div>
-  <div class="headright">
-    <ul class="checks" id="checks"></ul>
+  <div class="deckid">
+    <input id="deckName" value="Untitled deck" aria-label="Deck name">
+    <div class="switchwrap">
+      <button class="caret" id="deckCaret" aria-label="Your decks"
+              aria-expanded="false">&#9660;</button>
+      <div class="deckmenu" id="deckMenu" hidden></div>
+    </div>
+    <span class="savestate" id="saveState"></span>
+  </div>
+  <div class="topright">
+    <button class="btn" id="saveBtn" onclick="saveDeckCloud()" hidden>Save deck</button>
+    <button class="btn themebtn" id="themeBtn" onclick="toggleTheme()">
+      <i class="dot"></i><span id="themeLabel">Paper</span></button>
     <div class="acct" id="acct"></div>
   </div>
 </header>
- 
-<ul id="problems"></ul>
- 
-<div id="onboard" class="onboard">
-  <p id="onboardMsg">Loading cards&hellip;</p>
-  <button class="btn go" id="onboardRetry" onclick="loadPool()" hidden>Try again</button>
-  <button class="btn quiet" id="onboardPick" onclick="picker.click()" hidden>Import a pool file instead</button>
-</div>
- 
-<div id="browser" hidden>
-  <div class="controls">
-    <input id="q" placeholder="Search name, rules text, or artist">
-    <div class="row" id="domainRow"></div>
-    <div class="row" id="typeRow"></div>
-    <div class="row" id="rarityRow"></div>
+
+<div class="layout">
+<main class="browsecol">
+  <p class="eyebrow" id="notice">Loading cards&hellip;</p>
+  <ul id="problems"></ul>
+
+  <div id="onboard" class="onboard">
+    <p id="onboardMsg">Loading cards&hellip;</p>
+    <button class="btn go" id="onboardRetry" onclick="loadPool()" hidden>Try again</button>
+    <button class="btn quiet" id="onboardPick" onclick="picker.click()" hidden>Import a pool file instead</button>
   </div>
-  <p class="count" id="resultCount"></p>
-  <div class="shelf" id="results"></div>
-  <div id="pager">
-    <button class="btn" id="more" hidden></button>
-    <button class="btn" id="showAll" hidden></button>
-    <button class="btn quiet" id="showLess" hidden></button>
+
+  <div id="browser" hidden>
+    <div class="controls">
+      <div class="searchrow">
+        <input id="q" placeholder="Search name, rules text, or artist">
+        <span class="rescount" id="resultCount"></span>
+      </div>
+      <div class="row" id="domainRow"></div>
+      <div class="row" id="typeRow"></div>
+      <div class="row" id="rarityRow"></div>
+    </div>
+    <div class="shelf" id="results"></div>
+    <div id="pager">
+      <button class="btn" id="more" hidden></button>
+      <button class="btn" id="showAll" hidden></button>
+      <button class="btn quiet" id="showLess" hidden></button>
+    </div>
   </div>
-</div>
- 
-<section id="deck">
+</main>
+
+<aside class="deckpanel" id="deck">
+  <div class="legendbox" id="legendBox"></div>
+  <ul class="checks" id="checks"></ul>
+  <div class="ztabs" id="zoneTabs"></div>
   <h2>Energy curve <span id="avg">avg 0.00</span></h2>
   <div class="curve" id="curve"></div>
-  <div id="zoneLists"></div>
+  <div id="zoneList"></div>
   <div class="actions">
-    <button class="btn" onclick="exportDeck()">Export deck</button>
+    <button class="btn go" onclick="exportDeck()">Export deck</button>
     <button class="btn" onclick="copyText()">Copy as text</button>
-    <button class="btn" onclick="picker.click()">Import</button>
-    <button class="btn" onclick="wipe()">Reset</button>
+    <button class="btn quiet" onclick="picker.click()">Import</button>
+    <button class="btn quiet" onclick="wipe()">Reset</button>
   </div>
+</aside>
+</div>
+
+<footer>
   <p class="legal">
     Unofficial fan tool for personal use. Riftbound, League of Legends, and all card
     assets belong to Riot Games. Created under Riot Games' &ldquo;Legal Jibber Jabber&rdquo;
     policy using assets owned by Riot Games. Riot Games does not endorse or sponsor
     this project.
   </p>
-</section>
- 
+</footer>
+
 <div id="modal"><div class="box" id="modalBox"></div></div>
+
+<div id="askModal">
+  <div class="askbox">
+    <h3 id="askTitle"></h3>
+    <p id="askText"></p>
+    <div class="askacts" id="askActs"></div>
+  </div>
+</div>
 
 <div id="authModal">
   <div class="authbox">
@@ -414,10 +583,13 @@ const TYPES = ["Unit","Spell","Gear","Rune","Battlefield","Legend"];
 const RARITY_ORDER = ["Common","Uncommon","Rare","Epic","Showcase","Ultimate"];
 const ZONES = {
   main:{label:"Main deck", short:"Main", target:40, rule:"min"},
-  runes:{label:"Rune deck", short:"Rune", target:12, rule:"exact"},
-  battlefields:{label:"Battlefields", short:"Field", target:3, rule:"exact"},
+  runes:{label:"Rune deck", short:"Runes", target:12, rule:"exact"},
+  battlefields:{label:"Battlefields", short:"Fields", target:3, rule:"exact"},
   sideboard:{label:"Sideboard", short:"Side", target:8, rule:"zeroOrExact"}
 };
+/* Label ink on an active domain chip, chosen per fill for contrast. */
+const DOMAIN_INK = {Fury:"#FFFFFF", Calm:"#12101C", Mind:"#FFFFFF",
+  Body:"#12101C", Chaos:"#FFFFFF", Order:"#12101C"};
 /* localStorage keys. KEY holds the signed-out working deck — same key it has
    always had, so existing browsers keep their deck across this change. The
    others are device preferences, split out because the deck blob is deleted
@@ -452,6 +624,8 @@ let POOL_READY = false;
    cloud wants opened wait here. undefined = nothing pending. */
 let PENDING_LOCAL, PENDING_CLOUD;
 let BASELINE = null;       // snapshot() of the last saved state, for dirty checks
+let ZONE_TAB = "main";     // which zone the deck panel is showing; transient
+let MENU_OPEN = false;     // deck switcher dropdown
  
 const uid = () => Math.random().toString(36).slice(2,10);
 const nk = s => String(s).trim().toLowerCase();
@@ -757,6 +931,7 @@ window.saveDeckCloud = async function(){
     if(CLOUD_USER){
       try{ localStorage.setItem(`${LS_OPEN_DECK}:${CLOUD_USER.id}`, row.id); }catch{}
     }
+    if(MENU_OPEN) renderDeckMenu();   // a first save adds a row to the list
     note("Deck saved.");
   } finally {
     SAVING = false;
@@ -776,21 +951,217 @@ function ago(ts){
 }
 
 function renderSaveState(){
-  const wrap = document.getElementById("saveRow");
-  if(!wrap) return;
-  if(MODE !== "cloud"){ wrap.hidden = true; return; }
-  wrap.hidden = false;
   const btn = document.getElementById("saveBtn");
   const state = document.getElementById("saveState");
+  if(MODE !== "cloud"){
+    // Signed out there is nothing to push: the deck autosaves locally on
+    // every change, and the dropdown carries the sign-in pitch.
+    btn.hidden = true;
+    state.textContent = "";
+    state.classList.remove("dirty");
+    return;
+  }
+  btn.hidden = false;
   const dirty = isDirty();
   btn.disabled = SAVING;
   btn.textContent = SAVING ? "Saving…" : dirty ? "Save deck" : "Saved";
   btn.classList.toggle("go", dirty && !SAVING);
-  state.textContent = SAVING ? "" :
+  state.textContent = SAVING ? "saving…" :
     dirty ? "unsaved changes" :
     S.savedAt ? `saved · ${ago(S.savedAt)}` : "";
   state.classList.toggle("dirty", dirty);
 }
+
+/* --------------------------- deck switcher menu -------------------------- */
+window.toggleDeckMenu = (open = !MENU_OPEN) => {
+  MENU_OPEN = open;
+  document.getElementById("deckMenu").hidden = !open;
+  document.getElementById("deckCaret").setAttribute("aria-expanded", String(open));
+  if(open) renderDeckMenu();
+};
+
+/* Name, legend and counts for a dropdown row, read from the cached payload.
+   The payload might hold refs or legacy fat objects; both are handled. */
+function deckMeta(row){
+  const z = (row.payload && row.payload.zones) || {};
+  const cnt = k => (Array.isArray(z[k]) ? z[k] : [])
+    .reduce((n,e) => n + Math.max(1, Number(e && e.qty) || 1), 0);
+  let legendName = null, domains = [];
+  const lg = row.payload && row.payload.legend;
+  if(typeof lg === "string"){
+    const card = findCard(lg);
+    if(card){ legendName = card.name; domains = card.domains; }
+    else legendName = lg;
+  } else if(lg && lg.name){
+    legendName = lg.name; domains = lg.domains || [];
+  }
+  return {legendName, domains,
+    counts:`${cnt("main")}/${cnt("runes")}/${cnt("battlefields")}`};
+}
+
+const accentStyle = domains =>
+  !domains || !domains.length ? "background:var(--edge)"
+  : domains.length === 1 ? `background:var(--${domains[0]})`
+  : `background:linear-gradient(180deg,var(--${domains[0]}) 0 50%,var(--${domains[1]}) 50% 100%)`;
+
+function renderDeckMenu(){
+  const menu = document.getElementById("deckMenu");
+  if(MODE !== "cloud"){
+    menu.innerHTML = `<div class="dmempty">Your deck is saved in this browser.
+      Sign in to keep decks in your account and switch between them here —
+      on this device and on your phone.<br>
+      <button class="btn go" onclick="toggleDeckMenu(false);window.openAuthModal?.()">Sign in</button>
+    </div>`;
+    return;
+  }
+  const rows = DECKS.map(d=>{
+    const m = deckMeta(d);
+    const open = d.id === S.deckId;
+    return `<div class="dmrow">
+      <i class="accent" style="${accentStyle(m.domains)}"></i>
+      <button class="dmmain" onclick="switchDeck('${d.id}')">
+        <span class="dmname">${esc(d.name)}</span>
+        <span class="dmsub">${esc(m.legendName || "No legend yet")} · ${m.counts}</span>
+      </button>
+      <span class="dmmeta${open?" open":""}">${open ? "open" : ago(d.updated_at)}</span>
+      <button class="dmdel" onclick="deleteDeckRow('${d.id}')"
+        title="Delete ${esc(d.name)}" aria-label="Delete ${esc(d.name)}">&#10005;</button>
+    </div>`;
+  }).join("");
+  menu.innerHTML =
+    `<div class="dmhead"><span>Your decks</span><span>${DECKS.length} deck${DECKS.length===1?"":"s"}</span></div>`
+    + (rows || `<div class="dmempty">No saved decks yet. Build one and hit Save.</div>`)
+    + `<div class="dmacts">
+        <button class="btn" onclick="newDeck()">+ New deck</button>
+        <button class="btn" onclick="duplicateDeck()"
+          ${S.deckId ? "" : `disabled title="Save this deck first — an unsaved deck has nothing to duplicate from"`}>
+          Duplicate current</button>
+      </div>`;
+}
+
+/* ------------------------------ ask dialog ------------------------------- */
+/* A confirm() with three answers. Promise resolves with the chosen button's
+   value; backdrop and Escape resolve "cancel". */
+let ASK = null;
+function ask(title, text, buttons){
+  document.getElementById("askTitle").textContent = title;
+  document.getElementById("askText").textContent = text;
+  document.getElementById("askActs").innerHTML = buttons.map((b,i)=>
+    `<button class="btn ${b.kind||""}" data-ask="${i}">${esc(b.label)}</button>`).join("");
+  document.getElementById("askModal").classList.add("open");
+  return new Promise(resolve => { ASK = {resolve, buttons}; });
+}
+function closeAsk(value){
+  if(!ASK) return;
+  document.getElementById("askModal").classList.remove("open");
+  const r = ASK.resolve; ASK = null; r(value);
+}
+document.getElementById("askActs").addEventListener("click", e => {
+  const b = e.target.closest("[data-ask]");
+  if(b && ASK) closeAsk(ASK.buttons[Number(b.dataset.ask)].value);
+});
+document.getElementById("askModal").addEventListener("click", e => {
+  if(e.target.id === "askModal") closeAsk("cancel");
+});
+
+/* Dirty gate shared by switch and new-deck. Returns true when it is safe to
+   proceed — either nothing was dirty, the user saved, or they chose to
+   discard. A failed save keeps them where they are. */
+async function resolveDirty(text, proceedLabel){
+  if(!window.hasUnsavedChanges()) return true;
+  const v = await ask("Unsaved changes", text, [
+    {label:"Save first", value:"save", kind:"go"},
+    {label:proceedLabel, value:"discard"},
+    {label:"Cancel", value:"cancel", kind:"quiet"},
+  ]);
+  if(v === "save"){ await window.saveDeckCloud(); return !isDirty(); }
+  return v === "discard";
+}
+
+/* ----------------------------- deck actions ------------------------------ */
+window.switchDeck = async id => {
+  if(id === S.deckId){ toggleDeckMenu(false); return; }
+  const row = DECKS.find(d => d.id === id); if(!row) return;
+  const go = await resolveDirty(
+    `"${S.deckName}" has unsaved changes. Save them before opening "${row.name}", or they are lost.`,
+    "Switch without saving");
+  if(!go) return;
+  toggleDeckMenu(false);
+  // Refetch on switch (an allowed read) so a save from another device wins
+  // over this browser's cached copy.
+  let fresh = row;
+  if(window.cloud){
+    const r = await window.cloud.get(id);
+    if(r.error){ note("Couldn't open that deck: " + r.error); return; }
+    if(r.data){
+      fresh = r.data;
+      const i = DECKS.findIndex(d => d.id === id);
+      if(i >= 0) DECKS[i] = fresh;
+    }
+  }
+  openDeckRow(fresh);
+};
+
+window.newDeck = async () => {
+  const go = await resolveDirty(
+    `"${S.deckName}" has unsaved changes. Save them before starting a new deck, or they are lost.`,
+    "Continue without saving");
+  if(!go) return;
+  toggleDeckMenu(false);
+  freshDeck(); touch(); render();
+};
+
+/* Duplicate copies the LIVE in-memory state — what is on screen, unsaved
+   edits included — and switches onto the copy. The copy is RAM, not disk: no
+   row exists until the user hits Save, so it stays out of the dropdown list.
+   Disabled for decks with no row (see renderDeckMenu): duplicating a deck
+   that exists only in memory would hand back the same memory under a new
+   name. */
+window.duplicateDeck = async () => {
+  if(MODE !== "cloud" || !S.deckId) return;
+  if(window.hasUnsavedChanges()){
+    const v = await ask("Duplicate with unsaved changes?",
+      `"${S.deckName}" has unsaved edits. If you continue, the copy keeps them and the original reverts to its last save. Or save the original first, then duplicate.`,
+      [{label:"Save first", value:"save", kind:"go"},
+       {label:"Continue without saving", value:"discard"},
+       {label:"Cancel", value:"cancel", kind:"quiet"}]);
+    if(v === "cancel") return;
+    if(v === "save"){ await window.saveDeckCloud(); if(isDirty()) return; }
+  }
+  toggleDeckMenu(false);
+  S.deckName = (S.deckName + " copy").slice(0, 120);
+  S.deckId = null; S.savedAt = null; BASELINE = null;
+  touch(); render();
+};
+
+window.deleteDeckRow = async id => {
+  const row = DECKS.find(d => d.id === id); if(!row) return;
+  const v = await ask("Delete deck?",
+    `Delete "${row.name}" from your account? This can't be undone.`,
+    [{label:"Delete", value:"del", kind:"danger"},
+     {label:"Cancel", value:"cancel", kind:"quiet"}]);
+  if(v !== "del") return;
+  const r = await window.cloud.remove(id);
+  if(r.error){ note("Couldn't delete: " + r.error); return; }
+  DECKS = DECKS.filter(d => d.id !== id);
+  if(S.deckId === id) freshDeck();   // the open deck is gone; clear the table
+  if(MENU_OPEN) renderDeckMenu();
+  render();
+};
+
+/* -------------------------------- theme ---------------------------------- */
+/* A class swap on <html> plus one localStorage key. The button is labelled
+   with the theme it switches TO. */
+function paintThemeButton(){
+  const paper = document.documentElement.classList.contains("paper");
+  document.getElementById("themeLabel").textContent = paper ? "Midnight" : "Paper";
+}
+window.toggleTheme = () => {
+  const paper = !document.documentElement.classList.contains("paper");
+  document.documentElement.classList.toggle("paper", paper);
+  try{ localStorage.setItem("rb.theme", paper ? "paper" : "midnight"); }catch{}
+  paintThemeButton();
+};
  
 /* -------------------------------- helpers ------------------------------- */
 const note = t => document.getElementById("notice").textContent = t;
@@ -862,7 +1233,8 @@ function tileHtml(c, acts){
       ${c.signature?`<span class="sig">S</span>`:""}
       ${variant?`<span class="variant">${variant}</span>`:""}
     </button>
-    ${offDomain(c)?`<figcaption class="flagtag">off-domain</figcaption>`:""}
+    <figcaption class="tname" title="${esc(c.name)}">${esc(c.name)}</figcaption>
+    <p class="ttype">${esc(c.type)}${c.domains.length?" · "+c.domains.join(" / "):""}${offDomain(c)?` · <span class="flagtag">off-domain</span>`:""}</p>
     <div class="acts">${acts}</div>
   </figure>`;
 }
@@ -873,24 +1245,47 @@ function render(){
   document.getElementById("onboard").hidden = S.pool.length > 0;
   document.getElementById("browser").hidden = S.pool.length === 0;
  
-  // legend line
-  const ll = document.getElementById("legendline");
-  ll.innerHTML = S.legend
-    ? `<span class="legendname">${esc(S.legend.name)}</span>` +
-      S.legend.domains.map(d=>`<i class="pip" style="background:var(--${d})"></i>`).join("") +
-      `<button class="mini" onclick="clearLegend()">clear</button>`
-    : `No Legend — filter to Legend and pick one to lock your domains`;
- 
-  // legality strip
+  // legend box
+  const lb = document.getElementById("legendBox");
+  if(S.legend){
+    const art = S.legend.image
+      ? `<img src="${esc(thumb(S.legend.image, 120))}" alt="" referrerpolicy="no-referrer">`
+      : "";
+    lb.innerHTML = `<div class="lthumb">${art}</div>
+      <div class="lbody">
+        <p class="leyebrow">Legend</p>
+        <p class="lname">${esc(S.legend.name)}</p>
+        <p class="ldomains">${S.legend.domains.map(d =>
+          `<i class="pip" style="background:var(--${d})"></i>`).join("")}
+          ${S.legend.domains.join(" / ")}</p>
+      </div>
+      <button class="lclear" onclick="clearLegend()" title="Clear Legend"
+        aria-label="Clear Legend">&#10005;</button>`;
+  } else {
+    lb.innerHTML = `<div class="lthumb"></div>
+      <div class="lbody">
+        <p class="leyebrow">Legend</p>
+        <p class="lname">No legend yet</p>
+        <p class="ldomains">No domains set</p>
+      </div>`;
+  }
+
+  // legality rows
   document.getElementById("checks").innerHTML = Object.entries(ZONES).map(([k,z])=>{
     const n = zoneCount(k);
     const ok = z.rule==="exact" ? n===z.target
              : z.rule==="min" ? n>=z.target
              : n===0 || n===z.target;
-    return `<li class="${ok?"ok":""}"><b>${n}<span>/${z.rule==="min"?z.target+"+":z.target}</span></b>${z.label}</li>`;
+    const frac = Math.max(0, Math.min(1, n / z.target));
+    return `<li class="${ok?"ok":""}">
+      <div class="crow"><span>${z.label}</span>
+        <b>${n}<span>/${z.rule==="min"?z.target+"+":z.target}</span></b></div>
+      <div class="bar"><i style="width:${Math.round(frac*100)}%"></i></div></li>`;
   }).join("");
 
-  // problems
+  // Validation banners. One per active problem, sentences with the numbers
+  // computed in. Advisory only — nothing here ever blocks a save; people
+  // save works in progress. Rule numbers cite Core Rules 2026-07-16.
   const probs = [];
   if(S.unresolved.length){
     const total = S.unresolved.reduce((n,u)=>n+u.qty,0);
@@ -899,17 +1294,35 @@ function render(){
       + `. They stay in the deck when you save. `
       + `<button class="btn sm quiet" onclick="dropUnresolved()">Remove them</button>`);
   }
-  const everywhere = [...S.zones.main, ...S.zones.runes, ...S.zones.sideboard];
-  const off = everywhere.filter(offDomain);
-  if(off.length) probs.push(`Outside ${esc(S.legend.name)}'s domains (${S.legend.domains.join(" / ")}): ${off.map(c=>esc(c.name)).join(", ")}`);
-  const over = S.zones.main.filter(c=>c.qty>3);
-  if(over.length) probs.push(`Over 3 copies: ${over.map(c=>esc(c.name)).join(", ")}`);
-  if(S.legend){
-    const t = tagOf(S.legend.name);
-    const sigs = S.zones.main.filter(c=>c.signature && tagOf(c.name)===t).reduce((n,c)=>n+c.qty,0);
-    if(sigs>3) probs.push(`${sigs} signature cards for ${esc(S.legend.name)} — the limit is 3.`);
+  if(POOL_READY){
+    const m = zoneCount("main");                                   // 103.2: at least 40
+    if(m < 40) probs.push(`Main deck needs ${40-m} more card${40-m===1?"":"s"}.`);
+    const r = zoneCount("runes");                                  // 103.3.a: exactly 12
+    if(r < 12) probs.push(`Rune deck is ${12-r} short of 12.`);
+    else if(r > 12) probs.push(`Rune deck is ${r-12} over 12.`);
+    const b = zoneCount("battlefields");                           // 3 for standard play
+    if(b < 3) probs.push(`Add ${3-b} more battlefield${3-b===1?"":"s"}.`);
+    else if(b > 3) probs.push(`Battlefields are ${b-3} over 3.`);
+    const dupBf = S.zones.battlefields.filter(c=>c.qty>1);         // 103.4.c: all different
+    if(dupBf.length) probs.push(`Battlefields must all be different — duplicate: ${dupBf.map(c=>esc(c.name)).join(", ")}.`);
+    const sb = zoneCount("sideboard");
+    if(sb !== 0 && sb !== 8) probs.push(`Sideboard must be empty or exactly 8 cards — it has ${sb}.`);
+    if(!S.legend) probs.push(`No Legend set — filter to Legend and pick one to lock your domains.`);
   }
-  if(S.champion && !S.zones.main.some(c=>nk(c.name)===nk(S.champion)))
+  const everywhere = [...S.zones.main, ...S.zones.runes, ...S.zones.sideboard];
+  const off = everywhere.filter(offDomain);                        // 103.1.b: domain identity
+  if(off.length) probs.push(`Outside ${esc(S.legend.name)}'s domains (${S.legend.domains.join(" / ")}): ${off.map(c=>esc(c.name)).join(", ")}.`);
+  const over = S.zones.main.filter(c=>c.qty>3);                    // 103.2.b: 3 copies max
+  if(over.length) probs.push(`Over 3 copies: ${over.map(c=>esc(c.name)).join(", ")}.`);
+  if(S.legend){                                                    // 103.2.d: 3 Signature cards, matching tag
+    const t = tagOf(S.legend.name);
+    const sigs = S.zones.main.filter(c=>c.signature);
+    const matching = sigs.filter(c=>tagOf(c.name)===t).reduce((n,c)=>n+c.qty,0);
+    if(matching > 3) probs.push(`${matching} Signature cards for ${esc(S.legend.name)} — the limit is 3.`);
+    const offTag = sigs.filter(c=>tagOf(c.name)!==t);
+    if(offTag.length) probs.push(`Signature cards that don't match ${esc(S.legend.name)}: ${offTag.map(c=>esc(c.name)).join(", ")}.`);
+  }
+  if(S.champion && !S.zones.main.some(c=>nk(c.name)===nk(S.champion)))   // 103.2.a
     probs.push("Your chosen Champion isn't in the main deck.");
   if(S.champion && S.legend && tagOf(S.champion)!==tagOf(S.legend.name))
     probs.push(`${esc(S.champion)} doesn't match your Legend — the Champion's tag must match.`);
@@ -918,7 +1331,7 @@ function render(){
   // filters
   document.getElementById("domainRow").innerHTML = DOMAINS.map(d=>
     `<button class="chip dchip${S.domainFilter.includes(d)?" on":""}"
-      style="--c:var(--${d})" onclick="toggleFilter('domainFilter','${d}')">${d}</button>`).join("");
+      style="--c:var(--${d});--dt:${DOMAIN_INK[d]}" onclick="toggleFilter('domainFilter','${d}')">${d}</button>`).join("");
   document.getElementById("typeRow").innerHTML = TYPES.map(t=>
     `<button class="chip${S.typeFilter.includes(t)?" on":""}"
       onclick="toggleFilter('typeFilter','${t}')">${t}</button>`).join("") +
@@ -953,7 +1366,9 @@ function render(){
   // Never let the page size drift past the result count.
   S.limit = Math.max(48, Math.min(S.limit, Math.max(48, res.length)));
  
-  document.getElementById("resultCount").textContent = `${res.length} card${res.length===1?"":"s"}`;
+  // Count of what search + every active filter currently shows.
+  document.getElementById("resultCount").textContent =
+    `${res.length} card${res.length===1?"":"s"}`;
   document.getElementById("results").innerHTML = res.slice(0,S.limit).map(c=>{
     const id = esc(c.riftboundId||c.name).replace(/'/g,"\\'");
     // Only offer destinations the card is actually legal in: Runes go to the
@@ -992,22 +1407,36 @@ function render(){
   const avg = mc ? S.zones.main.reduce((n,c)=>n+c.energy*c.qty,0)/mc : 0;
   document.getElementById("avg").textContent = "avg " + avg.toFixed(2);
  
-  // zone lists
-  document.getElementById("zoneLists").innerHTML = Object.entries(ZONES).map(([k,z])=>{
-    const list = [...S.zones[k]].sort((a,b)=>a.energy-b.energy||a.name.localeCompare(b.name));
-    const body = list.length
-      ? `<div class="shelf sm">${list.map(c=>tileHtml(c,
-          `<span class="qty">
-             <button class="step" onclick="bump('${k}','${c.id}',-1)">–</button>
-             <b>${c.qty}</b>
-             <button class="step" onclick="bump('${k}','${c.id}',1)">+</button>
-           </span>`)).join("")}</div>`
-      : `<p class="empty">Empty.</p>`;
-    return `<h2>${z.label} <span>${zoneCount(k)}</span></h2>${body}`;
-  }).join("");
+  // zone tabs + the open zone as compact rows
+  document.getElementById("zoneTabs").innerHTML = Object.entries(ZONES).map(([k,z])=>
+    `<button class="ztab${ZONE_TAB===k?" on":""}" onclick="setZoneTab('${k}')">${z.short}<b>${zoneCount(k)}</b></button>`).join("");
 
+  const zk = ZONE_TAB;
+  const zlist = [...S.zones[zk]].sort((a,b)=>a.energy-b.energy||a.name.localeCompare(b.name));
+  const zun = S.unresolved.filter(u=>u.zone===zk);
+  document.getElementById("zoneList").innerHTML = (zlist.length || zun.length)
+    ? `<ul class="dlist">` + zlist.map(c=>`<li>
+        <i class="dot" style="background:${c.domains[0]?`var(--${c.domains[0]})`:"var(--Colorless)"}"></i>
+        <button class="dname" title="${esc(c.name)}"
+          onclick="openCard('${esc(c.riftboundId||c.name).replace(/'/g,"\\'")}')">${esc(c.name)}</button>
+        <span class="denergy">${c.energy||""}</span>
+        <span class="qty">
+          <button class="step" onclick="bump('${zk}','${c.id}',-1)">–</button>
+          <b>${c.qty}</b>
+          <button class="step" onclick="bump('${zk}','${c.id}',1)">+</button>
+        </span></li>`).join("")
+      + zun.map(u=>`<li>
+        <i class="dot" style="background:var(--Colorless)"></i>
+        <span class="dname" style="color:var(--warn); cursor:default">${esc(u.ref)}</span>
+        <span class="qty"><b>${u.qty}</b></span></li>`).join("")
+      + `</ul>`
+    : `<p class="dempty">Nothing here yet.</p>`;
+
+  if(MENU_OPEN) renderDeckMenu();
   renderSaveState();
 }
+
+window.setZoneTab = k => { ZONE_TAB = k; render(); };
  
 /* --------------------------------- actions ------------------------------ */
 const findCard = id => S.pool.find(c => (c.riftboundId||c.name) === id);
@@ -1232,7 +1661,20 @@ document.getElementById("showLess").addEventListener("click", () => {
 document.getElementById("modal").addEventListener("click", e => {
   if(e.target.id === "modal") closeModal();
 });
-document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+document.addEventListener("keydown", e => {
+  if(e.key !== "Escape") return;
+  closeModal();
+  closeAsk("cancel");
+  if(MENU_OPEN) toggleDeckMenu(false);
+});
+document.getElementById("deckCaret").addEventListener("click", e => {
+  e.stopPropagation();
+  toggleDeckMenu();
+});
+// Click anywhere outside the switcher closes it.
+document.addEventListener("click", e => {
+  if(MENU_OPEN && !e.target.closest(".switchwrap")) toggleDeckMenu(false);
+});
  
 /* ------------------------------- startup -------------------------------- */
 /* The pool ships with the site. Nobody should have to find a JSON file to
@@ -1272,6 +1714,7 @@ try{
   if(v !== null) S.variants = v === "true";
 }catch{}
 if(load()) note("Deck restored from this browser");
+paintThemeButton();
 render();      // paint name and chrome immediately; cards hydrate after the pool
 loadPool();
 </script>
@@ -1752,13 +2195,19 @@ function paintAccount(){
   const el = $("acct");
   if(session){
     const who = session.name && session.name !== session.email ? session.name : session.email;
-    el.innerHTML = `<span class="who" title="${esc2(session.email)}">${esc2(who)}</span>
-      <button class="btn" data-auth="out">Sign out</button>`;
+    const initial = (who.trim()[0] || "?").toUpperCase();
+    el.innerHTML = `<span class="avatar" aria-hidden="true">${esc2(initial)}</span>
+      <span class="who" title="${esc2(session.email)}">${esc2(who)}</span>
+      <button class="btn sm quiet" data-auth="out">Sign out</button>`;
   } else {
     el.innerHTML = `<button class="btn" data-auth="in">Sign in</button>
       <span class="pitch">Decks on every device</span>`;
   }
 }
+
+/* The deck switcher's signed-out view carries a Sign in button; this is how
+   it reaches the modal from the classic script. */
+window.openAuthModal = () => openAuth("signin");
 
 $("acct").addEventListener("click", async e => {
   const a = e.target.closest("[data-auth]")?.dataset.auth;

@@ -2,6 +2,25 @@
 
 One line each: what was chosen, what was rejected.
 
+## Stage 5 + UI pass — multi-deck management and the mockup layout (2026-08-16)
+
+- Deck-construction rules verified against Core Rules v2026-07-16 (openrift.app's rules mirror): main ≥40 is 103.2, runes =12 is 103.3.a, 3-copy limit is 103.2.b, champion-in-main with matching tag is 103.2.a, domain identity is 103.1.b. Added the **distinct battlefields** check (103.4.c — "cannot include more than one Battlefield of the same name") and a **Signature-tag mismatch** banner (103.2.d says the 3 allowed Signature cards must match the Legend's tag); rejected leaving those two unchecked, since the handoff asked for the rules to be verified.
+- Sideboard 0-or-8 kept as a banner although the core construction rules don't define a sideboard; rejected dropping it — it has been the app's rule since stage 0 and the handoff lists it.
+- Every active problem gets its own banner even though mockup 1 draws only one; rejected showing just the first, because the handoff's behaviour spec says one banner per active problem and the mockup is authoritative for visuals, not for which problems exist.
+- The dirty-check before switching decks, starting a new deck, and signing out reuses the duplicate flow's three-way dialog (Save first / proceed / Cancel); rejected a plain confirm(), for consistency — this generalisation is the inference the handoff asked to have logged.
+- Deleting a deck uses a styled two-button dialog naming the deck; rejected the browser confirm(), which can't be styled and reads out of place next to the three-way dialog.
+- Switching decks refetches the row over the Data API (an allowed read) instead of trusting the cached list; rejected the cache, which would silently lose a save made on the phone.
+- Duplicate detaches the live in-memory state — name gains " copy", row identity and BASELINE drop — exactly per the spec; the copy stays out of the dropdown until saved because the dropdown renders only DECKS rows.
+- Domain chips: accent line removed, active chip fills with the domain color; label ink chosen per domain (white on Fury/Mind/Chaos, dark on Calm/Body/Order); rejected one ink for all six, which fails contrast on the light golds.
+- Theme is a class swap on `<html>` plus one localStorage key (`rb.theme`), applied by a tiny inline script before the stylesheet parses; rejected reading it after load, which flashes Midnight at Paper users. In Paper the primary buttons are dark ink (mockup 4 draws Export black), via `--go-bg`/`--go-fg`.
+- The CSS variable `--paper` (page text color) was renamed `--text` now that a theme actually called Paper exists; rejected keeping the collision.
+- Signed out, the Save button and save-state label are hidden (the deck autosaves locally) and the deck dropdown is the sign-in pitch, per the handoff's degradation rule.
+- The Import button stays in the deck panel actions although the mockups draw only Export/Copy/Reset; rejected removing it — it is the pool-fetch fallback and the way an uncommitted set gets tested.
+- Zone shelves under the browser were replaced by the mockups' tabbed row list (dot = first domain color, energy, qty stepper); the active tab is transient state, deliberately unpersisted.
+- The last-open deck id is remembered per user (`rb.open-deck:<userId>`) so a reload reopens the deck that was on the table; rejected always opening the most recent, which loses one's place after browsing another deck.
+- The deck panel is sticky with internal scroll on desktop and drops to a stacked column under 940px; the phone rules from the earlier responsive pass (touch targets, 16px inputs, dvh modal) are untouched.
+- Verified with a 40-check Playwright suite driving the real dropdown, dialogs, duplicate/delete flows, banners, count readout, and theme persistence, plus a reload suite for save → reload → same deck reopens. One test-harness race was found and fixed in the tests (the real auth module's late "signed out" dispatch clobbering the mocked session) — not an app defect, since the module is the app's only session source.
+
 ## Stage 4 — persistence over the Data API (2026-08-16)
 
 - Deck payloads store `{ref, qty}` keyed on `riftboundId` (collector-number identity, name as fallback for pool-less cards); rejected name keys, which the base/Showcase rule in `CLAUDE.md` forbids.
