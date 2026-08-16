@@ -2,6 +2,14 @@
 
 One line each: what was chosen, what was rejected.
 
+## Incident — live 403 on every deck save (2026-08-16)
+
+- Root cause measured, not assumed: `has_schema_privilege('authenticated','auth','USAGE')` had become **false**, so the RLS policies' `app_user_id()` → `auth.user_id()` call died with `permission denied for schema auth` (42501 → PostgREST 403, whose JSON body is exactly the 89 bytes the author's DevTools showed). Migration 0001 had granted it in the same committed transaction that created the tables; Neon re-provisioning the `auth` schema (pg_session_jwt) dropped it.
+- Fix: `public.app_user_id()` is now `SECURITY DEFINER` (migration 0002), so the policies no longer depend on the caller holding rights on Neon's schema; rejected a plain re-grant as the fix, because the re-grant **silently no-ops now** — Postgres downgrades a grant the grantor can't make to a warning, and `neondb_owner` lost that right in the same re-provision. The grant is still attempted in 0002 as self-healing if Neon restores it.
+- SECURITY DEFINER is safe here because the function already had the required hygiene: no arguments, no table access (reads only the caller's JWT session state), `set search_path = ''`.
+- Why 24 green tests missed it: `rls_test.sql` stubs `app_user_id()` with a plain SQL function, so `auth.user_id()` was never executed as `authenticated`. Added T0/T0b, which call the real function as both Data API roles before the stub lands — the suite is now 26 tests, all passing post-fix.
+- Verified at the failing layer: as `authenticated`, the real `app_user_id()` returns NULL (no permission error). Full end-to-end with a signed JWT is not mintable from here — Better Auth's signing key in `neon_auth.jwks` is encrypted with the server-held secret — so the author's next Save is the closing check.
+
 ## Stage 5 + UI pass — multi-deck management and the mockup layout (2026-08-16)
 
 - Deck-construction rules verified against Core Rules v2026-07-16 (openrift.app's rules mirror): main ≥40 is 103.2, runes =12 is 103.3.a, 3-copy limit is 103.2.b, champion-in-main with matching tag is 103.2.a, domain identity is 103.1.b. Added the **distinct battlefields** check (103.4.c — "cannot include more than one Battlefield of the same name") and a **Signature-tag mismatch** banner (103.2.d says the 3 allowed Signature cards must match the Legend's tag); rejected leaving those two unchecked, since the handoff asked for the rules to be verified.

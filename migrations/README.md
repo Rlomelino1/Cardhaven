@@ -8,6 +8,7 @@ are hard to read.
 | # | File | Applied | State |
 |---|---|---|---|
 | 0001 | `0001_create_decks.sql` | 2026-08-13 | live on `neondb`, `falling-star-08784661` |
+| 0002 | `0002_app_user_id_survives_auth_reprovision.sql` | 2026-08-16 | live — see the incident note in the file header |
 
 ## Running
 
@@ -37,12 +38,13 @@ JWT — `pg_session_jwt` would need a real signed token to populate `auth.user_i
 rollback restores the real function. The JWT-to-uuid step it skips is covered separately
 by C11/C11b.
 
-### What they cover — 24 tests, all passing
+### What they cover — 26 tests, all passing
 
 **Isolation (`rls_test.sql`)**
 
 | | |
 |---|---|
+| T0/T0b | the **real** `app_user_id()` (not the stub) is executable by both Data API roles — guards against Neon re-provisioning the `auth` schema, which produced live 403s on 2026-08-16 while the stubbed suite stayed green |
 | T1 | trigger pins `user_id` on insert |
 | T2 | a client-supplied `user_id` is overridden, not honoured |
 | T3 | user A sees exactly its own rows |

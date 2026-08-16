@@ -14,6 +14,22 @@ values
   ('aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa', 'Test A', 'a@example.invalid', true, now(), now()),
   ('bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb', 'Test B', 'b@example.invalid', true, now(), now());
 
+-- T0 runs BEFORE the stub below replaces app_user_id(): the REAL function
+-- must be executable by the Data API roles. The stub is exactly how this
+-- suite passed 24/24 while production returned 403 `permission denied for
+-- schema auth` (2026-08-16) — Neon had re-provisioned the auth schema and
+-- dropped the USAGE grant, and nothing here called auth.user_id() as
+-- authenticated. With no JWT session the real function returns NULL; the
+-- failure mode under test raises 42501 instead, which aborts the suite.
+set local role authenticated;
+select 'T0 real app_user_id() executable as authenticated (no 42501)' as test,
+       (public.app_user_id() is null) as pass;
+reset role;
+set local role anonymous;
+select 'T0b real app_user_id() executable as anonymous (no 42501)' as test,
+       (public.app_user_id() is null) as pass;
+reset role;
+
 create or replace function public.app_user_id() returns uuid
   language sql stable as $$ select 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa'::uuid $$;
 
