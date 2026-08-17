@@ -1,0 +1,3 @@
+/* esm.sh - jose@6.2.5/dist/webapi/lib/jwk_to_key */
+import{JOSENotSupported as s}from"./jose_6.2.5_es2022_errors.mjs";var i='Invalid or unsupported JWK "alg" (Algorithm) Parameter value';function n(e,t){if(!e.kty.includes(t.kty))throw new s(i);return e.subtleFor?.({kty:t.kty,crv:t.crv})??e.subtle}async function p(e,t){if(t.kty==="RSA"&&"oth"in t&&t.oth!==void 0)throw new s('RSA JWK "oth" (Other Primes Info) Parameter value is not supported');let u=n(e,t),r=!!(t.d||t.priv),a=r?e.usages.private:e.usages.public,o={...t};return o.kty!=="AKP"&&delete o.alg,delete o.use,crypto.subtle.importKey("jwk",o,u,t.ext??!r,t.key_ops??a)}export{p as jwkToKey};
+//# sourceMappingURL=jwk_to_key.mjs.map

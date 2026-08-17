@@ -1,0 +1,3 @@
+/* esm.sh - @neondatabase/auth@0.5.0-beta/dist/neon-auth-BLCDc-bu */
+import{n as u}from"./_neondatabase_auth_0.5.0-beta_es2022_dist_supabase-adapter-CKXlmI3i.mjs";function s(n,t){let o=t?.adapter??u(),{fetchOptions:r}=t??{},e=o(n,r),a=t?.allowAnonymous??!1;return typeof e.initialize!="function"?{getJWTToken:()=>e.getJWTToken(a),adapter:e.getBetterAuthInstance()}:{getJWTToken:()=>e.getJWTToken(a),adapter:e}}function l(n,t){return s(n,t).adapter}export{s as n,l as t};
+//# sourceMappingURL=neon-auth-BLCDc-bu.mjs.map

@@ -1,0 +1,3 @@
+/* esm.sh - better-auth@1.6.23/dist/plugins/admin/access/statement */
+import{createAccessControl as s}from"./better-auth_1.6.23_es2022_dist_plugins_access_access.mjs";var t={user:["create","list","set-role","ban","impersonate","impersonate-admins","delete","set-password","set-email","get","update"],session:["list","revoke","delete"]},e=s(t),o=e.newRole({user:["create","list","set-role","ban","impersonate","delete","set-password","set-email","get","update"],session:["list","revoke","delete"]}),a=e.newRole({user:[],session:[]}),n={admin:o,user:a};export{o as adminAc,e as defaultAc,n as defaultRoles,t as defaultStatements,a as userAc};
+//# sourceMappingURL=statement.mjs.map

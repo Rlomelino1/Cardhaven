@@ -1,0 +1,3 @@
+/* esm.sh - @better-auth/core@1.6.23/utils/string */
+function s(e){return e.charAt(0).toUpperCase()+e.slice(1)}var r=/[\p{Ll}\d]+|\p{Lu}+(?!\p{Ll})|\p{Lu}[\p{Ll}\d]+|\p{Lo}+/gu,p=/['\u2019]/g;function o(e){return e.replace(p,"").match(r)??[]}function u(e){return o(e).map(t=>t.toLowerCase()).join("_")}function c(e){return o(e).map(t=>t.toLowerCase()).join("-")}function i(e){return o(e).reduce((t,n,a)=>t+(a===0?n.toLowerCase():`${n[0].toUpperCase()}${n.slice(1)}`),"")}function C(e){return o(e).map(t=>`${t[0].toUpperCase()}${t.slice(1).toLowerCase()}`).join("")}export{s as capitalizeFirstLetter,i as toCamelCase,c as toKebabCase,C as toPascalCase,u as toSnakeCase};
+//# sourceMappingURL=string.mjs.map

@@ -1,0 +1,3 @@
+/* esm.sh - @neondatabase/auth@0.5.0-beta */
+import{c as t,l as o,o as a,s}from"./_neondatabase_auth_0.5.0-beta_es2022_dist_better-auth-helpers-DlzEQzcv.mjs";import{n as i,t as A}from"./_neondatabase_auth_0.5.0-beta_es2022_dist_neon-auth-BLCDc-bu.mjs";export{a as AuthApiError,s as AuthError,A as createAuthClient,i as createInternalNeonAuth,t as isAuthApiError,o as isAuthError};
+//# sourceMappingURL=auth.mjs.map

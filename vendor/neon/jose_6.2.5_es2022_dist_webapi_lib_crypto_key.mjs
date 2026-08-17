@@ -1,0 +1,3 @@
+/* esm.sh - jose@6.2.5/dist/webapi/lib/crypto_key */
+var h=(o,n="algorithm.name")=>new TypeError(`CryptoKey does not support this operation, its ${n} must be ${o}`);function a(o,n){if(n&&!o.usages.includes(n))throw new TypeError(`CryptoKey does not support this operation, its usages must include ${n}.`)}function i(o,n,t){let r=o.algorithm;if(r.name!==n.name)throw h(n.name);if(n.hash&&r.hash?.name!==n.hash)throw h(n.hash,"algorithm.hash");if(n.namedCurve&&r.namedCurve!==n.namedCurve)throw h(n.namedCurve,"algorithm.namedCurve");if(n.length!==void 0&&r.length!==n.length)throw h(n.length,"algorithm.length");a(o,t)}export{i as checkCryptoKey,a as checkUsage};
+//# sourceMappingURL=crypto_key.mjs.map

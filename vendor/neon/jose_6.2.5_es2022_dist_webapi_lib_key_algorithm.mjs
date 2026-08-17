@@ -1,0 +1,3 @@
+/* esm.sh - jose@6.2.5/dist/webapi/lib/key_algorithm */
+import{JOSENotSupported as e}from"./jose_6.2.5_es2022_errors.mjs";import{maybeJWSAlgorithm as i}from"./jose_6.2.5_es2022_dist_webapi_lib_jws_algorithms.mjs";import{maybeJWEAlgorithm as m}from"./jose_6.2.5_es2022_dist_webapi_lib_jwe_algorithms.mjs";function o(){return new e('Invalid or unsupported JWK "alg" (Algorithm) Parameter value')}function f(r){if(typeof r!="string")throw o();let t=i(r)??m(r);if(!t)throw o();return t}export{f as keyAlgorithm};
+//# sourceMappingURL=key_algorithm.mjs.map

@@ -1,0 +1,3 @@
+/* esm.sh - better-auth@1.6.23/dist/client/focus-manager */
+var t=Symbol.for("better-auth:focus-manager"),n=class{listeners=new Set;subscribe(e){return this.listeners.add(e),()=>{this.listeners.delete(e)}}setFocused(e){this.listeners.forEach(i=>i(e))}setup(){if(typeof window>"u"||typeof document>"u"||typeof window.addEventListener>"u")return()=>{};let e=()=>{document.visibilityState==="visible"&&this.setFocused(!0)};return document.addEventListener("visibilitychange",e,!1),()=>{document.removeEventListener("visibilitychange",e,!1)}}};function s(){return globalThis[t]||(globalThis[t]=new n),globalThis[t]}export{s as getGlobalFocusManager,t as kFocusManager};
+//# sourceMappingURL=focus-manager.mjs.map
