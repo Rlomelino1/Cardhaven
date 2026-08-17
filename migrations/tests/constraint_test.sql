@@ -173,6 +173,58 @@ exception when others then
     ('C10 deleting the account cascades away decks AND settings', false);
 end $$;
 
+-- C13: per-user deck cap (migration 0003). 100 inserts succeed, the 101st is
+-- rejected, and the cap is per-user -- a second account is unaffected by the
+-- first's count. Uses fresh users D and E so it is isolated from user C's rows.
+do $$
+declare d_ok boolean; e_ok boolean;
+begin
+  insert into neon_auth."user" (id, name, email, "emailVerified", "createdAt", "updatedAt")
+  values
+    ('dddddddd-4444-4444-8444-dddddddddddd','Test D','d@example.invalid',true,now(),now()),
+    ('eeeeeeee-5555-4555-8555-eeeeeeeeeeee','Test E','e@example.invalid',true,now(),now());
+  create or replace function public.app_user_id() returns uuid
+    language sql stable as $f$ select 'dddddddd-4444-4444-8444-dddddddddddd'::uuid $f$;
+  insert into public.decks (name, payload)
+    select 'D deck ' || g, '{}'::jsonb from generate_series(1,100) g;
+  begin
+    insert into public.decks (name, payload) values ('D deck 101','{}');
+    d_ok := false;   -- the trigger should have raised before we get here
+  exception when check_violation then
+    d_ok := true;
+  end;
+  create or replace function public.app_user_id() returns uuid
+    language sql stable as $f$ select 'eeeeeeee-5555-4555-8555-eeeeeeeeeeee'::uuid $f$;
+  insert into public.decks (name, payload) values ('E deck 1','{}');
+  select count(*) = 1 into e_ok from public.decks
+    where user_id = 'eeeeeeee-5555-4555-8555-eeeeeeeeeeee';
+  insert into results values
+    ('C13 deck cap: 100 ok, 101st rejected, cap is per-user', d_ok and e_ok);
+exception when others then
+  insert into results values
+    ('C13 deck cap: 100 ok, 101st rejected, cap is per-user', false);
+end $$;
+
+-- C14: a forged but well-formed JWT -- a valid uuid sub for no real user --
+-- gains nothing. pin_ownership stamps the forged uuid, and the FK to
+-- neon_auth."user" rejects the row. Runs as `authenticated`, like a real call.
+do $$
+begin
+  create or replace function public.app_user_id() returns uuid
+    language sql stable as $f$ select '00000000-0000-4000-8000-0000000000ff'::uuid $f$;
+  set local role authenticated;
+  insert into public.decks (name, payload) values ('forged','{}');
+  reset role;
+  insert into results values ('C14 forged valid-uuid JWT cannot insert (FK)', false);
+exception
+  when foreign_key_violation then
+    reset role;
+    insert into results values ('C14 forged valid-uuid JWT cannot insert (FK)', true);
+  when others then
+    reset role;
+    insert into results values ('C14 forged valid-uuid JWT cannot insert (FK)', false);
+end $$;
+
 -- C11: app_user_id() cast safety -- a non-uuid sub must yield NULL, not 22P02
 select 'C11 non-uuid JWT sub yields NULL instead of erroring' as test,
        bool_and(result is null) as pass

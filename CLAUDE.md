@@ -50,9 +50,10 @@ CLAUDE.md               this file
 README.md               human-facing overview
 data/ogn-pool.json      352 Origins cards with image URLs
 scripts/                build-pool-v2.mjs — the fetch script, for when new sets drop
-migrations/             0001_create_decks.sql + tests/ (24 tests, all passing)
+migrations/             0001–0003 SQL + tests/ (29 tests, all passing)
+tests/                  Playwright e2e suite (dev/CI only) + a static server
 docs/                   DECISIONS.md, BLOCKED.md, auth-setup.md, deployment.md,
-                        persistence-audit.md
+                        persistence-audit.md, hardening-plan.md
 ```
 
 **`index.html` and `.nojekyll` cannot move.** Pages is a branch deploy from `main` at

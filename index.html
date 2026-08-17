@@ -4,6 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
+<!-- Defence-in-depth CSP. A <meta> CSP can't set frame-ancestors, and script-src
+     must keep 'unsafe-inline' because the app's own scripts and onclick handlers
+     are inline — so this does NOT constrain injected script. What it DOES do is
+     contain a hypothetical XSS: connect-src pins network to the two Neon hosts
+     (no exfiltration elsewhere), img-src to Riot's CDN, and base-uri/object-src/
+     form-action shut the usual escalation paths. Validated non-breaking against
+     the live app before shipping. Endpoints must match the NEON config below. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://esm.sh; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<!-- Card art is non-CORS <img> loads (no crossorigin); ES modules are CORS fetches
+     (crossorigin) — the modes must match for the warmed socket to be reused. -->
+<link rel="preconnect" href="https://cmsassets.rgpub.io">
+<link rel="preconnect" href="https://esm.sh" crossorigin>
 <title>Card Haven — Riftbound Deck Builder</title>
 <script>
 /* Theme class before first paint, or Paper users get a Midnight flash. */
@@ -830,6 +842,18 @@ const zoneFor = t => {
 };
 const esc = s => String(s ?? "").replace(/[&<>"']/g, m =>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+/* For a value going into a JS string literal inside an inline handler
+   (onclick="fn('HERE')"). esc() is WRONG there: it produces &#39;, which the
+   HTML parser decodes back to ' before the JS runs, closing the string and
+   letting an imported deck name run script. Escape for both layers instead —
+   the HTML attribute first (& and " so the value can't start an entity or
+   close the double-quoted attribute), then the JS string (\ ' and newlines).
+   Order matters: neutralise & before we introduce any &quot;. */
+const jsStr = s => String(s ?? "")
+  .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+  .replace(/\\/g, "\\\\").replace(/'/g, "\\'")
+  .replace(/\n/g, "\\n").replace(/\r/g, "\\r")
+  .replace(/</g, "\\x3C").replace(/>/g, "\\x3E");
  
 /* ------------------------------ persistence ----------------------------- */
 /* What gets stored — locally or in a deck row — is a reference and a
@@ -1569,11 +1593,11 @@ function colTileHtml(c){
   const missing = COL_READY && q === 0;
   const tag = c.rarity === "Showcase" ? "Showcase" : c.alternateArt ? "Alt art" : null;
   const border = c.domains[0] ? `var(--${c.domains[0]})` : "var(--Colorless)";
-  const idq = esc(id).replace(/'/g, "\\'");
+  const idq = jsStr(id);
   const art = c.image
-    ? `<img src="${esc(thumb(c.image))}" alt="" loading="lazy"
+    ? `<img src="${esc(thumb(c.image))}" alt="" loading="lazy" decoding="async"
          referrerpolicy="no-referrer"
-         onerror="imgFail(this,'${esc(c.name).replace(/'/g,"\\'")}')">`
+         onerror="imgFail(this,'${jsStr(c.name)}')">`
     : fallbackSvg(c);
   const own = !COL_READY ? "" :
     missing ? `<span class="cown miss">Missing</span>`
@@ -1803,15 +1827,15 @@ function thumb(url, w = 240){
 
 function tileHtml(c, acts){
   const art = c.image
-    ? `<img src="${esc(thumb(c.image))}" alt="${esc(c.name)}" loading="lazy"
+    ? `<img src="${esc(thumb(c.image))}" alt="${esc(c.name)}" loading="lazy" decoding="async"
          referrerpolicy="no-referrer"
-         onerror="imgFail(this,'${esc(c.name).replace(/'/g,"\\'")}')">`
+         onerror="imgFail(this,'${jsStr(c.name)}')">`
     : fallbackSvg(c);
   const variant = c.rarity === "Showcase" ? "Showcase" : c.alternateArt ? "Alt art" : null;
   return `<figure class="tile${offDomain(c)?" flagged":""}">
     <button class="frame" style="background:${frameStyle(c)}"
       title="${esc(c.name)}${variant?" — "+variant:""}"
-      onclick="openCard('${esc(c.riftboundId||c.name).replace(/'/g,"\\'")}')">
+      onclick="openCard('${jsStr(c.riftboundId||c.name)}')">
       ${art}
       ${c.energy>0?`<span class="orb">${c.energy}</span>`:""}
       ${c.signature?`<span class="sig">S</span>`:""}
@@ -1929,7 +1953,7 @@ function render(){
   document.getElementById("rarityRow").innerHTML = `<span class="lbl">rarity</span>` +
     rarities.map(r=>
       `<button class="chip${S.rarityFilter.includes(r)?" on":""}"
-        onclick="toggleFilter('rarityFilter','${esc(r)}')">${esc(r)}</button>`).join("");
+        onclick="toggleFilter('rarityFilter','${jsStr(r)}')">${esc(r)}</button>`).join("");
  
   // results
   const term = S.q.trim().toLowerCase();
@@ -1954,7 +1978,7 @@ function render(){
   document.getElementById("resultCount").textContent =
     `${res.length} card${res.length===1?"":"s"}`;
   document.getElementById("results").innerHTML = res.slice(0,S.limit).map(c=>{
-    const id = esc(c.riftboundId||c.name).replace(/'/g,"\\'");
+    const id = jsStr(c.riftboundId||c.name);
     // Only offer destinations the card is actually legal in: Runes go to the
     // rune deck, Battlefields to battlefields, everything else main or side.
     const sug = zoneFor(c.type);
@@ -2002,7 +2026,7 @@ function render(){
     ? `<ul class="dlist">` + zlist.map(c=>`<li>
         <i class="dot" style="background:${c.domains[0]?`var(--${c.domains[0]})`:"var(--Colorless)"}"></i>
         <button class="dname" title="${esc(c.name)}"
-          onclick="openCard('${esc(c.riftboundId||c.name).replace(/'/g,"\\'")}')">${esc(c.name)}</button>
+          onclick="openCard('${jsStr(c.riftboundId||c.name)}')">${esc(c.name)}</button>
         <span class="denergy">${c.energy||""}</span>
         <span class="qty">
           <button class="step" onclick="bump('${zk}','${c.id}',-1)">–</button>
@@ -2131,7 +2155,7 @@ window.openCard = id => {
   if(!c) return;
   const art = c.image
     ? `<img src="${esc(c.image)}" alt="${esc(c.name)}" referrerpolicy="no-referrer"
-         onerror="imgFail(this,'${esc(c.name).replace(/'/g,"\\'")}')">`
+         onerror="imgFail(this,'${jsStr(c.name)}')">`
     : fallbackSvg(c);
   document.getElementById("modalBox").innerHTML = `${art}
     <div class="meta">
@@ -2142,10 +2166,10 @@ window.openCard = id => {
       ${c.artist?`<p class="artist">Art by ${esc(c.artist)}</p>`:""}
       <div class="modalacts">
         ${VIEW === "deck" && c.type === "Legend"
-          ? `<button class="btn" onclick="addCard('${esc(c.riftboundId||c.name).replace(/'/g,"\\'")}','legend');closeModal()">Set as Legend</button>`
+          ? `<button class="btn" onclick="addCard('${jsStr(c.riftboundId||c.name)}','legend');closeModal()">Set as Legend</button>`
           : ""}
         ${VIEW === "deck" && c.supertype === "Champion"
-          ? `<button class="btn" onclick="setChampion('${esc(c.riftboundId||c.name).replace(/'/g,"\\'")}');closeModal()">Set as Champion</button>`
+          ? `<button class="btn" onclick="setChampion('${jsStr(c.riftboundId||c.name)}');closeModal()">Set as Champion</button>`
           : ""}
         <button class="btn quiet" onclick="closeModal()">Close</button>
       </div>
