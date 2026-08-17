@@ -34,6 +34,12 @@ dist/
 build/
 .cache/
 
+# Test output (Playwright). The suite is dev/CI only; the app has no build step.
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
 # Local scratch: exported decks, collection dumps, scraped card pools you don't
 # want in git history. Keep the canonical pool JSON tracked, put throwaways here.
 local/

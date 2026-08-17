@@ -1,0 +1,16 @@
+{
+  "name": "card-haven-deckbuilder",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dev-only tooling for Card Haven (Riftbound deck builder). The app itself is a single static index.html with no build step and no runtime dependencies; nothing here is served to users.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:sql": "node migrations/tests/run.mjs --file migrations/tests/rls_test.sql && node migrations/tests/run.mjs --file migrations/tests/constraint_test.sql",
+    "serve": "node tests/serve.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "pg": "^8.13.0"
+  }
+}

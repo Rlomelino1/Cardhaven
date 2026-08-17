@@ -9,6 +9,7 @@ are hard to read.
 |---|---|---|---|
 | 0001 | `0001_create_decks.sql` | 2026-08-13 | live on `neondb`, `falling-star-08784661` |
 | 0002 | `0002_app_user_id_survives_auth_reprovision.sql` | 2026-08-16 | live — see the incident note in the file header |
+| 0003 | `0003_limit_decks_per_user.sql` | 2026-08-17 | live — 100-deck-per-user cap, a free-tier abuse backstop |
 
 ## Running
 
@@ -38,7 +39,7 @@ JWT — `pg_session_jwt` would need a real signed token to populate `auth.user_i
 rollback restores the real function. The JWT-to-uuid step it skips is covered separately
 by C11/C11b.
 
-### What they cover — 27 tests, all passing
+### What they cover — 29 tests, all passing
 
 **Isolation (`rls_test.sql`)**
 
@@ -75,6 +76,8 @@ by C11/C11b.
 | C11 | a non-uuid JWT `sub` yields NULL rather than raising `22P02` |
 | C11b | a real uuid `sub` still casts, case-insensitively |
 | C12 | the stage-6 collection upsert (only `collection` in the body) leaves `settings` untouched, run as `authenticated` |
+| C13 | the per-user deck cap (0003): 100 inserts succeed, the 101st is rejected, and the cap is per-user |
+| C14 | a forged but well-formed JWT (valid uuid `sub`, no such user) cannot insert — the FK to `neon_auth."user"` rejects it |
 
 T10 is worth reading twice. `neondb_owner` — the role in `DATABASE_URL` — has
 `rolbypassrls = true`, and `BYPASSRLS` overrides `FORCE ROW LEVEL SECURITY`. Anything

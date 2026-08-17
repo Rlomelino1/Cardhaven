@@ -46,6 +46,20 @@ CLAUDE.md               working agreement and architecture notes
 | [`docs/auth-setup.md`](docs/auth-setup.md) | Neon Auth + Google OAuth console runbook |
 | [`docs/deployment.md`](docs/deployment.md) | How Pages is configured, and what was verified |
 | [`docs/persistence-audit.md`](docs/persistence-audit.md) | What the app stores and where it belongs |
+| [`docs/hardening-plan.md`](docs/hardening-plan.md) | Security, testing, and performance audit and plan |
+
+## Tests
+
+Dev-only; the app itself has no build step and no runtime dependencies.
+
+```
+npm install
+npm test         # Playwright e2e suite (serves the repo, blocks the CDN, runs headless)
+npm run test:sql # SQL constraint + RLS tests against the live DB (rolled back)
+```
+
+`npm test` runs in CI on push and PR (`.github/workflows/ci.yml`); it informs, it
+does not gate the Pages deploy. The SQL tests need `.env` and stay local.
 
 ## Status
 
