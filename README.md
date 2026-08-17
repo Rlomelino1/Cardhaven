@@ -1,9 +1,11 @@
-# Riftbound Deckbuilder
+# Card Haven — Riftbound Deck Builder
 
 A deckbuilding and collection-tracking tool for [Riftbound](https://riftbound.leagueoflegends.com/),
-Riot's League of Legends TCG.
+Riot's League of Legends TCG. Riftbound is the first game supported under the
+**Card Haven** brand.
 
-**Live:** <https://rlomelino1.github.io/Riftbound-deck-builder/>
+**Live:** <https://cardhavenapp.com> (the old Pages URL,
+`https://rlomelino1.github.io/Riftbound-deck-builder/`, redirects there)
 
 A single self-contained HTML file — vanilla JS, no build step, no runtime
 dependencies, all CSS and JS inline. Card data is a static JSON file. Accounts and

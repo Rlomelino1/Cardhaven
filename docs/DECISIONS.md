@@ -197,3 +197,13 @@ in a real browser. Most of the modal already matched; these are the gaps that we
 - `docs/BLOCKED.md` §2 moved to Resolved with the evidence table, and the CHIPS correction was corrected rather than deleted — partitioning turned out to be the mechanism that makes it work, not an incidental detail.
 - Recorded the partition consequence in `docs/auth-setup.md`: the cookie is partitioned to `https://rlomelino1.github.io`, so a future custom domain signs every user out once. Rejected leaving it implicit — it is invisible until launch day.
 - Kept `.gbtn:disabled` while deleting `.gnote`; the disabled style is still reached through `setBusy()`, the note's element no longer exists.
+
+## Card Haven rebrand + domain-move doc sync (2026-08-17)
+
+- Header brand is now `Card Haven` (wordmark) + `Riftbound` (brandsub); rejected adding new markup or CSS — the existing two-span structure expresses primary + game-label as-is.
+- Dropped the JS that swapped the brandsub between "Deckbuilder"/"Collection" on view change; rejected keeping a third span for it — the view tabs right next to it already show the active view, and the brandsub now carries the game name.
+- On phones the brandsub is hidden (existing ≤640px rule), so the mobile header reads just "Card Haven"; rejected surfacing "Riftbound" there — header space is the scarce resource on the phone layout.
+- Left `kind:"riftbound"` in the export payload, the `riftbound-deckbuilder-v1` localStorage key, and all `riftboundId` identifiers untouched; renaming any of them would orphan saved data or break import round-trips.
+- Left the Riot legal notice's "Riftbound Deckbuilder" wording untouched in both the footer and README's Legal section — the notice is per-game and off-limits.
+- Placed the roadmap note in `CLAUDE.md` under `# Architecture`, right after "Where it's going"; rejected the top of the file, where it would read as a rename of the project rather than context.
+- Old-URL mentions that record past measurements (stage-1 verification table, the 2026-08-15 cookie table, §1 probe table) stay as written, annotated where needed; only statements of current canonical state moved to `cardhavenapp.com`.

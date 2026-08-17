@@ -26,11 +26,16 @@ disabled route returns `404` — `/session` and `/sign-in/social` on `GET` both 
 ## 1. Trusted domains — done ✅
 
 Console → **Auth** → **Configuration** tab → **Domains**. Add, with protocol and no
-trailing slash:
+trailing slash. Registered as of the August 2026 custom-domain move:
 
 ```
-https://rlomelino1.github.io
+https://cardhavenapp.com
+https://www.cardhavenapp.com
 ```
+
+The original entry, `https://rlomelino1.github.io`, was added at stage 3 when the
+Pages URL was the canonical origin. The rule that bit then still applies to every
+new entry: **origins only, no trailing path** — see the probe below.
 
 Probed on 2026-08-14, before this was set:
 
@@ -74,10 +79,14 @@ need rotating.
    app's own `callbackURL` is where the user lands *after* OAuth and is governed by
    trusted domains (step 1), not by Google.
 
-5. **Authorized JavaScript origins** — add both:
+5. **Authorized JavaScript origins** — registered as of the August 2026
+   custom-domain move (the old Pages origin, `https://rlomelino1.github.io`, was
+   the original entry). Same trap as trusted domains: entries are **origins only,
+   no trailing path**.
 
    ```
-   https://rlomelino1.github.io
+   https://cardhavenapp.com
+   https://www.cardhavenapp.com
    http://localhost:8080
    ```
 
@@ -275,18 +284,19 @@ return-leg exchange: the callback lands back on the app with a one-time
 trades it for `__Secure-neon-auth.session_token` — `HttpOnly`, `Secure`, `SameSite=None`,
 and **`Partitioned`**.
 
-### A custom domain would sign everybody out, once
+### The custom-domain move signed everybody out, once — August 2026
 
-The cookie's partition key is the top-level site, `https://rlomelino1.github.io`. A
-partitioned cookie is scoped to the site the user is *on*, not just the domain that set
-it, so moving the app to a custom domain creates a different partition. Every existing
-session cookie becomes unreachable and every signed-in user is signed out exactly once.
+A partitioned cookie's partition key is the top-level site the user is *on*, not just
+the domain that set it. While the app lived on the Pages URL, the key was
+`https://rlomelino1.github.io`; when the app moved to the custom domain in August
+2026 that created a different partition, every existing session cookie became
+unreachable, and every signed-in user was signed out exactly once — as this section
+predicted before the move. The partition key is now **`https://cardhavenapp.com`**.
 
-Not a blocker and not data loss — decks live in Postgres keyed by user, so signing back
-in restores everything. But it should not be a surprise on launch day, and it is a reason
-to pick the final hostname before inviting anyone. It also compounds with the
-`INVALID_CALLBACKURL` trap in §1: a new domain needs adding to trusted domains *and* to
-Google's authorized JavaScript origins before it will work at all.
+Not data loss — decks live in Postgres keyed by user, so signing back in restored
+everything. The compounding trap from §1 was handled before the cutover: the new
+domain was added to Neon Auth trusted domains *and* Google's authorized JavaScript
+origins (origins only, no trailing path) ahead of the move.
 
 ### If it regresses, this is the fingerprint
 

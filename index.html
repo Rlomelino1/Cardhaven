@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Riftbound Deckbuilder</title>
+<title>Card Haven — Riftbound Deck Builder</title>
 <script>
 /* Theme class before first paint, or Paper users get a Midnight flash. */
 try{ if(localStorage.getItem("rb.theme")==="paper")
@@ -597,7 +597,7 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
  
 <header>
   <div class="brand">
-    <span class="wordmark">Riftbound</span><span class="brandsub" id="brandSub">Deckbuilder</span>
+    <span class="wordmark">Card Haven</span><span class="brandsub">Riftbound</span>
   </div>
   <nav class="viewnav" aria-label="View">
     <button class="vtab on" data-goview="deck" onclick="goView('deck')">Deckbuilder</button>
@@ -1495,7 +1495,6 @@ function applyHash(){
   const v = location.hash === "#collection" ? "collection" : "deck";
   VIEW = v;
   document.body.classList.toggle("view-collection", v === "collection");
-  document.getElementById("brandSub").textContent = v === "collection" ? "Collection" : "Deckbuilder";
   document.querySelectorAll(".vtab").forEach(b =>
     b.classList.toggle("on", b.dataset.goview === v));
   renderCollectionAll();

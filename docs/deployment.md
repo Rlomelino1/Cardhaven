@@ -1,6 +1,9 @@
 # Deployment (stage 1)
 
-**Live URL:** <https://rlomelino1.github.io/Riftbound-deck-builder/>
+**Live URL:** <https://cardhavenapp.com> — custom domain since August 2026; the
+original Pages URL, `https://rlomelino1.github.io/Riftbound-deck-builder/`,
+redirects there. (Mentions of the old URL further down are records of what was
+verified at stage 1, on the old origin.)
 
 ## How it is configured
 
@@ -18,6 +21,24 @@ and none is needed; `index.html` is the artifact.
 
 `.nojekyll` is present at the root so Pages skips Jekyll and does not drop
 underscore-prefixed paths.
+
+## Custom domain (August 2026)
+
+The site moved to `https://cardhavenapp.com`, with `https://www.cardhavenapp.com`
+redirecting to the apex. Configuration as it now exists:
+
+- **Registrar / DNS**: GoDaddy, DNS managed there (nameservers
+  `ns37.domaincontrol.com` / `ns38.domaincontrol.com`).
+- **Apex `cardhavenapp.com`**: four A records to GitHub Pages —
+  `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`.
+- **`www`**: CNAME → `rlomelino1.github.io`.
+- **Repo**: a `CNAME` file containing `cardhavenapp.com` sits at the repo root.
+  GitHub committed it when the domain was claimed. **Do not delete, rename, or
+  edit it** — removing it un-claims the domain and takes the site down.
+- **HTTPS**: enforced on the custom domain.
+- **Auth**: `https://cardhavenapp.com` and `https://www.cardhavenapp.com` are
+  registered in Neon Auth trusted domains and Google OAuth authorized JavaScript
+  origins — details in `docs/auth-setup.md`.
 
 ## Verified
 

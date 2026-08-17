@@ -76,6 +76,22 @@ zero cost:
 
 Neon project ID: `falling-star-08784661` · region `us-east-2` · database `neondb`
 
+## Roadmap context — awareness only, no implementation
+
+The product is **Card Haven**, live at `https://cardhavenapp.com`. Riftbound is the
+first (currently only) supported game inside it.
+
+- **Near term**: additional Riftbound sets beyond Origins (`data/ogn-pool.json` is
+  currently the only pool).
+- **Longer term**: other TCGs entirely, as separate games under the Card Haven
+  umbrella.
+
+**No implementation now.** No abstraction layers, no multi-game refactors, no schema
+generalization — not in this pass, and not in future passes unless a stage brief asks
+for it. This note exists so that when future stage work presents a choice between a
+Riftbound-hardcoded shape and an equally cheap game-neutral shape, the game-neutral
+one wins; when generalizing costs extra, don't.
+
 ## Config and secrets
 
 Environment variables live in a gitignored `.env`, named to match Neon's own

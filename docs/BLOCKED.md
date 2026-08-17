@@ -42,10 +42,15 @@ the app reports as a legal deck changed.
 **Google sign-in (was §2).** Closed 2026-08-15. Neon shipped a return-leg session
 exchange and the flow works end to end — verified by the author on the live Pages URL
 and on iOS Safari. The only code change was removing `disabled` from the button.
+Reconfirmed after the August 2026 move to `https://cardhavenapp.com`: the same
+CHIPS-based partitioned cookie (`SameSite=None; Secure; Partitioned`) works on the
+custom domain, with the partition key now `https://cardhavenapp.com`.
 
 The session no longer depends on a cookie set during the callback redirect. The callback
 returns to the app with a one-time verifier in the query string, and the next
-`getSession()` trades it for a session cookie:
+`getSession()` trades it for a session cookie. The table is the measurement as taken
+on 2026-08-15, on the old Pages origin — the origin-dependent rows (partition key,
+CORS) now read `https://cardhavenapp.com` instead:
 
 | Observation | Value |
 |---|---|
@@ -95,8 +100,8 @@ single-use verifier should not stay in the address bar to be bookmarked or share
 Accumulation across retries is not a risk either way — the SDK uses `searchParams.set`,
 which overwrites.
 
-**If it regresses**, the fingerprint is in `docs/auth-setup.md` alongside the partition
-consequence for a future custom domain.
+**If it regresses**, the fingerprint is in `docs/auth-setup.md` alongside the record
+of the one-time sign-out the August 2026 custom-domain move caused.
 
 **SMTP sender (was §1).** Settled 2026-08-14: a Gmail account created for this project,
 `smtp.gmail.com:587` with a 16-character app password. Chosen over Brevo and Resend
