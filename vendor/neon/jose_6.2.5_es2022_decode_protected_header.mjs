@@ -1,0 +1,3 @@
+/* esm.sh - jose@6.2.5/decode/protected_header */
+import{parseJoseHeader as i}from"./jose_6.2.5_es2022_dist_webapi_lib_helpers.mjs";function n(e){let r;if(typeof e=="string"){let t=e.split(".");(t.length===3||t.length===5)&&([r]=t)}else if(typeof e=="object"&&e)if("protected"in e)r=e.protected;else throw new TypeError("Token does not contain a Protected Header");let o="Invalid Token or Protected Header formatting";if(typeof r!="string"||!r)throw new TypeError(o);return i(r,TypeError,o)}export{n as decodeProtectedHeader};
+//# sourceMappingURL=protected_header.mjs.map

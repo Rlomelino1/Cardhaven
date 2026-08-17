@@ -1,0 +1,3 @@
+/* esm.sh - jose@6.2.5/jws/compact/sign */
+import{FlattenedSign as o}from"./jose_6.2.5_es2022_jws_flattened_sign.mjs";import{unencodedPayload as n}from"./jose_6.2.5_es2022_dist_webapi_lib_jws_sign.mjs";var r=class{#t;#e;constructor(t){this.#t=new o(t)}setProtectedHeader(t){return this.#t.setProtectedHeader(t),this.#e=t,this}async sign(t,s){if(n(this.#e))throw new TypeError("use the flattened module for creating JWS with b64: false");let e=await this.#t.sign(t,s);return`${e.protected}.${e.payload}.${e.signature}`}};export{r as CompactSign};
+//# sourceMappingURL=sign.mjs.map

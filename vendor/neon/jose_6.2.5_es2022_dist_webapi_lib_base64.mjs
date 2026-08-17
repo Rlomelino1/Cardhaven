@@ -1,0 +1,3 @@
+/* esm.sh - jose@6.2.5/dist/webapi/lib/base64 */
+function n(t){if(Uint8Array.prototype.toBase64)return t.toBase64();let e=32768,o=[];for(let r=0;r<t.length;r+=e)o.push(String.fromCharCode.apply(null,t.subarray(r,r+e)));return btoa(o.join(""))}function a(t){if(Uint8Array.fromBase64)return Uint8Array.fromBase64(t);let e=atob(t),o=new Uint8Array(e.length);for(let r=0;r<e.length;r++)o[r]=e.charCodeAt(r);return o}export{a as decodeBase64,n as encodeBase64};
+//# sourceMappingURL=base64.mjs.map

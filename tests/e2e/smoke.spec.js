@@ -92,6 +92,22 @@ test.describe("persistence and preferences", () => {
   });
 });
 
+test.describe("vendored SDK", () => {
+  test("the auth/data SDK loads from vendored files, not a CDN", async ({ page }) => {
+    // Deliberately does NOT block esm.sh — it asserts nothing tries to reach it.
+    const esm = [];
+    page.on("request", r => { if (/esm\.sh/.test(r.url())) esm.push(r.url()); });
+    await page.goto("/");
+    await page.waitForFunction(() => typeof POOL_READY !== "undefined" && POOL_READY, null, { timeout: 15000 });
+    // window.cloud only exists once the whole vendored module graph has executed.
+    await page.waitForFunction(() => typeof window.cloud !== "undefined", null, { timeout: 15000 });
+    expect(esm).toEqual([]);
+    const n = await page.evaluate(() =>
+      performance.getEntriesByType("resource").filter(r => /\/vendor\/neon\//.test(r.name)).length);
+    expect(n).toBeGreaterThan(100);
+  });
+});
+
 test.describe("security", () => {
   test("an imported deck name cannot execute script (XSS regression)", async ({ page }) => {
     await openApp(page);

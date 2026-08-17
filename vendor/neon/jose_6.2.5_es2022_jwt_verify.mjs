@@ -1,0 +1,3 @@
+/* esm.sh - jose@6.2.5/jwt/verify */
+import{prepareVerify as i,verifyCompact as p}from"./jose_6.2.5_es2022_dist_webapi_lib_jws_verify.mjs";import{validateClaimsSet as d}from"./jose_6.2.5_es2022_dist_webapi_lib_jwt_claims_set.mjs";import{JWTInvalid as n}from"./jose_6.2.5_es2022_errors.mjs";async function l(a,r,t){let e=await p(a,i(t),r);if(!e.b64)throw new n("JWTs MUST NOT use unencoded payload");let o={payload:d(e.parsedProt,e.payload,t),protectedHeader:e.parsedProt};return typeof r=="function"?{...o,key:e.key}:o}export{l as jwtVerify};
+//# sourceMappingURL=verify.mjs.map

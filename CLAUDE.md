@@ -49,7 +49,8 @@ index.html              the app — must stay at the repo root, Pages serves fro
 CLAUDE.md               this file
 README.md               human-facing overview
 data/ogn-pool.json      352 Origins cards with image URLs
-scripts/                build-pool-v2.mjs — the fetch script, for when new sets drop
+vendor/neon/            the Neon SDK graph, vendored (served from this origin, not a CDN)
+scripts/                build-pool-v2.mjs (fetch a new set); vendor-neon.mjs (re-vendor the SDK)
 migrations/             0001–0003 SQL + tests/ (29 tests, all passing)
 tests/                  Playwright e2e suite (dev/CI only) + a static server
 docs/                   DECISIONS.md, BLOCKED.md, auth-setup.md, deployment.md,
@@ -139,10 +140,14 @@ convention (`neon env pull` writes the first two):
 - **All Neon docs use Vite's `import.meta.env`.** That does not exist here. Put the
   two URLs in a small config object at the top of `index.html`. **Do not introduce a
   build step to get environment variables.**
-- **Load the SDK as ESM from a CDN** via `<script type="module">`. There is no UMD
-  build. Verified: the `index`, `auth`, and `auth/vanilla` entry points import no Node
-  built-ins, so they're browser-safe. There is a dedicated `./auth/vanilla` export —
-  use it, not the React one.
+- **The SDK is vendored** under `vendor/neon/` and imported with relative paths, so the
+  app loads it from its own origin, not esm.sh, at runtime (supply-chain hardening —
+  the ~132-module resolved graph is committed and reviewable). It is still ESM via
+  `<script type="module">`; there is no UMD build. Verified: the `index`, `auth`, and
+  `auth/vanilla` entry points import no Node built-ins, so they're browser-safe. There
+  is a dedicated `./auth/vanilla` export — use it, not the React one. To bump versions,
+  edit the pins in `scripts/vendor-neon.mjs`, run it, and commit the regenerated
+  `vendor/neon/`. This is a maintenance tool, not a build step the app needs at runtime.
 - **Pin exact versions.** These are pre-1.0 packages. The Data API itself is in beta.
   When something behaves unexpectedly, check the current Neon docs before assuming the
   bug is in our code.

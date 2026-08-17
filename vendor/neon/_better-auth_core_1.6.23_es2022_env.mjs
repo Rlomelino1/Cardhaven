@@ -1,0 +1,3 @@
+/* esm.sh - @better-auth/core@1.6.23/env */
+import{ENV as e,env as r,getBooleanEnvVar as t,getEnvVar as g,isDevelopment as i,isProduction as l,isTest as m,nodeENV as n}from"./_better-auth_core_1.6.23_es2022_dist_env_env-impl.mjs";import{getColorDepth as p}from"./_better-auth_core_1.6.23_es2022_dist_env_color-depth.mjs";import{TTY_COLORS as a,createLogger as E,levels as V,logger as d,shouldPublishLog as f}from"./_better-auth_core_1.6.23_es2022_dist_env_logger.mjs";export{e as ENV,a as TTY_COLORS,E as createLogger,r as env,t as getBooleanEnvVar,p as getColorDepth,g as getEnvVar,i as isDevelopment,l as isProduction,m as isTest,V as levels,d as logger,n as nodeENV,f as shouldPublishLog};
+//# sourceMappingURL=env.mjs.map

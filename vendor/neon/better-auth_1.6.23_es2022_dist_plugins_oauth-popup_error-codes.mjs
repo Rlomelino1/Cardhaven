@@ -1,0 +1,3 @@
+/* esm.sh - better-auth@1.6.23/dist/plugins/oauth-popup/error-codes */
+import{defineErrorCodes as o}from"./_better-auth_core_1.6.23_es2022_utils_error-codes.mjs";var p=o({POPUP_SIGN_IN_FAILED:"Popup sign-in failed",POPUP_BLOCKED:"Sign-in popup was blocked by the browser",POPUP_CLOSED:"Sign-in popup was closed before completing",POPUP_TIMEOUT:"Sign-in popup timed out"});export{p as OAUTH_POPUP_ERROR_CODES};
+//# sourceMappingURL=error-codes.mjs.map

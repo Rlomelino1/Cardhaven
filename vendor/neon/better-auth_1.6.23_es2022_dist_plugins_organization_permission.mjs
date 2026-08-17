@@ -1,0 +1,3 @@
+/* esm.sh - better-auth@1.6.23/dist/plugins/organization/permission */
+var a=(s,o)=>{if(!s.permissions)return!1;let e=s.role.split(","),r=s.options.creatorRole||"owner",l=e.includes(r),t=s.allowCreatorAllPermissions||!1;if(l&&t)return!0;for(let n of e)if(o[n]?.authorize(s.permissions)?.success)return!0;return!1},c=new Map;export{c as cacheAllRoles,a as hasPermissionFn};
+//# sourceMappingURL=permission.mjs.map

@@ -1,0 +1,3 @@
+/* esm.sh - jose@6.2.5/dist/webapi/lib/is_key_like */
+function o(t){if(!e(t))throw new Error("CryptoKey instance expected")}var e=t=>{if(t?.[Symbol.toStringTag]==="CryptoKey")return!0;try{return t instanceof CryptoKey}catch{return!1}},r=t=>t?.[Symbol.toStringTag]==="KeyObject",n=t=>e(t)||r(t);export{o as assertCryptoKey,e as isCryptoKey,n as isKeyLike,r as isKeyObject};
+//# sourceMappingURL=is_key_like.mjs.map

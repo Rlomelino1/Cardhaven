@@ -1,8 +1,10 @@
-// Shared setup. The suite is hermetic: it blocks the esm.sh auth/data SDK so the
-// tests never depend on an external CDN or the live database. The app is built
-// to degrade to local (signed-out) mode when that module fails to load, which is
-// exactly the surface these tests cover. Auth-dependent flows are Tier 2 and will
-// be tested separately with a mocked Neon network, not against a live account.
+// Shared setup. The suite is hermetic and network-independent. The Neon SDK is
+// vendored under vendor/neon/ and served from our own origin, so nothing here
+// reaches a CDN; esm.sh is blocked anyway as a belt-and-suspenders guard against
+// a future dependency quietly re-introducing a runtime CDN import. Auth-dependent
+// flows are Tier 2 and will be tested with a mocked Neon network, not a live
+// account. (The "vendored SDK" test deliberately does NOT block esm.sh — it
+// proves nothing tries to reach it.)
 
 export async function openApp(page, { hash = "" } = {}) {
   await page.route(/(^|\/\/)esm\.sh\//, route => route.abort());

@@ -1,0 +1,3 @@
+/* esm.sh - zod@4.3.6/v4/classic/errors */
+import*as o from"./zod_4.3.6_es2022_v4_core.mjs";import{$ZodError as u}from"./zod_4.3.6_es2022_v4_core.mjs";import*as s from"./zod_4.3.6_es2022_v4_core_util.mjs";var t=(r,a)=>{u.init(r,a),r.name="ZodError",Object.defineProperties(r,{format:{value:e=>o.formatError(r,e)},flatten:{value:e=>o.flattenError(r,e)},addIssue:{value:e=>{r.issues.push(e),r.message=JSON.stringify(r.issues,s.jsonStringifyReplacer,2)}},addIssues:{value:e=>{r.issues.push(...e),r.message=JSON.stringify(r.issues,s.jsonStringifyReplacer,2)}},isEmpty:{get(){return r.issues.length===0}}})},c=o.$constructor("ZodError",t),l=o.$constructor("ZodError",t,{Parent:Error});export{c as ZodError,l as ZodRealError};
+//# sourceMappingURL=errors.mjs.map

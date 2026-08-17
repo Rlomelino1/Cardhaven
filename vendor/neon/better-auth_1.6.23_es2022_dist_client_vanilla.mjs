@@ -1,0 +1,3 @@
+/* esm.sh - better-auth@1.6.23/dist/client/vanilla */
+import{getClientConfig as f}from"./better-auth_1.6.23_es2022_dist_client_config.mjs";import{createDynamicPathProxy as l}from"./better-auth_1.6.23_es2022_dist_client_proxy.mjs";import{capitalizeFirstLetter as p}from"./_better-auth_core_1.6.23_es2022_utils_string.mjs";function y(r){let{pluginPathMethods:i,pluginsActions:n,pluginsAtoms:t,$fetch:e,atomListeners:s,$store:c}=f(r),o={};for(let[a,m]of Object.entries(t))o[`use${p(a)}`]=m;return l({...n,...o,$fetch:e,$store:c},e,i,t,s)}export{y as createAuthClient};
+//# sourceMappingURL=vanilla.mjs.map

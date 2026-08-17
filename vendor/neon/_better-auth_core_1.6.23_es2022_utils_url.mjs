@@ -1,0 +1,3 @@
+/* esm.sh - @better-auth/core@1.6.23/utils/url */
+function c(a,t){let e;try{e=new URL(a).pathname.replace(/\/+$/,"")||"/"}catch{return"/"}let r=t.replace(/\/+$/,"");return r===""?e:e===r?"/":e.startsWith(r+"/")?e.slice(r.length).replace(/\/+$/,"")||"/":e}var n=["javascript:","data:","vbscript:"];function i(a){let t;try{t=new URL(a)}catch{return!0}return!n.includes(t.protocol)}export{n as DANGEROUS_URL_SCHEMES,i as isSafeUrlScheme,c as normalizePathname};
+//# sourceMappingURL=url.mjs.map

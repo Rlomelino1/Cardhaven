@@ -1,0 +1,3 @@
+/* esm.sh - better-auth@1.6.23/dist/plugins/admin/has-permission */
+import{defaultRoles as l}from"./better-auth_1.6.23_es2022_dist_plugins_admin_access_statement.mjs";var f=s=>{if(s.userId&&s.options?.adminUserIds?.includes(s.userId))return!0;if(!s.permissions)return!1;let e=(s.role||s.options?.defaultRole||"user").split(","),o=s.options?.roles||l;for(let r of e)if(o[r]?.authorize(s.permissions)?.success)return!0;return!1};export{f as hasPermission};
+//# sourceMappingURL=has-permission.mjs.map

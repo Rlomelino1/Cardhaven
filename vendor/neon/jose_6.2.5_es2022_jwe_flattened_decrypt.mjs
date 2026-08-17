@@ -1,0 +1,3 @@
+/* esm.sh - jose@6.2.5/jwe/flattened/decrypt */
+import{JWEInvalid as c}from"./jose_6.2.5_es2022_errors.mjs";import{isObject as p}from"./jose_6.2.5_es2022_dist_webapi_lib_type_checks.mjs";import{prepareDecrypt as i,decryptJWE as n,decryptResult as o,checkShared as a,checkRecipient as m}from"./jose_6.2.5_es2022_dist_webapi_lib_jwe_decrypt.mjs";async function h(t,e,r){if(!p(t))throw new c("Flattened JWE must be an object");return a(t),m(t),o(t,await n(t,i(r),e))}export{h as flattenedDecrypt};
+//# sourceMappingURL=decrypt.mjs.map

@@ -1,0 +1,3 @@
+/* esm.sh - jose@6.2.5/jwk/embedded */
+import{jwkToKey as i}from"./jose_6.2.5_es2022_dist_webapi_lib_jwk_to_key.mjs";import{jwsAlgorithm as n}from"./jose_6.2.5_es2022_dist_webapi_lib_jws_algorithms.mjs";import{isObject as w}from"./jose_6.2.5_es2022_dist_webapi_lib_type_checks.mjs";import{JWSInvalid as t}from"./jose_6.2.5_es2022_errors.mjs";async function d(o,a){let e={...o,...a?.header};if(!w(e.jwk))throw new t('"jwk" (JSON Web Key) Header Parameter must be a JSON object');let m=n(e.alg),r=await i(m,{...e.jwk,ext:!0});if(r.type!=="public")throw new t('"jwk" (JSON Web Key) Header Parameter must be a public key');return r}export{d as EmbeddedJWK};
+//# sourceMappingURL=embedded.mjs.map

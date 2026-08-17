@@ -1,0 +1,3 @@
+/* esm.sh - better-auth@1.6.23/dist/client/equality */
+import{onSet as u}from"./nanostores__5E1.1.1_target_es2022.mjs";function i(t){if(typeof t!="object"||t===null)return!1;let e=Object.getPrototypeOf(t);return e===Object.prototype||e===null}function o(t,e){if(t===e)return!0;if(Array.isArray(t)&&Array.isArray(e)){if(t.length!==e.length)return!1;for(let r=0;r<t.length;r++)if(!o(t[r],e[r]))return!1;return!0}if(i(t)&&i(e)){let r=Object.keys(t),n=Object.keys(e);if(r.length!==n.length)return!1;for(let f of r)if(!(f in e)||!o(t[f],e[f]))return!1;return!0}return!1}function s(t,e){return u(t,({newValue:r,abort:n})=>{e(t.value,r)&&n()})}export{o as isJsonEqual,s as withEquality};
+//# sourceMappingURL=equality.mjs.map

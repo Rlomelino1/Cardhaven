@@ -7,15 +7,13 @@
 <!-- Defence-in-depth CSP. A <meta> CSP can't set frame-ancestors, and script-src
      must keep 'unsafe-inline' because the app's own scripts and onclick handlers
      are inline — so this does NOT constrain injected script. What it DOES do is
-     contain a hypothetical XSS: connect-src pins network to the two Neon hosts
-     (no exfiltration elsewhere), img-src to Riot's CDN, and base-uri/object-src/
-     form-action shut the usual escalation paths. Validated non-breaking against
-     the live app before shipping. Endpoints must match the NEON config below. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://esm.sh; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io data:; base-uri 'none'; object-src 'none'; form-action 'none'">
-<!-- Card art is non-CORS <img> loads (no crossorigin); ES modules are CORS fetches
-     (crossorigin) — the modes must match for the warmed socket to be reused. -->
+     contain a hypothetical XSS: script-src is 'self' only (the SDK is vendored,
+     no CDN), connect-src pins network to the two Neon hosts (no exfiltration
+     elsewhere), img-src to Riot's CDN, and base-uri/object-src/form-action shut
+     the usual escalation paths. Validated non-breaking against the live app
+     before shipping. Endpoints must match the NEON config below. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
-<link rel="preconnect" href="https://esm.sh" crossorigin>
 <title>Card Haven — Riftbound Deck Builder</title>
 <script>
 /* Theme class before first paint, or Paper users get a Midnight flash. */
@@ -2355,14 +2353,21 @@ loadPool();
    React and never calls those adapters. Verified: this pair loads
    vanilla.mjs only. Stage 4 needs the Data API client too; get it from
    @neondatabase/postgrest-js rather than reaching for the neon-js root.
-   Versions pinned exact - these are pre-1.0 and the Data API is in beta. */
-import { createAuthClient }        from "https://esm.sh/@neondatabase/auth@0.5.0-beta";
-import { BetterAuthVanillaAdapter } from "https://esm.sh/@neondatabase/auth@0.5.0-beta/vanilla";
+   Versions pinned exact - these are pre-1.0 and the Data API is in beta.
+
+   VENDORED. These load from vendor/neon/ (this origin), not esm.sh. The full
+   resolved graph — ~132 modules, better-auth + jose + zod + postgrest — is
+   committed and served alongside the app, so the code that runs is reviewable
+   in the repo and the app no longer depends on a transforming CDN being up or
+   honest at load time. Re-vendor with `node scripts/vendor-neon.mjs` only when
+   the pinned versions above are intentionally bumped. */
+import { createAuthClient }        from "./vendor/neon/_neondatabase_auth_0.5.0-beta.mjs";
+import { BetterAuthVanillaAdapter } from "./vendor/neon/_neondatabase_auth_0.5.0-beta_vanilla.mjs";
 /* Stage 4: the Data API client, per CLAUDE.md — postgrest-js, not the neon-js
    root (which drags React in). Verified against the published 0.2.0-beta
    bundle: it never throws from a query; everything comes back {data, error}. */
 import { NeonPostgrestClient, fetchWithToken }
-  from "https://esm.sh/@neondatabase/postgrest-js@0.2.0-beta";
+  from "./vendor/neon/_neondatabase_postgrest-js_0.2.0-beta.mjs";
 
 const NEON = {
   authUrl:    "https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech/neondb/auth",
