@@ -865,6 +865,26 @@ const jsStr = s => String(s ?? "")
    decision — a base printing and its Showcase printing are distinct refs. */
 const refOf = c => c.riftboundId || c.name;
 
+/* Deck-limit identity — the OPPOSITE of refOf, by decision (CLAUDE.md). For the
+   3-copy limit a base printing and its Showcase/alt-art printing are ONE card,
+   so they must share a limit. Collector numbers are "set-number-total" and a
+   variant carries a suffix on the middle segment: ogn-039-298 and ogn-039a-298
+   are both card 039, ogn-299-298 and ogn-299*-298 both 299. Stripping the
+   trailing non-digits off that segment yields the shared key. This groups only
+   for legality; the collection still keys on the full ref, so a Showcase stays a
+   distinct object there. Falls back to the lowercased ref when it can't be
+   parsed (a hand-imported name), so such an entry groups only with itself. */
+function copyGroupRef(ref){
+  const p = String(ref).split("-");
+  const num = p.length === 3 && (p[1] || "").match(/^\d+/);
+  return num ? `${p[0]}-${num[0]}` : String(ref).toLowerCase();
+}
+const copyGroup = c => copyGroupRef(refOf(c));
+/* Display label for a group: the base printing's name, i.e. the name with a
+   trailing "(Alternate Art)" / "(Signature)" / "(Overnumbered)" marker removed.
+   Display only — never used as an identity key. */
+const baseName = n => String(n).replace(/\s*\([^)]*\)\s*$/, "");
+
 /* The champion is held in memory as a name (the legality checks compare
    names), but stored as a ref so the payload has one identity scheme. */
 function championRef(){
@@ -1909,8 +1929,16 @@ function render(){
     const b = zoneCount("battlefields");                           // 3 for standard play
     if(b < 3) probs.push(`Add ${3-b} more battlefield${3-b===1?"":"s"}.`);
     else if(b > 3) probs.push(`Battlefields are ${b-3} over 3.`);
-    const dupBf = S.zones.battlefields.filter(c=>c.qty>1);         // 103.4.c: all different
-    if(dupBf.length) probs.push(`Battlefields must all be different — duplicate: ${dupBf.map(c=>esc(c.name)).join(", ")}.`);
+    // 103.4.c: all different — counting printings together, so a base
+    // battlefield and its Showcase are the "same" battlefield.
+    const bfCopies = new Map();
+    for(const c of S.zones.battlefields){
+      const g = copyGroup(c);
+      const e = bfCopies.get(g) || {copies:0, label:baseName(c.name)};
+      e.copies += c.qty; bfCopies.set(g, e);
+    }
+    const dupBf = [...bfCopies.values()].filter(e=>e.copies>1);
+    if(dupBf.length) probs.push(`Battlefields must all be different — duplicate: ${dupBf.map(e=>esc(e.label)).join(", ")}.`);
     const sb = zoneCount("sideboard");
     if(sb !== 0 && sb !== 8) probs.push(`Sideboard must be empty or exactly 8 cards — it has ${sb}.`);
     if(!S.legend) probs.push(`No Legend set — filter to Legend and pick one to lock your domains.`);
@@ -1918,8 +1946,22 @@ function render(){
   const everywhere = [...S.zones.main, ...S.zones.runes, ...S.zones.sideboard];
   const off = everywhere.filter(offDomain);                        // 103.1.b: domain identity
   if(off.length) probs.push(`Outside ${esc(S.legend.name)}'s domains (${S.legend.domains.join(" / ")}): ${off.map(c=>esc(c.name)).join(", ")}.`);
-  const over = S.zones.main.filter(c=>c.qty>3);                    // 103.2.b: 3 copies max
-  if(over.length) probs.push(`Over 3 copies: ${over.map(c=>esc(c.name)).join(", ")}.`);
+  // 103.2.b: at most 3 copies of a card in the main deck, counting every
+  // printing together — a base and its Showcase share one limit (CLAUDE.md).
+  // Unresolved main entries count too, keyed off their ref.
+  const groupCopies = new Map();   // group -> {copies, label}
+  for(const c of S.zones.main){
+    const g = copyGroup(c);
+    const e = groupCopies.get(g) || {copies:0, label:baseName(c.name)};
+    e.copies += c.qty; groupCopies.set(g, e);
+  }
+  for(const u of S.unresolved.filter(u=>u.zone==="main")){
+    const g = copyGroupRef(u.ref);
+    const e = groupCopies.get(g) || {copies:0, label:u.ref};
+    e.copies += u.qty; groupCopies.set(g, e);
+  }
+  const over = [...groupCopies.values()].filter(e=>e.copies>3);
+  if(over.length) probs.push(`Over 3 copies: ${over.map(e=>`${esc(e.label)} (${e.copies})`).join(", ")}.`);
   if(S.legend){                                                    // 103.2.d: 3 Signature cards, matching tag
     const t = tagOf(S.legend.name);
     const sigs = S.zones.main.filter(c=>c.signature);
