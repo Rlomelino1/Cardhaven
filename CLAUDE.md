@@ -211,8 +211,16 @@ requires. `copyGroup(card)` in `index.html` strips the variant suffix off the mi
 segment of the id (`ogn-039a-298` and `ogn-039-298` are both card `ogn-039`) and the
 legality check sums copies across the group; the battlefield "all different" check
 uses the same grouping. The collection is untouched — it still keys on the full ref,
-so a Showcase stays a distinct object there. Re-vendor note: this is pure client
-logic, no schema change. Covered by e2e tests in `tests/e2e/smoke.spec.js`.
+so a Showcase stays a distinct object there. This is pure client logic, no schema
+change. Covered by e2e tests in `tests/e2e/smoke.spec.js`.
+
+**The limit spans main deck + sideboard**, per Tournament Rules 403.4: *"Limits on
+copies of named cards apply to the combination of Main Deck and sideboard."* So 3 in
+the main deck plus 1 in the sideboard is illegal; 2 + 1 is fine. Runes and
+battlefields are separate decks under their own rules and are not counted. The
+sideboard's own 0-or-8 size rule is TR 403.2 — note both live in the **Tournament**
+rules, not the Core rules, which is why the core construction section defines no
+sideboard at all.
 
 ---
 

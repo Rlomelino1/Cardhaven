@@ -1946,22 +1946,35 @@ function render(){
   const everywhere = [...S.zones.main, ...S.zones.runes, ...S.zones.sideboard];
   const off = everywhere.filter(offDomain);                        // 103.1.b: domain identity
   if(off.length) probs.push(`Outside ${esc(S.legend.name)}'s domains (${S.legend.domains.join(" / ")}): ${off.map(c=>esc(c.name)).join(", ")}.`);
-  // 103.2.b: at most 3 copies of a card in the main deck, counting every
-  // printing together — a base and its Showcase share one limit (CLAUDE.md).
-  // Unresolved main entries count too, keyed off their ref.
-  const groupCopies = new Map();   // group -> {copies, label}
-  for(const c of S.zones.main){
-    const g = copyGroup(c);
-    const e = groupCopies.get(g) || {copies:0, label:baseName(c.name)};
-    e.copies += c.qty; groupCopies.set(g, e);
-  }
-  for(const u of S.unresolved.filter(u=>u.zone==="main")){
-    const g = copyGroupRef(u.ref);
-    const e = groupCopies.get(g) || {copies:0, label:u.ref};
-    e.copies += u.qty; groupCopies.set(g, e);
+  // 103.2.b: at most 3 copies of a card, counting every printing together — a
+  // base and its Showcase share one limit (CLAUDE.md). The count spans the main
+  // deck AND the sideboard, per Tournament Rules 403.4, quoted: "Limits on
+  // copies of named cards apply to the combination of Main Deck and sideboard."
+  // (Verified against playriftbound.com, not assumed — 3 in main + 1 in the
+  // sideboard is illegal, 2 + 1 is fine.) Runes and battlefields are separate
+  // decks under their own rules and are deliberately not counted here.
+  // Unresolved entries in both counted zones count too, keyed off their ref.
+  const groupCopies = new Map();   // group -> {copies, side, label}
+  const countCopy = (g, qty, label, isSide) => {
+    const e = groupCopies.get(g) || {copies:0, side:0, label};
+    e.copies += qty;
+    if(isSide) e.side += qty;
+    groupCopies.set(g, e);
+  };
+  for(const z of ["main","sideboard"]){
+    const isSide = z === "sideboard";
+    for(const c of S.zones[z]) countCopy(copyGroup(c), c.qty, baseName(c.name), isSide);
+    for(const u of S.unresolved.filter(u => u.zone === z))
+      countCopy(copyGroupRef(u.ref), u.qty, u.ref, isSide);
   }
   const over = [...groupCopies.values()].filter(e=>e.copies>3);
-  if(over.length) probs.push(`Over 3 copies: ${over.map(e=>`${esc(e.label)} (${e.copies})`).join(", ")}.`);
+  if(over.length){
+    // Name the sideboard only when it actually contributed, so the ordinary
+    // main-deck-only case doesn't cite a zone the user never touched.
+    const withSide = over.some(e => e.side > 0);
+    probs.push(`Over 3 copies${withSide ? " (main deck and sideboard combined)" : ""}: `
+      + over.map(e=>`${esc(e.label)} (${e.copies})`).join(", ") + `.`);
+  }
   if(S.legend){                                                    // 103.2.d: 3 Signature cards, matching tag
     const t = tagOf(S.legend.name);
     const sigs = S.zones.main.filter(c=>c.signature);
