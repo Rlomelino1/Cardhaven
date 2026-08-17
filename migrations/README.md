@@ -38,7 +38,7 @@ JWT — `pg_session_jwt` would need a real signed token to populate `auth.user_i
 rollback restores the real function. The JWT-to-uuid step it skips is covered separately
 by C11/C11b.
 
-### What they cover — 26 tests, all passing
+### What they cover — 27 tests, all passing
 
 **Isolation (`rls_test.sql`)**
 
@@ -74,6 +74,7 @@ by C11/C11b.
 | C10 | deleting the account cascades away decks **and** settings |
 | C11 | a non-uuid JWT `sub` yields NULL rather than raising `22P02` |
 | C11b | a real uuid `sub` still casts, case-insensitively |
+| C12 | the stage-6 collection upsert (only `collection` in the body) leaves `settings` untouched, run as `authenticated` |
 
 T10 is worth reading twice. `neondb_owner` — the role in `DATABASE_URL` — has
 `rolbypassrls = true`, and `BYPASSRLS` overrides `FORCE ROW LEVEL SECURITY`. Anything

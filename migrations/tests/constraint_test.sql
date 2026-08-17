@@ -127,6 +127,35 @@ begin
 end $$;
 
 -- C10: deleting the account cascades to its decks and settings
+-- C12: the stage-6 collection write must not clobber the settings column.
+-- This is the exact SQL PostgREST generates for the client's upsert
+-- (POST ?on_conflict=user_id with Prefer: resolution=merge-duplicates and a
+-- body carrying only `collection`): DO UPDATE SET is built from the body's
+-- columns alone. Runs as `authenticated`, like the real request.
+do $$
+declare kept jsonb; got jsonb;
+begin
+  insert into public.user_settings (settings, collection)
+    values ('{"variants":true}', '{"ogn-001-298":1}');
+  set local role authenticated;
+  insert into public.user_settings (collection)
+    values ('{"ogn-001-298":3,"ogn-002-298":2}')
+    on conflict (user_id) do update set collection = excluded.collection;
+  reset role;
+  select settings, collection into kept, got
+    from public.user_settings
+   where user_id = 'cccccccc-3333-4333-8333-cccccccccccc';
+  insert into results values
+    ('C12 collection upsert leaves settings untouched',
+     kept = '{"variants":true}'::jsonb and got->>'ogn-002-298' = '2');
+  -- leave no row behind: C10 below inserts its own for the same user
+  delete from public.user_settings
+   where user_id = 'cccccccc-3333-4333-8333-cccccccccccc';
+exception when others then
+  reset role;
+  insert into results values ('C12 collection upsert leaves settings untouched', false);
+end $$;
+
 do $$
 declare remaining int;
 begin

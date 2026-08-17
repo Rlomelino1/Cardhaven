@@ -2,6 +2,28 @@
 
 One line each: what was chosen, what was rejected.
 
+## Stage 6 — collection tracker with automatic sync (2026-08-16)
+
+- The collection syncs change-driven: every mutation resets a 2-second debounce, one write per burst, plus flush-on-hide and retry-with-backoff. This is **not** the polling/interval autosave the CU-hours rule bans — nothing ever fires without a user action behind it; an idle page makes zero requests.
+- Merge on session arrival is **per-printing max** — `max(local, server)` per riftboundId; rejected summing (double-counts the same physical cards) and rejected either side overwriting the other (destroys data). The local blob clears only after the merged write succeeds; on failure it stays for the next arrival.
+- The write is a PostgREST upsert (`POST ?on_conflict=user_id`, `Prefer: resolution=merge-duplicates`) whose body carries only `collection` — verified against the published 0.2.0-beta bundle that DO UPDATE SET is built from the body's columns, so `settings` cannot be clobbered; also asserted at the SQL level as the `authenticated` role in the new C12 test. Rejected PATCH-plus-fallback-insert, which needs two calls and a row-existence dance.
+- The flush on `visibilitychange → hidden` / `pagehide` sends the map via `fetch keepalive` but deliberately keeps the dirty flag: a tab that survives (screen-off, tab switch) re-confirms with a normal write on return; a tab that dies got the best effort available. Rejected clearing the flag, which would silently trust an unconfirmable request.
+- A **failed collection read** while signed in blocks all collection writes (steppers inert, readout says retrying) until a read succeeds; rejected allowing writes, because flushing a local-only map over an unread server map is how a collection gets wiped.
+- On session arrival the row is created if absent (one small write, once per account) so the keepalive PATCH always has a row to hit; rejected lazy creation, which would silently drop a flush that raced the first-ever write.
+- Map keys that no longer resolve against the pool are preserved on every write but excluded from all counts and the grid; rejected dropping them (destroys data when a pool momentarily regresses) and rejected counting them (numbers nobody can see).
+- Quantities clamp to 1–3 on load as well as on tap — 7 heals to 3, 0 and junk are deleted; rejected rendering an impossible state from a hand-edited blob.
+- Missing tiles keep the real art faintly visible (grayscale, dimmed) under the mockups' diagonal hatch; rejected hiding the art entirely — the mockup faces are placeholders, and a recognisable ghost is more useful in a binder run.
+- Rarity section headers stay collection-truth (owned/total of the whole rarity) while filters narrow the grid, matching the mockups; the tab counts, by contrast, are computed over search ∧ chips so the numbers always describe what the tabs would show.
+- Number search matches the collector number as a prefix after stripping the `OGN` prefix, separators, and zero-padding ("7", "007", "ogn 007", and "007a" all work), plus a raw substring match on the full id; rejected exact-only matching, which makes zero-padding the user's problem.
+- The card modal hides Set as Legend / Set as Champion in the collection view — read-only detail plus Close; rejected keeping them, which would mutate a deck from a view that promises not to.
+- Signed out, the readout says `On this device only · N copies logged`; rejected any state that could be mistaken for SYNCED.
+- View switching is a body class plus the URL hash (`#collection`), handled on `hashchange`; the deck — unsaved edits included — stays in memory untouched and no dialog fires, per the handoff's two-tables rule.
+- `normalize()` now carries `setName` through (it was dropped, and the set panel read "OGN" instead of "Origins"); the set panel reads it from the pool, nothing hardcoded.
+- Percent collected uses floor, so 99.7% never reads as 100%.
+- Scoped T10/T11 in `rls_test.sql` to the test users' rows; the old unscoped `count(*)` broke the moment the author saved a real deck — which they did, confirming the 403 fix live.
+- Bulk actions (Mark all owned, Clear) go through the stage-5 styled dialog and the same sync engine, one write each; rejected `confirm()` per the handoff.
+- Verified with a 44-check Playwright suite (stepping and cap boundaries, tabs, three search modes, missing treatment, bulk dialogs, debounce coalescing, mid-flight follow-up write, failure→pending→retry, online-event flush, keepalive-on-hide, signed-out round-trip, max-merge, load-failure lockout) plus screenshots against the three mockups in both themes and at 390px; stage 4/5 suites re-run green.
+
 ## Incident — live 403 on every deck save (2026-08-16)
 
 - Root cause measured, not assumed: `has_schema_privilege('authenticated','auth','USAGE')` had become **false**, so the RLS policies' `app_user_id()` → `auth.user_id()` call died with `permission denied for schema auth` (42501 → PostgREST 403, whose JSON body is exactly the 89 bytes the author's DevTools showed). Migration 0001 had granted it in the same committed transaction that created the tables; Neon re-provisioning the `auth` schema (pg_session_jwt) dropped it.

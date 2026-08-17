@@ -161,6 +161,119 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
 .askbox p{font-size:13.5px; line-height:1.65; color:var(--text2); margin:0 0 18px}
 .askacts{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
 
+/* ------------------------- collection (stage 6) -------------------------- */
+.viewnav{display:flex; gap:3px; background:var(--ink); border:1px solid var(--edge);
+  border-radius:3px; padding:3px}
+.vtab{background:none; border:none; border-radius:2px; color:var(--mute);
+  font-size:12.5px; padding:6px 13px; cursor:pointer; white-space:nowrap}
+.vtab.on{background:var(--edge); color:var(--text); font-weight:600}
+.syncstate{font-family:ui-monospace,Menlo,monospace; font-size:9px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mute);
+  white-space:nowrap}
+.syncstate.bad{color:var(--warn)}
+.syncstate[hidden]{display:none}
+/* One file, two rooms: the deck stays exactly as it is while you look away. */
+body.view-collection .deckid,
+body.view-collection #saveBtn,
+body.view-collection .layout{display:none}
+#collectionView{display:none}
+body.view-collection #collectionView{display:block}
+
+.colsummary{display:grid; grid-template-columns:1.5fr 1.2fr .9fr; gap:14px;
+  margin-top:16px}
+.cpanel{background:var(--panel); border:1px solid var(--edge); border-radius:4px;
+  padding:16px}
+.csethead{margin:0; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+.csetname{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:22px; font-weight:700}
+.csetmeta{font-family:ui-monospace,Menlo,monospace; font-size:8.5px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
+.cpct{margin:8px 0 10px; display:flex; align-items:baseline; gap:7px}
+.cpct b{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:54px; font-weight:400; line-height:1}
+.pctsign{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:20px; color:var(--mute)}
+.pctlabel{font-family:ui-monospace,Menlo,monospace; font-size:9px;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--mute)}
+.cbar{height:6px; background:var(--edge); border-radius:3px; overflow:hidden}
+.cbar i{display:block; height:100%; background:var(--teal); width:0}
+.csetline{margin:11px 0 0; font-family:ui-monospace,Menlo,monospace; font-size:9.5px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--mute);
+  display:flex; gap:18px; flex-wrap:wrap}
+.csetcards{color:var(--text)}
+.cplabel{margin:0 0 13px; font-family:ui-monospace,Menlo,monospace; font-size:9px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
+.crargrid{display:grid; grid-template-columns:1fr 1fr; gap:11px 22px}
+.crrow{display:flex; align-items:center; gap:8px}
+.crlabel{display:flex; align-items:center; gap:7px; width:88px; flex:none;
+  font-size:12.5px; color:var(--text)}
+.crbar{flex:1; height:2px; background:var(--edge); border-radius:1px; overflow:hidden}
+.crbar i{display:block; height:100%}
+.crcount{font-family:ui-monospace,Menlo,monospace; font-size:10px; color:var(--mute);
+  min-width:42px; text-align:right}
+.cmisscount{margin:0; display:flex; align-items:baseline; gap:8px; font-size:13px;
+  color:var(--mute)}
+.cmisscount b{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:42px; font-weight:400; color:var(--warn); line-height:1}
+.cmissnote{font-size:12px; color:var(--mute); margin:7px 0 13px; line-height:1.5;
+  min-height:18px}
+.cmisswide{width:100%; margin-bottom:7px}
+.cmissrow{display:flex; gap:7px}
+.cmissrow .btn{flex:1}
+
+.colcontrols{display:flex; flex-direction:column; gap:9px; margin-top:16px}
+.colsearchrow{display:flex; gap:14px; align-items:center; flex-wrap:wrap}
+#colQ{flex:1; min-width:200px}
+.coltabs{display:flex; gap:3px; background:var(--panel); border:1px solid var(--edge);
+  border-radius:3px; padding:3px}
+.coltab{background:none; border:none; border-radius:2px; color:var(--mute);
+  font-size:12px; padding:6px 11px; cursor:pointer; white-space:nowrap}
+.coltab b{font-size:10px; margin-left:5px; font-weight:400}
+.coltab.on{background:var(--text); color:var(--ink); font-weight:600}
+.coltab.on b{color:var(--ink)}
+.colchiprow{display:flex; gap:14px; align-items:center; justify-content:space-between;
+  flex-wrap:wrap}
+
+.colsec{margin-top:24px; padding-bottom:8px; border-bottom:1px solid var(--edge);
+  justify-content:flex-start; gap:9px}   /* count sits beside the label */
+.colshelf{margin-top:14px}
+.ctile{margin:0; display:flex; flex-direction:column; gap:4px}
+.cframe{position:relative; border:none; border-radius:6px; padding:2px; cursor:pointer;
+  display:block; width:100%; line-height:0; background:var(--fc,var(--edge));
+  box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.cframe img,.cframe svg{width:100%; height:auto; display:block; border-radius:4px;
+  background:var(--tile-bg); aspect-ratio:744/1039}
+/* Missing: hatched, dimmed, MISSING where the owned badge would be. The art
+   stays faintly visible so the card is still recognisable in a binder run. */
+.hatch{display:none}
+.ismissing .cframe{background:var(--edge)}
+.ismissing .cframe img,.ismissing .cframe svg{filter:grayscale(1) brightness(.8);
+  opacity:.4}
+.ismissing .hatch{display:block; position:absolute; inset:2px; border-radius:4px;
+  background:repeating-linear-gradient(45deg,
+    transparent 0 7px, rgba(127,127,127,.18) 7px 9px)}
+.ismissing .tname{color:var(--mute)}
+/* Chips drawn on top of card art keep fixed dark-chip colors in both themes. */
+.ctag{position:absolute; top:6px; right:6px; background:rgba(10,8,18,.85);
+  color:#EAE7F4; border:1px solid rgba(234,231,244,.35); border-radius:2px;
+  font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.08em;
+  text-transform:uppercase; padding:2px 5px; line-height:1.1}
+.cnum{position:absolute; left:6px; bottom:6px; background:rgba(10,8,18,.85);
+  color:#CFC9DE; border-radius:2px; font-family:ui-monospace,Menlo,monospace;
+  font-size:8px; letter-spacing:.08em; padding:2px 5px; line-height:1.2}
+.cown{position:absolute; right:6px; bottom:6px; background:rgba(10,8,18,.9);
+  color:#EAE7F4; border-radius:2px; font-family:ui-monospace,Menlo,monospace;
+  font-size:9px; font-weight:700; padding:2px 6px; line-height:1.3}
+.cown.full{background:var(--teal); color:#0E1A19}
+.cown.miss{background:rgba(234,231,244,.85); color:#12101C; font-weight:400;
+  letter-spacing:.06em; text-transform:uppercase; font-size:8px}
+.cstep{display:flex; align-items:center; gap:6px; margin-top:2px}
+.cseg{flex:1; display:flex; gap:3px}
+.cseg i{flex:1; height:4px; border-radius:1px; background:var(--edge)}
+.cseg i.on{background:var(--text)}
+.cseg i.full{background:var(--teal)}
+.step:disabled{opacity:.35; cursor:default}
+
 .checks{list-style:none; display:flex; flex-direction:column; gap:10px; margin:0; padding:0}
 .checks li{font-family:ui-monospace,Menlo,monospace; font-size:9px;
   letter-spacing:.12em; text-transform:uppercase; color:var(--mute)}
@@ -187,7 +300,7 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
 .rescount{font-family:ui-monospace,Menlo,monospace; font-size:10px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute);
   white-space:nowrap}
-#q{background:var(--panel); border:1px solid var(--edge); color:var(--text);
+#q,#colQ{background:var(--panel); border:1px solid var(--edge); color:var(--text);
   border-radius:2px; padding:10px 12px; font-size:14px; width:100%}
 .row{display:flex; gap:5px; flex-wrap:wrap; align-items:center}
 .row > .lbl{font-family:ui-monospace,Menlo,monospace; font-size:9px;
@@ -417,7 +530,7 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   .chip{padding:8px 11px; font-size:12px}
   /* iOS zooms the whole page when you focus an input under 16px and
      never zooms back out. This is the only reason for the size. */
-  #q,#deckName{font-size:16px}
+  #q,#colQ,#deckName{font-size:16px}
   #deckName{font-size:26px}
   /* The tile actions are nowrap at desktop sizes because they fit.
      With touch padding they don't, so let the second one drop. */
@@ -429,6 +542,8 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
 @media (max-width:940px){
   .layout{grid-template-columns:1fr}
   .deckpanel{position:static; max-height:none}
+  .colsummary{grid-template-columns:1fr}
+  .crargrid{grid-template-columns:1fr 1fr}
 }
 
 /* ---- narrow viewport: layout ---- */
@@ -445,6 +560,15 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   .deckmenu{left:auto; right:-40px}
   .shelf{grid-template-columns:repeat(auto-fill,minmax(94px,1fr)); gap:8px}
   .curve{min-height:72px}
+  .viewnav{order:2}
+  /* The sync readout is wider than a phone header row; give it its own line
+     inside the top-right cluster instead of shoving Sign in off-screen. */
+  .topright{flex-wrap:wrap; justify-content:flex-end}
+  .syncstate{order:5; flex:1 1 100%; text-align:right; white-space:normal}
+  .crargrid{grid-template-columns:1fr}
+  .coltabs{flex:1 1 100%}
+  .coltab{flex:1; padding:8px 4px}
+  .cpct b{font-size:44px}
   /* Full-width rows beat a ragged wrap of four differently-sized buttons. */
   .actions{gap:6px}
   .actions .btn{flex:1 1 calc(50% - 3px)}
@@ -473,8 +597,12 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
  
 <header>
   <div class="brand">
-    <span class="wordmark">Riftbound</span><span class="brandsub">Deckbuilder</span>
+    <span class="wordmark">Riftbound</span><span class="brandsub" id="brandSub">Deckbuilder</span>
   </div>
+  <nav class="viewnav" aria-label="View">
+    <button class="vtab on" data-goview="deck" onclick="goView('deck')">Deckbuilder</button>
+    <button class="vtab" data-goview="collection" onclick="goView('collection')">Collection</button>
+  </nav>
   <div class="deckid">
     <input id="deckName" value="Untitled deck" aria-label="Deck name">
     <div class="switchwrap">
@@ -485,6 +613,7 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
     <span class="savestate" id="saveState"></span>
   </div>
   <div class="topright">
+    <span class="syncstate" id="syncState" hidden></span>
     <button class="btn" id="saveBtn" onclick="saveDeckCloud()" hidden>Save deck</button>
     <button class="btn themebtn" id="themeBtn" onclick="toggleTheme()">
       <i class="dot"></i><span id="themeLabel">Paper</span></button>
@@ -536,6 +665,48 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
     <button class="btn quiet" onclick="wipe()">Reset</button>
   </div>
 </aside>
+</div>
+
+<div id="collectionView">
+  <div class="colsummary">
+    <section class="cpanel cset">
+      <p class="csethead"><span class="csetname" id="colSetName">Origins</span>
+        <span class="csetmeta" id="colSetMeta"></span></p>
+      <p class="cpct"><b id="colPct">–</b><span class="pctsign">%</span>
+        <span class="pctlabel">collected</span></p>
+      <div class="cbar"><i id="colBar"></i></div>
+      <p class="csetline"><span class="csetcards" id="colCards"></span>
+        <span id="colCopies"></span></p>
+    </section>
+    <section class="cpanel">
+      <p class="cplabel">By rarity</p>
+      <div class="crargrid" id="colRarity"></div>
+    </section>
+    <section class="cpanel cmiss">
+      <p class="cplabel">Still missing</p>
+      <p class="cmisscount"><b id="colMissN">–</b> cards</p>
+      <p class="cmissnote" id="colMissNote"></p>
+      <button class="btn cmisswide" onclick="colShowMissing()">Show only missing</button>
+      <div class="cmissrow">
+        <button class="btn" onclick="colMarkAll()">Mark all owned</button>
+        <button class="btn quiet" onclick="colClear()">Clear</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="colcontrols">
+    <div class="colsearchrow">
+      <input id="colQ" placeholder="Search name, number, or artist">
+      <div class="coltabs" id="colTabs"></div>
+    </div>
+    <div class="row" id="colDomainRow"></div>
+    <div class="colchiprow">
+      <div class="row" id="colTypeRow"></div>
+      <span class="rescount" id="colCount"></span>
+    </div>
+  </div>
+
+  <div id="colGrid"></div>
 </div>
 
 <footer>
@@ -597,6 +768,11 @@ const DOMAIN_INK = {Fury:"#FFFFFF", Calm:"#12101C", Mind:"#FFFFFF",
 const KEY = "riftbound-deckbuilder-v1";
 const LS_VARIANTS = "rb.variants";
 const LS_OPEN_DECK = "rb.open-deck";   // per-user: `${LS_OPEN_DECK}:${userId}`
+const LS_COLLECTION = "rb.collection"; // signed-out collection map
+
+/* Dot / bar colors for the by-rarity panel, per the mockups. */
+const RARITY_DOT = {Common:"#9A93AC", Uncommon:"#E08A2E", Rare:"#3FA7A0",
+  Epic:"#8B5CD6", Showcase:"#D9B62E"};
 
 /* --------------------------------- state -------------------------------- */
 let S = {
@@ -626,6 +802,22 @@ let PENDING_LOCAL, PENDING_CLOUD;
 let BASELINE = null;       // snapshot() of the last saved state, for dirty checks
 let ZONE_TAB = "main";     // which zone the deck panel is showing; transient
 let MENU_OPEN = false;     // deck switcher dropdown
+
+/* ----------------------- collection state (stage 6) ---------------------- */
+let VIEW = "deck";         // "deck" | "collection", driven by the URL hash
+/* The collection map: riftboundId -> qty (1..3). A printing at zero is
+   DELETED, never stored as 0. Every printing is its own object — a base card
+   and its Showcase are two keys, deliberately (see CLAUDE.md). Keys that no
+   longer resolve against the pool are preserved on every write, just not
+   counted in the UI. */
+let COL = {};
+/* Badges, counts, and steppers stay inert until the map has actually loaded:
+   locally that is synchronous, signed-in it is one read. Acting before then
+   would flash everything MISSING — or worse, let a tap overwrite the server
+   map with an empty one. */
+let COL_READY = false;
+let COL_LOAD_FAILED = false;
+const COLF = {q:"", tab:"all", domains:[], types:[]};   // transient filters
  
 const uid = () => Math.random().toString(36).slice(2,10);
 const nk = s => String(s).trim().toLowerCase();
@@ -839,7 +1031,7 @@ function openDeckRow(row){
    sign-out, and the return leg of the Google redirect. It is the ONLY place
    the app learns who it is. If the module never loads (CDN down), this never
    fires and the app stays in local mode, fully functional. */
-window.onCloudSession = function(user, decks, importedRow){
+window.onCloudSession = function(user, decks, importedRow, collection){
   CLOUD_USER = user;
   if(user){
     MODE = "cloud";
@@ -852,10 +1044,23 @@ window.onCloudSession = function(user, decks, importedRow){
     }
     PENDING_CLOUD = row;
     PENDING_LOCAL = undefined;   // merged or empty; either way not the source now
+    // Collection: the module already merged the local map server-side.
+    // null = the read failed; hold everything and retry until it lands.
+    if(collection){
+      COL = sanitizeCollection(collection);
+      COL_READY = true; COL_LOAD_FAILED = false;
+    } else {
+      COL_READY = false; COL_LOAD_FAILED = true;
+      scheduleColLoadRetry();
+    }
   } else {
     const wasCloud = MODE === "cloud";
     MODE = "local";
     DECKS = [];
+    // Signed out the collection lives on this device; the account's copy
+    // stays in the account.
+    COL = readLocalCollection();
+    COL_READY = true; COL_LOAD_FAILED = false;
     if(wasCloud){
       // Signing out mid-session: the account's decks stay in the account.
       // The table resets to whatever local deck exists — usually none, since
@@ -867,6 +1072,7 @@ window.onCloudSession = function(user, decks, importedRow){
   }
   applyPending();
   render();
+  renderCollectionAll();
 };
 
 /* The signed-out deck, read raw for the merge-on-signup path. Serialized
@@ -1162,6 +1368,385 @@ window.toggleTheme = () => {
   try{ localStorage.setItem("rb.theme", paper ? "paper" : "midnight"); }catch{}
   paintThemeButton();
 };
+
+/* ========================================================================
+   Collection (stage 6)
+   ======================================================================== */
+
+/* Heal anything out of range instead of rendering an impossible state: a
+   hand-edited or ancient blob with 0, 7, or "two" becomes 1..3 or is gone. */
+function sanitizeCollection(raw){
+  const out = {};
+  if(!raw || typeof raw !== "object") return out;
+  for(const [k, v] of Object.entries(raw)){
+    const q = Math.floor(Number(v));
+    if(!isFinite(q) || q < 1) continue;
+    out[k] = Math.min(3, q);
+  }
+  return out;
+}
+
+function readLocalCollection(){
+  try{
+    const raw = localStorage.getItem(LS_COLLECTION);
+    return raw ? sanitizeCollection(JSON.parse(raw)) : {};
+  }catch{ return {}; }
+}
+/* The signed-out map, for the module's max-merge. null when empty. */
+window.localCollectionForMerge = function(){
+  const m = readLocalCollection();
+  return Object.keys(m).length ? m : null;
+};
+window.clearLocalCollection = () => { try{ localStorage.removeItem(LS_COLLECTION); }catch{} };
+
+const qtyOf = id => COL[id] || 0;
+
+/* "OGN 007A/298" from "ogn-007a-298". The denominator comes from the id, so
+   overnumbered Showcase printings legitimately read above it. */
+function colNum(c){
+  const m = String(c.riftboundId || "").split("-");
+  if(m.length === 3) return `${m[0].toUpperCase()} ${m[1].toUpperCase()}/${m[2]}`;
+  return c.number != null ? `${(c.set||"OGN").toUpperCase()} ${String(c.number).padStart(3,"0")}` : "";
+}
+
+/* Counts ignore map keys that no longer resolve against the pool — they are
+   preserved on every write, just not displayed. */
+const colOwnedCount = list => list.reduce((n,c) => n + (qtyOf(refOf(c)) > 0 ? 1 : 0), 0);
+const colCopies = list => list.reduce((n,c) => n + qtyOf(refOf(c)), 0);
+
+/* --------------------------- sync engine --------------------------------
+   Event-driven, debounced, coalesced. This is not the banned polling/interval
+   autosave: nothing here ever fires without a user action behind it. Rapid
+   taps through a binder collapse into one write two seconds after the last. */
+let colTimer = null, colRetryTimer = null, colInflight = false,
+    colDirty = false, colFailed = false, colBackoff = 2000;
+
+function colPersistLocal(){
+  try{ localStorage.setItem(LS_COLLECTION, JSON.stringify(COL)); }
+  catch(e){ note("Couldn't save locally: " + e.message); }
+}
+
+/* Call after every mutation of COL. */
+function colMutate(){
+  if(MODE === "cloud"){
+    colDirty = true;
+    clearTimeout(colTimer);
+    colTimer = setTimeout(colFlush, 2000);
+  } else {
+    colPersistLocal();
+  }
+  renderSyncState();
+}
+
+async function colFlush(){
+  clearTimeout(colTimer); colTimer = null;
+  if(MODE !== "cloud" || !window.cloud || colInflight || !colDirty) return;
+  colDirty = false; colInflight = true;
+  renderSyncState();
+  const r = await window.cloud.saveCollection({...COL});
+  colInflight = false;
+  if(r.error){
+    colDirty = true; colFailed = true;
+    clearTimeout(colRetryTimer);
+    colRetryTimer = setTimeout(colFlush, colBackoff);
+    colBackoff = Math.min(colBackoff * 2, 60000);
+  } else {
+    colFailed = false; colBackoff = 2000;
+    if(colDirty) colFlush();   // changes landed mid-flight: one more write
+  }
+  renderSyncState();
+}
+
+/* Tab going away mid-debounce: send what we have with keepalive. The dirty
+   flag deliberately stays set — if the tab survives (phone screen-off, tab
+   switch), the normal engine re-writes on return and confirms; if it dies,
+   the keepalive was the best effort available. */
+function colFlushOnHide(){
+  if(MODE !== "cloud" || !COL_READY || (!colDirty && !colTimer)) return;
+  clearTimeout(colTimer); colTimer = null;
+  window.cloud?.collectionKeepalive?.({...COL});
+}
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "hidden") colFlushOnHide();
+  else if(colDirty && MODE === "cloud") colFlush();
+});
+window.addEventListener("pagehide", colFlushOnHide);
+window.addEventListener("online", () => { if(colDirty && MODE === "cloud") colFlush(); });
+
+/* Signed-in collection read failed: keep retrying, block writes meanwhile. */
+function scheduleColLoadRetry(){
+  clearTimeout(colRetryTimer);
+  colRetryTimer = setTimeout(async () => {
+    if(MODE !== "cloud" || COL_READY || !window.cloud?.syncCollection) return;
+    const r = await window.cloud.syncCollection();
+    if(!r.error && r.map){
+      COL = sanitizeCollection(r.map);
+      COL_READY = true; COL_LOAD_FAILED = false;
+      renderCollectionAll();
+    } else scheduleColLoadRetry();
+  }, colBackoff = Math.min(colBackoff * 2, 60000));
+}
+
+/* ------------------------------ view switch ------------------------------ */
+/* Hash routing: #collection is the collection, anything else the deckbuilder.
+   Switching views moves nothing and asks nothing — the deck (unsaved edits
+   included) stays in memory exactly as it is. */
+function applyHash(){
+  const v = location.hash === "#collection" ? "collection" : "deck";
+  VIEW = v;
+  document.body.classList.toggle("view-collection", v === "collection");
+  document.getElementById("brandSub").textContent = v === "collection" ? "Collection" : "Deckbuilder";
+  document.querySelectorAll(".vtab").forEach(b =>
+    b.classList.toggle("on", b.dataset.goview === v));
+  renderCollectionAll();
+}
+window.goView = v => {
+  if(v === VIEW) return;
+  if(v === "collection") location.hash = "collection";      // fires hashchange
+  else { history.pushState(null, "", location.pathname + location.search); applyHash(); }
+};
+window.addEventListener("hashchange", applyHash);
+
+function renderCollectionAll(){
+  renderSyncState();
+  if(VIEW === "collection") renderCollection();
+}
+
+/* --------------------------- sync status readout ------------------------- */
+function renderSyncState(){
+  const el = document.getElementById("syncState");
+  if(!el) return;
+  el.hidden = VIEW !== "collection";
+  if(el.hidden) return;
+  const copies = colCopies(S.pool);
+  let txt, cls = "";
+  if(MODE !== "cloud"){
+    txt = `On this device only · ${copies} copies logged`;
+  } else if(!COL_READY){
+    txt = COL_LOAD_FAILED ? "Can't reach your collection — retrying" : "Loading collection…";
+    cls = COL_LOAD_FAILED ? "bad" : "";
+  } else if(colInflight || colTimer){
+    txt = "Syncing…";
+  } else if(colFailed && colDirty){
+    txt = "Offline — changes pending"; cls = "bad";
+  } else {
+    txt = `Synced · ${copies} copies logged`;
+  }
+  el.textContent = txt;
+  el.classList.toggle("bad", cls === "bad");
+}
+
+/* ------------------------------- filtering ------------------------------- */
+function colMatchesSearch(c, term, qnorm){
+  if(!term) return true;
+  if(c.name.toLowerCase().includes(term)) return true;
+  if((c.artist || "").toLowerCase().includes(term)) return true;
+  const id = String(c.riftboundId || "").toLowerCase();
+  if(id.includes(term)) return true;
+  if(qnorm){
+    const mid = (id.split("-")[1] || "").replace(/^0+/, "");
+    if(mid.startsWith(qnorm)) return true;
+  }
+  return false;
+}
+const colTabMatch = (q, tab) =>
+  tab === "all" ? true :
+  tab === "missing" ? q === 0 :
+  tab === "partial" ? (q >= 1 && q <= 2) : q === 3;
+
+/* search ∧ chips, before the tab — the tab counts are computed on this. */
+function colBase(){
+  const term = COLF.q.trim().toLowerCase();
+  const qnorm = term.replace(/^ogn[\s-]*/, "").replace(/[\s-]/g, "").replace(/^0+/, "");
+  return S.pool.filter(c =>
+    (!COLF.domains.length || c.domains.some(d => COLF.domains.includes(d))) &&
+    (!COLF.types.length || COLF.types.includes(c.type)) &&
+    colMatchesSearch(c, term, qnorm));
+}
+
+/* ------------------------------- rendering ------------------------------- */
+function colTileHtml(c){
+  const id = refOf(c), q = qtyOf(id);
+  const missing = COL_READY && q === 0;
+  const tag = c.rarity === "Showcase" ? "Showcase" : c.alternateArt ? "Alt art" : null;
+  const border = c.domains[0] ? `var(--${c.domains[0]})` : "var(--Colorless)";
+  const idq = esc(id).replace(/'/g, "\\'");
+  const art = c.image
+    ? `<img src="${esc(thumb(c.image))}" alt="" loading="lazy"
+         referrerpolicy="no-referrer"
+         onerror="imgFail(this,'${esc(c.name).replace(/'/g,"\\'")}')">`
+    : fallbackSvg(c);
+  const own = !COL_READY ? "" :
+    missing ? `<span class="cown miss">Missing</span>`
+            : `<span class="cown${q === 3 ? " full" : ""}">${q}/3</span>`;
+  const segs = [1,2,3].map(i =>
+    `<i class="${q >= i ? (q === 3 ? "full" : "on") : ""}"></i>`).join("");
+  return `<figure class="ctile${missing ? " ismissing" : ""}" data-ref="${esc(id)}">
+    <button class="cframe" style="--fc:${border}" title="${esc(c.name)}"
+      onclick="openCard('${idq}')">
+      ${art}
+      <span class="hatch"></span>
+      ${c.energy > 0 ? `<span class="orb">${c.energy}</span>` : ""}
+      ${tag ? `<span class="ctag">${tag}</span>` : ""}
+      <span class="cnum">${colNum(c)}</span>
+      ${own}
+    </button>
+    <figcaption class="tname" title="${esc(c.name)}">${esc(c.name)}</figcaption>
+    <p class="ttype">${esc(c.rarity || "")}${c.rarity ? " · " : ""}${esc(c.type)}</p>
+    <div class="cstep">
+      <button class="step" onclick="colBump('${idq}',-1)"
+        ${(!COL_READY || q === 0) ? "disabled" : ""} aria-label="Remove a copy">–</button>
+      <span class="cseg" aria-label="${q} of 3 copies">${segs}</span>
+      <button class="step" onclick="colBump('${idq}',1)"
+        ${(!COL_READY || q === 3) ? "disabled" : ""} aria-label="Add a copy">+</button>
+    </div>
+  </figure>`;
+}
+
+function updateColTile(id){
+  const el = document.querySelector(`#colGrid .ctile[data-ref="${id}"]`);
+  const card = findCard(id);
+  if(el && card) el.outerHTML = colTileHtml(card);
+}
+
+function renderColSummary(){
+  if(!S.pool.length) return;
+  const total = S.pool.length;
+  const ownedPrintings = colOwnedCount(S.pool);
+  const copies = colCopies(S.pool);
+  const playsets = S.pool.reduce((n,c) => n + (qtyOf(refOf(c)) === 3 ? 1 : 0), 0);
+  const pct = total ? Math.floor(ownedPrintings / total * 100) : 0;
+
+  document.getElementById("colSetName").textContent = S.pool[0]?.setName || S.pool[0]?.set || "Set";
+  document.getElementById("colSetMeta").textContent =
+    `${total} printings · variants counted separately`;
+  document.getElementById("colPct").textContent = COL_READY ? pct : "–";
+  document.getElementById("colBar").style.width = (COL_READY ? pct : 0) + "%";
+  document.getElementById("colCards").textContent =
+    COL_READY ? `${ownedPrintings} of ${total} cards` : `${total} cards`;
+  document.getElementById("colCopies").textContent =
+    COL_READY ? `${copies}/${total * 3} copies · ${playsets} playset${playsets === 1 ? "" : "s"}` : "";
+
+  // by rarity
+  const rarities = [...new Set(S.pool.map(c => c.rarity).filter(Boolean))]
+    .sort((a,b) => {
+      const ia = RARITY_ORDER.indexOf(a), ib = RARITY_ORDER.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
+    });
+  document.getElementById("colRarity").innerHTML = rarities.map(r => {
+    const list = S.pool.filter(c => c.rarity === r);
+    const owned = COL_READY ? colOwnedCount(list) : 0;
+    const w = list.length ? Math.round(owned / list.length * 100) : 0;
+    return `<div class="crrow">
+      <span class="crlabel"><i class="pip" style="background:${RARITY_DOT[r] || "var(--mute)"}"></i>${esc(r)}</span>
+      <span class="crbar"><i style="width:${w}%;background:${RARITY_DOT[r] || "var(--mute)"}"></i></span>
+      <span class="crcount">${COL_READY ? `${owned}/${list.length}` : list.length}</span>
+    </div>`;
+  }).join("");
+
+  // still missing
+  const missing = S.pool.filter(c => qtyOf(refOf(c)) === 0);
+  const missTop = missing.filter(c => c.rarity === "Epic" || c.rarity === "Showcase").length;
+  document.getElementById("colMissN").textContent = COL_READY ? missing.length : "–";
+  document.getElementById("colMissNote").textContent = !COL_READY ? "" :
+    missing.length === 0 ? "Set complete." :
+    missTop ? `${missTop} of them ${missTop === 1 ? "is an" : "are"} Epic or Showcase printing${missTop === 1 ? "" : "s"}.` :
+    "None of them are Epic or Showcase printings.";
+
+  // filter tabs (counts over search ∧ chips)
+  const base = colBase();
+  const tabs = [["all","All"],["missing","Missing"],["partial","Partial"],["playset","Playset"]];
+  document.getElementById("colTabs").innerHTML = tabs.map(([k, label]) => {
+    const n = COL_READY ? base.filter(c => colTabMatch(qtyOf(refOf(c)), k)).length
+                        : (k === "all" ? base.length : "–");
+    return `<button class="coltab${COLF.tab === k ? " on" : ""}"
+      onclick="setColTab('${k}')">${label}<b>${n}</b></button>`;
+  }).join("");
+
+  const shown = base.filter(c => colTabMatch(qtyOf(refOf(c)), COLF.tab)).length;
+  document.getElementById("colCount").textContent = `${shown} card${shown === 1 ? "" : "s"}`;
+
+  renderSyncState();
+}
+
+function renderCollection(){
+  if(VIEW !== "collection" || !document.getElementById("colGrid")) return;
+  renderColSummary();
+
+  document.getElementById("colDomainRow").innerHTML = DOMAINS.map(d =>
+    `<button class="chip dchip${COLF.domains.includes(d) ? " on" : ""}"
+      style="--c:var(--${d});--dt:${DOMAIN_INK[d]}" onclick="toggleColChip('domains','${d}')">${d}</button>`).join("");
+  document.getElementById("colTypeRow").innerHTML = TYPES.map(t =>
+    `<button class="chip${COLF.types.includes(t) ? " on" : ""}"
+      onclick="toggleColChip('types','${t}')">${t}</button>`).join("");
+
+  const base = colBase();
+  const filtered = base.filter(c => colTabMatch(qtyOf(refOf(c)), COLF.tab));
+  const rarities = [...new Set(S.pool.map(c => c.rarity).filter(Boolean))]
+    .sort((a,b) => {
+      const ia = RARITY_ORDER.indexOf(a), ib = RARITY_ORDER.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
+    });
+  document.getElementById("colGrid").innerHTML = filtered.length
+    ? rarities.map(r => {
+        const cards = filtered.filter(c => c.rarity === r)
+          .sort((a,b) => (a.number ?? 0) - (b.number ?? 0) ||
+                         String(a.riftboundId).localeCompare(String(b.riftboundId)));
+        if(!cards.length) return "";
+        // Section counts stay collection-truth (owned/total of the whole
+        // rarity), matching the mockups, regardless of active filters.
+        const all = S.pool.filter(c => c.rarity === r);
+        const owned = COL_READY ? colOwnedCount(all) : null;
+        return `<h2 class="colsec">${esc(r)} <span>${owned === null ? all.length : `${owned}/${all.length}`}</span></h2>
+          <div class="shelf colshelf">${cards.map(colTileHtml).join("")}</div>`;
+      }).join("")
+    : `<p class="dempty">Nothing matches these filters.</p>`;
+}
+
+/* -------------------------------- actions -------------------------------- */
+window.colBump = (id, d) => {
+  if(!COL_READY) return;
+  const cur = qtyOf(id);
+  const next = Math.max(0, Math.min(3, cur + d));
+  if(next === cur) return;
+  if(next === 0) delete COL[id]; else COL[id] = next;
+  colMutate();
+  // On the All tab a qty change never changes grid membership, so only the
+  // touched tile re-renders — full 352-tile repaints would jank on a phone.
+  if(COLF.tab === "all") updateColTile(id); else renderCollection();
+  renderColSummary();
+};
+
+window.setColTab = t => { COLF.tab = t; renderCollection(); };
+window.toggleColChip = (k, v) => {
+  COLF[k] = COLF[k].includes(v) ? COLF[k].filter(x => x !== v) : [...COLF[k], v];
+  renderCollection();
+};
+window.colShowMissing = () => setColTab("missing");
+
+window.colMarkAll = async () => {
+  if(!COL_READY) return;
+  const total = S.pool.length;
+  const v = await ask("Mark every printing owned?",
+    `This raises all ${total} printings to at least 1 copy. Quantities you've already logged above 1 are untouched.`,
+    [{label:"Mark all owned", value:"yes", kind:"go"},
+     {label:"Cancel", value:"cancel", kind:"quiet"}]);
+  if(v !== "yes") return;
+  for(const c of S.pool){ const id = refOf(c); if(!COL[id]) COL[id] = 1; }
+  colMutate(); renderCollection();
+};
+
+window.colClear = async () => {
+  if(!COL_READY) return;
+  const copies = colCopies(S.pool);
+  const v = await ask("Clear the collection?",
+    `This wipes the logged collection — all ${copies} copies go back to zero. It can't be undone.`,
+    [{label:"Clear it", value:"yes", kind:"danger"},
+     {label:"Cancel", value:"cancel", kind:"quiet"}]);
+  if(v !== "yes") return;
+  COL = {};
+  colMutate(); renderCollection();
+};
  
 /* -------------------------------- helpers ------------------------------- */
 const note = t => document.getElementById("notice").textContent = t;
@@ -1173,7 +1758,7 @@ function normalize(c){
     type:String(c.type ?? "Unit"), supertype:c.supertype ?? null,
     rarity:c.rarity ?? null,
     domains:(Array.isArray(c.domains)?c.domains:[]).filter(d=>ALL_DOMAINS.includes(d)),
-    set:c.set ?? "", number:c.number ?? null,
+    set:c.set ?? "", setName:c.setName ?? null, number:c.number ?? null,
     riftboundId:c.riftboundId ?? c.riftbound_id ?? null,
     signature:!!c.signature, alternateArt:!!(c.alternateArt ?? c.alternate_art),
     image:c.image ?? c.image_url ?? null, artist:c.artist ?? null,
@@ -1557,10 +2142,10 @@ window.openCard = id => {
       ${c.text?`<p class="text">${rich(c.text)}</p>`:""}
       ${c.artist?`<p class="artist">Art by ${esc(c.artist)}</p>`:""}
       <div class="modalacts">
-        ${c.type === "Legend"
+        ${VIEW === "deck" && c.type === "Legend"
           ? `<button class="btn" onclick="addCard('${esc(c.riftboundId||c.name).replace(/'/g,"\\'")}','legend');closeModal()">Set as Legend</button>`
           : ""}
-        ${c.supertype === "Champion"
+        ${VIEW === "deck" && c.supertype === "Champion"
           ? `<button class="btn" onclick="setChampion('${esc(c.riftboundId||c.name).replace(/'/g,"\\'")}');closeModal()">Set as Champion</button>`
           : ""}
         <button class="btn quiet" onclick="closeModal()">Close</button>
@@ -1644,6 +2229,9 @@ function copyText(){
 document.getElementById("q").addEventListener("input", e => {
   S.q = e.target.value; S.limit = 48; render();
 });
+document.getElementById("colQ").addEventListener("input", e => {
+  COLF.q = e.target.value; renderCollection();
+});
 document.getElementById("deckName").addEventListener("input", e => {
   S.deckName = e.target.value; touch();
 });
@@ -1702,6 +2290,7 @@ window.loadPool = async function loadPool(){
     POOL_READY = true;
     applyPending();   // a stashed local blob or cloud deck can hydrate now
     render();
+    renderCollectionAll();   // the grid renders from the pool
   }catch(err){
     msg.textContent = `Couldn't load the card pool (${err.message}).`;
     retry.hidden = pick.hidden = false;
@@ -1714,7 +2303,12 @@ try{
   if(v !== null) S.variants = v === "true";
 }catch{}
 if(load()) note("Deck restored from this browser");
+// Signed-out collection is synchronous; a session arriving later replaces it
+// through onCloudSession with the merged server map.
+COL = readLocalCollection();
+COL_READY = true;
 paintThemeButton();
+applyHash();   // land on the view the URL names — bookmarks and refreshes
 render();      // paint name and chrome immediately; cards hydrate after the pool
 loadPool();
 </script>
@@ -1785,14 +2379,20 @@ let busy     = false;
    server sends in its set-auth-jwt response header. getSession() is cached
    by the SDK with the JWT's own expiry, so this does not add a network round
    trip per query. */
+/* lastToken: the collection sync's flush-on-tab-close needs to issue a
+   keepalive fetch synchronously inside pagehide — no time for an async token
+   lookup — so every normal token fetch stashes the JWT here. */
+let lastToken = null;
+const getToken = async () => {
+  try {
+    const r = await auth.getSession();
+    lastToken = r?.data?.session?.token ?? null;
+  } catch { lastToken = null; }
+  return lastToken;
+};
 const db = new NeonPostgrestClient({
   dataApiUrl: NEON.dataApiUrl,
-  options: { global: { fetch: fetchWithToken(async () => {
-    try {
-      const r = await auth.getSession();
-      return r?.data?.session?.token ?? null;
-    } catch { return null; }
-  }) } },
+  options: { global: { fetch: fetchWithToken(getToken) } },
 });
 
 /* Every cloud result is flattened to {data, error:string|null} so the app
@@ -1811,6 +2411,66 @@ window.cloud = {
   update: async (id, row) => flatten(await db.from("decks")
     .update(row).eq("id", id).select("id,updated_at").single()),
   remove: async id => flatten(await db.from("decks").delete().eq("id", id)),
+
+  /* ---- collection (stage 6) ---- */
+  // RLS narrows user_settings to the caller's own row, so no eq() is needed
+  // on the read. The write is an upsert that carries ONLY the collection
+  // column: verified against the published 0.2.0-beta bundle, this sends
+  // POST ?on_conflict=user_id with Prefer: resolution=merge-duplicates, and
+  // PostgREST builds DO UPDATE SET from the body's columns alone — the
+  // settings column cannot be clobbered. The insert path works because
+  // pin_ownership fills user_id before the conflict check.
+  getSettingsRow: async () => flatten(await db.from("user_settings")
+    .select("collection")),
+  saveCollection: async map => flatten(await db.from("user_settings")
+    .upsert({collection: map}, {onConflict: "user_id"})
+    .select("updated_at").single()),
+
+  /* Best-effort flush when the tab is going away: a keepalive PATCH using
+     the stashed JWT, fire-and-forget by necessity. Only the collection
+     column travels. Returns false when there is nothing to send with. */
+  collectionKeepalive: map => {
+    if(!lastToken || !session?.id) return false;
+    try{
+      fetch(`${NEON.dataApiUrl}/user_settings?user_id=eq.${session.id}`, {
+        method: "PATCH",
+        keepalive: true,
+        headers: {
+          Authorization: `Bearer ${lastToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({collection: map}),
+      }).catch(() => {});
+      return true;
+    }catch{ return false; }
+  },
+
+  /* Read the server collection, fold the signed-out local map in by
+     per-printing max, and make sure the row exists so the keepalive PATCH
+     above always has something to hit. Called on session arrival and by the
+     app's retry path. Returns {map} or {error}. */
+  syncCollection: async () => {
+    const r = await window.cloud.getSettingsRow();
+    if(r.error) return {error: r.error};
+    const rowExists = Array.isArray(r.data) && r.data.length > 0;
+    const server = rowExists && r.data[0].collection &&
+      typeof r.data[0].collection === "object" ? r.data[0].collection : {};
+    const local = window.localCollectionForMerge?.() ?? null;
+    if(!local && rowExists) return {map: server};
+    // Merge by max per printing: summing would double-count the same
+    // physical cards, overwriting either side destroys data.
+    const merged = {...server};
+    if(local) for(const [k, q] of Object.entries(local))
+      merged[k] = Math.max(merged[k] || 0, q);
+    const w = await window.cloud.saveCollection(merged);
+    if(w.error){
+      // The local blob stays put and retries on the next session arrival.
+      console.warn("[cloud] collection merge failed:", w.error);
+      return rowExists ? {map: server} : {error: w.error};
+    }
+    if(local) window.clearLocalCollection?.();
+    return {map: merged};
+  },
 };
 
 /* ------------------------- session -> app handoff ----------------------- */
@@ -1844,15 +2504,23 @@ async function syncCloud(){
     }
   }
 
+  // Collection: read, merge the signed-out map, ensure the row exists.
+  // null tells the app the cloud copy is unknown — it must hold badges and
+  // block collection writes until a read succeeds, or a fresh tap could
+  // overwrite the server map with a local-only one.
+  const col = await window.cloud.syncCollection();
+  const colMap = col.error ? null : col.map;
+  if(col.error) console.warn("[cloud] collection load failed:", col.error);
+
   const list = await window.cloud.list();
   if(list.error){
     console.warn("[cloud] deck list failed:", list.error);
     // Session is real but data is unreachable. Hand over what we know: the
     // app opens the imported deck or a fresh one, and Save can still retry.
-    window.onCloudSession?.(session, imported ? [imported] : [], imported);
+    window.onCloudSession?.(session, imported ? [imported] : [], imported, colMap);
     return;
   }
-  window.onCloudSession?.(session, list.data ?? [], imported);
+  window.onCloudSession?.(session, list.data ?? [], imported, colMap);
 }
 
 const $ = id => document.getElementById(id);

@@ -100,10 +100,14 @@ reset role;
 
 -- neondb_owner holds BYPASSRLS, which beats FORCE. Assert the true behaviour
 -- rather than the hoped-for one: the admin role sees everything, and the three
--- roles the Data API actually uses do not bypass.
+-- roles the Data API actually uses do not bypass. Scoped to the test users:
+-- the live table carries real decks now (since 2026-08-16), and an unscoped
+-- count(*) breaks the moment anyone saves one.
 select 'T10 admin role bypasses RLS (BYPASSRLS beats FORCE) - sees all 3' as test,
        (count(*) = 3) as pass
-  from public.decks;
+  from public.decks
+ where user_id in ('aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa',
+                   'bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb');
 
 select 'T10b no Data API role can bypass RLS' as test,
        (count(*) = 0) as pass
@@ -116,6 +120,8 @@ select 'T10b no Data API role can bypass RLS' as test,
 alter table public.decks no force row level security;
 select 'T11 control: 3 rows really exist, so the zeros above were RLS' as test,
        (count(*) = 3) as pass
-  from public.decks;
+  from public.decks
+ where user_id in ('aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa',
+                   'bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb');
 
 rollback;

@@ -55,7 +55,7 @@ CLAUDE.md               working agreement and architecture notes
 | 3 · Auth UI — sign up / in / out / reset, email + Google | done |
 | 4 · `save`/`load` → Data API, anonymous path, merge on signup | done |
 | 5 · Multiple named decks, Paper/Midnight themes, validation banners | done |
-| 6 · Collection tracker + "what am I missing" | |
+| 6 · Collection tracker + "what am I missing" | done |
 | 7 · Showcase / base-card 3-copy limit | |
 
 ## Legal
