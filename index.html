@@ -2514,6 +2514,15 @@ window.cloud = {
     .upsert({collection: map}, {onConflict: "user_id"})
     .select("updated_at").single()),
 
+  /* Create this user's settings row only if it is missing. ignoreDuplicates
+     sends Prefer: resolution=ignore-duplicates, i.e. ON CONFLICT DO NOTHING
+     (verified in the vendored postgrest-js bundle), so unlike saveCollection
+     this can NEVER overwrite an existing collection. That makes "the row
+     exists" an invariant we can rely on, which is what lets syncCollection
+     tell a genuinely-new account apart from a read that under-reported. */
+  ensureSettingsRow: async () => flatten(await db.from("user_settings")
+    .upsert({collection: {}}, {onConflict: "user_id", ignoreDuplicates: true})),
+
   /* Best-effort flush when the tab is going away: a keepalive PATCH using
      the stashed JWT, fire-and-forget by necessity. Only the collection
      column travels. Returns false when there is nothing to send with. */
@@ -2552,10 +2561,25 @@ window.cloud = {
     // Nothing local to contribute means there is nothing to save, so DO NOT
     // WRITE — whatever the read said. This used to fall through and write {}
     // when the read reported no row, which is exactly the wipe: an upsert
-    // carrying {} replaces a real collection. The row is no longer pre-created
-    // for the keepalive's benefit either; a PATCH against a missing row simply
-    // affects zero rows, and the first real change creates it via upsert.
-    if(!local) return {map: server};
+    // carrying {} replaces a real collection.
+    if(!local){
+      if(rowExists) return {map: server};
+      // No row reported, and nothing local. That is ambiguous — either a
+      // genuinely new account, or a read that under-reported (which is what
+      // showed a real collection as "Synced · 0 copies logged" and, because
+      // the app believed it, never retried). Resolve it: create the row only
+      // if it is truly missing (DO NOTHING, so an existing collection is never
+      // touched), then read again. After that, "no row" can only mean the read
+      // is failing, so report an error and let the retry path recover.
+      const made = await window.cloud.ensureSettingsRow();
+      if(made.error) return {error: made.error};
+      const again = await window.cloud.getSettingsRow();
+      if(again.error) return {error: again.error};
+      if(!Array.isArray(again.data) || again.data.length === 0)
+        return {error: "settings row still unreadable after creating it"};
+      const back = again.data[0].collection;
+      return {map: back && typeof back === "object" ? back : {}};
+    }
     // Merge by max per printing: summing would double-count the same
     // physical cards, overwriting either side destroys data.
     const merged = {...server};

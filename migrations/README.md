@@ -43,7 +43,7 @@ JWT — `pg_session_jwt` would need a real signed token to populate `auth.user_i
 rollback restores the real function. The JWT-to-uuid step it skips is covered separately
 by C11/C11b.
 
-### What they cover — 34 tests, all passing
+### What they cover — 35 tests, all passing
 
 **Isolation (`rls_test.sql`)**
 
@@ -92,6 +92,7 @@ by C11/C11b.
 | H3 | the last non-empty value is retrievable — the query a human runs to recover |
 | H4 | `authenticated`/`anonymous` hold no grants on the history table |
 | H5 | RLS is enabled **and** forced with zero policies, so it stays unreadable even if a grant is added by accident |
+| H6 | the client's row-creating insert (`ON CONFLICT DO NOTHING`) cannot overwrite an existing collection — the guard against it regressing to `merge-duplicates`, which is what caused the wipe |
 
 T10 is worth reading twice. `neondb_owner` — the role in `DATABASE_URL` — has
 `rolbypassrls = true`, and `BYPASSRLS` overrides `FORCE ROW LEVEL SECURITY`. Anything

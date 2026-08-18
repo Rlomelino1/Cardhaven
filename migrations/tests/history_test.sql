@@ -15,6 +15,8 @@ values ('ffffffff-6666-4666-8666-ffffffffffff','Test F','f@example.invalid',true
 create or replace function public.app_user_id() returns uuid
   language sql stable as $$ select 'ffffffff-6666-4666-8666-ffffffffffff'::uuid $$;
 
+create temp table results(test text, pass boolean);
+
 insert into public.user_settings (collection) values ('{"a":1,"b":2,"c":3}');
 
 -- H1: growing a collection writes no history (the common case stays free)
@@ -55,5 +57,33 @@ select 'H5 RLS enabled+forced with zero policies' as test,
         and (select count(*) from pg_policies
               where schemaname='public' and tablename='user_settings_history') = 0) as pass
   from pg_class c where c.oid = 'public.user_settings_history'::regclass;
+
+-- H6: the client's ensureSettingsRow() must not be able to clobber a real
+-- collection. This is the exact SQL PostgREST generates for
+-- .upsert({collection:{}}, {onConflict:'user_id', ignoreDuplicates:true}) --
+-- Prefer: resolution=ignore-duplicates, i.e. ON CONFLICT DO NOTHING. Run as
+-- `authenticated`, like the real request. If this ever regresses to
+-- merge-duplicates it becomes the wipe again, so the test is the guard.
+do $$
+declare kept jsonb;
+begin
+  update public.user_settings set collection = '{"ogn-073-298":1,"ogn-119-298":2}'
+   where user_id = 'ffffffff-6666-4666-8666-ffffffffffff';
+  set local role authenticated;
+  insert into public.user_settings (collection) values ('{}')
+    on conflict (user_id) do nothing;
+  reset role;
+  select collection into kept from public.user_settings
+   where user_id = 'ffffffff-6666-4666-8666-ffffffffffff';
+  insert into results values
+    ('H6 ensureSettingsRow cannot overwrite an existing collection',
+     kept = '{"ogn-073-298":1,"ogn-119-298":2}'::jsonb);
+exception when others then
+  reset role;
+  insert into results values
+    ('H6 ensureSettingsRow cannot overwrite an existing collection', false);
+end $$;
+
+select test, pass from results order by test;
 
 rollback;
