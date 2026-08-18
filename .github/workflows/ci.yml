@@ -32,8 +32,13 @@ permissions:
   contents: read
 
 jobs:
+  # Keep this job named `e2e`: it is the required status check on main.
   e2e:
     runs-on: ubuntu-latest
+    # This check gates merges, so a hung runner must fail rather than block the
+    # gate forever. Observed range is ~50-240s; the browser install occasionally
+    # stalls for far longer, and GitHub's own default would let it sit for hours.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
