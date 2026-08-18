@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
-    "test:sql": "node migrations/tests/run.mjs --file migrations/tests/rls_test.sql && node migrations/tests/run.mjs --file migrations/tests/constraint_test.sql",
+    "test:sql": "node migrations/tests/run.mjs --file migrations/tests/rls_test.sql && node migrations/tests/run.mjs --file migrations/tests/constraint_test.sql && node migrations/tests/run.mjs --file migrations/tests/history_test.sql",
     "serve": "node tests/serve.mjs"
   },
   "devDependencies": {

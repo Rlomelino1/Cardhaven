@@ -1483,6 +1483,11 @@ function colMutate(){
 async function colFlush(){
   clearTimeout(colTimer); colTimer = null;
   if(MODE !== "cloud" || !window.cloud || colInflight || !colDirty) return;
+  // COL_READY means COL holds the account's real map rather than the empty
+  // placeholder this page loaded with. Writing before that lands would push {}
+  // over a real collection. colFlushOnHide already guarded this; colFlush did
+  // not, and it is reachable from the visibilitychange and online handlers.
+  if(!COL_READY) return;
   colDirty = false; colInflight = true;
   renderSyncState();
   const r = await window.cloud.saveCollection({...COL});
@@ -2535,15 +2540,26 @@ window.cloud = {
   syncCollection: async () => {
     const r = await window.cloud.getSettingsRow();
     if(r.error) return {error: r.error};
-    const rowExists = Array.isArray(r.data) && r.data.length > 0;
+    // A read that did not come back as an array is a FAILED read, not proof
+    // that the server is empty. Treating it as "no row" is what destroyed a
+    // collection on 2026-08-17: the row existed, this read under-reported, and
+    // the write below overwrote it with {} through the upsert's DO UPDATE.
+    if(!Array.isArray(r.data)) return {error: "unexpected settings response"};
+    const rowExists = r.data.length > 0;
     const server = rowExists && r.data[0].collection &&
       typeof r.data[0].collection === "object" ? r.data[0].collection : {};
     const local = window.localCollectionForMerge?.() ?? null;
-    if(!local && rowExists) return {map: server};
+    // Nothing local to contribute means there is nothing to save, so DO NOT
+    // WRITE — whatever the read said. This used to fall through and write {}
+    // when the read reported no row, which is exactly the wipe: an upsert
+    // carrying {} replaces a real collection. The row is no longer pre-created
+    // for the keepalive's benefit either; a PATCH against a missing row simply
+    // affects zero rows, and the first real change creates it via upsert.
+    if(!local) return {map: server};
     // Merge by max per printing: summing would double-count the same
     // physical cards, overwriting either side destroys data.
     const merged = {...server};
-    if(local) for(const [k, q] of Object.entries(local))
+    for(const [k, q] of Object.entries(local))
       merged[k] = Math.max(merged[k] || 0, q);
     const w = await window.cloud.saveCollection(merged);
     if(w.error){
@@ -2551,7 +2567,7 @@ window.cloud = {
       console.warn("[cloud] collection merge failed:", w.error);
       return rowExists ? {map: server} : {error: w.error};
     }
-    if(local) window.clearLocalCollection?.();
+    window.clearLocalCollection?.();
     return {map: merged};
   },
 };
