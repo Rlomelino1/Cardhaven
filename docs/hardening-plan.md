@@ -389,6 +389,16 @@ maps. *Effort*: ~1 day (the mocking scaffold is the bulk). *Performance cost*: n
 
 ## CI — GitHub Actions that informs, never gates the deploy
 
+> **Superseded 2026-08-18 — the suite now gates production.** This section argued for an
+> advisory-only CI, and the reasoning below about the *deploy step* still holds: Pages is
+> a branch deploy, so Actions genuinely cannot block the publish, which fires on any push
+> to `main` in parallel with the workflow. What changed is where the gate sits. `main` is
+> now a protected branch requiring a PR and a green `e2e` check, so the gate is on what
+> may **reach** main rather than on the publish itself — and since a merge is the only way
+> main advances, only a green suite is ever published. The original call was made before
+> the app had lost user data twice; a regression reaching production silently is no longer
+> an acceptable failure mode for a change that costs one settings page.
+
 *What*: a workflow on push/PR that runs the Playwright suite headless.
 
 *Why*: catches regressions before they reach `main`. *How*: it must not touch the Pages

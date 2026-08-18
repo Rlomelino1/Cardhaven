@@ -58,8 +58,13 @@ npm test         # Playwright e2e suite (serves the repo, blocks the CDN, runs h
 npm run test:sql # SQL constraint + RLS tests against the live DB (rolled back)
 ```
 
-`npm test` runs in CI on push and PR (`.github/workflows/ci.yml`); it informs, it
-does not gate the Pages deploy. The SQL tests need `.env` and stay local.
+`npm test` runs in CI on push and PR (`.github/workflows/ci.yml`) and **gates what
+reaches production**: `main` is protected, so a change needs a pull request with a
+green `e2e` check before it can be merged, and Pages only publishes what is on
+main. Direct pushes to main are rejected — work on a branch and open a PR.
+
+The SQL tests need a database credential from `.env` and stay local; run them with
+`npm run test:sql` before touching a migration.
 
 ## Status
 

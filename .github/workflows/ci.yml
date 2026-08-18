@@ -1,14 +1,23 @@
 # Runs the Playwright suite on push and PR.
 #
-# This does NOT deploy anything and cannot block a deploy. GitHub Pages publishes
-# this repo with "Deploy from a branch" (main / root), which is independent of
-# Actions — a failing test here informs a human, it does not wedge the site going
-# live. That is the intended behaviour for a one-person project.
+# This job GATES what reaches production. GitHub Pages publishes this repo with
+# "Deploy from a branch" (main / root), so Actions cannot block the deploy step
+# itself — Pages fires on any push to main, in parallel with this workflow. The
+# gate is therefore on what is allowed to REACH main: `main` is a protected
+# branch that requires a pull request and requires the `e2e` check below to pass
+# before it can be merged. Since a merge is the only way main advances, only code
+# with a green suite is ever published.
+#
+# Consequences worth knowing:
+#   - Renaming this job breaks the gate. The required status check is matched by
+#     job name, so `e2e` must stay `e2e` (or the protection rule be updated with
+#     it, otherwise merges block forever on a check that never reports).
+#   - Direct pushes to main are rejected. Work goes through a branch and a PR.
 #
 # The SQL tests (migrations/tests/) are deliberately NOT run here: they need a
-# live database and a project-scoped Neon API key, and standing that secret up in
-# CI for a suite that changes rarely isn't worth the exposure. Run them locally
-# with `npm run test:sql`. See docs/hardening-plan.md.
+# live database credential, and standing a production connection string up in CI
+# for a suite that only changes when a migration does isn't worth the exposure.
+# Run them locally with `npm run test:sql`. See docs/hardening-plan.md.
 
 name: CI
 

@@ -70,7 +70,12 @@ A hosted site with accounts, per-user deck CRUD, and per-user collection trackin
 zero cost:
 
 - **Static hosting**: GitHub Pages, **Deploy from a branch** (`main`, `/ root`) — not
-  a build workflow. Nothing to generate; the HTML is the artifact.
+  a build workflow. Nothing to generate; the HTML is the artifact. **`main` is
+  protected**: a change needs a PR whose `e2e` check is green before it can merge, and
+  Pages publishes whatever is on main — so the test suite gates production. Direct
+  pushes to main are rejected; branch and open a PR. Don't rename the `e2e` job in
+  `.github/workflows/ci.yml` without updating the required check, or merges block on a
+  check that never reports.
 - **Auth**: Neon Managed Better Auth (email/password + Google OAuth)
 - **Data**: Neon Postgres via the Neon Data API (PostgREST-compatible), with Row Level
   Security as the authorization layer
