@@ -254,3 +254,11 @@ in a real browser. Most of the modal already matched; these are the gaps that we
 - Row creation uses `ignoreDuplicates: true` (`Prefer: resolution=ignore-duplicates` → `ON CONFLICT DO NOTHING`, verified in the vendored postgrest-js bundle), so unlike `saveCollection` it can never overwrite an existing collection; SQL test H6 pins that, because a regression to `merge-duplicates` would recreate the wipe exactly.
 - After the row is known to exist, a still-empty read is reported as an error so the existing retry-with-backoff path recovers on its own; rejected returning an empty map, which is what showed a real collection as zero.
 - The happy path is unchanged and makes no extra calls — verified by a test asserting `ensureSettingsRow` is not called when the first read succeeds, so ordinary loads cost nothing extra against the CU-hour budget.
+
+## Tests gate production (2026-08-18)
+
+- `main` is now a protected branch requiring a pull request and a green `e2e` check before merge. Pages deploys from the branch, so Actions cannot block the publish itself — it fires on any push to main, in parallel with CI — which is why the gate sits on what may *reach* main instead. A merge is the only way main advances, so only a green suite is ever published.
+- `enforce_admins` is ON. It was briefly off, and a direct push to main was accepted with "Bypassed rule violations" — a gate the only person who pushes here can walk through is not a gate. Rejected leaving admins exempt; the escape hatch is toggling the setting deliberately, not bypassing it by habit.
+- Required check is matched by **job name** (`e2e`), not workflow name; renaming the job silently blocks every merge on a check that never reports. Recorded in `ci.yml` and `CLAUDE.md` because it is invisible until it bites.
+- `strict` is on (a branch must be up to date with main before merging), so the suite that gates a merge ran against the code that will actually be on main; rejected the looser setting, which lets two independently-green PRs combine into a broken main.
+- The SQL suite still runs locally only. Gating on it would mean a production database credential in CI secrets for a suite that only changes when a migration does; rejected that trade, unchanged from the hardening plan.
