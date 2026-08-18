@@ -10,6 +10,7 @@ are hard to read.
 | 0001 | `0001_create_decks.sql` | 2026-08-13 | live on `neondb`, `falling-star-08784661` |
 | 0002 | `0002_app_user_id_survives_auth_reprovision.sql` | 2026-08-16 | live — see the incident note in the file header |
 | 0003 | `0003_limit_decks_per_user.sql` | 2026-08-17 | live — 100-deck-per-user cap, a free-tier abuse backstop |
+| 0004 | `0004_collection_history_safety_net.sql` | 2026-08-17 | live — snapshots a collection before any update that removes printings |
 
 ## Running
 
@@ -29,7 +30,10 @@ node run.mjs --file ..\0001_create_decks.sql
 ```powershell
 node run.mjs --file rls_test.sql
 node run.mjs --file constraint_test.sql
+node run.mjs --file history_test.sql
 ```
+
+Or `npm run test:sql` from the repo root, which runs all three.
 
 Both wrap everything in a transaction that is **rolled back**, including the rows they
 insert into `neon_auth."user"`. Running them leaves the database exactly as it was.
@@ -39,7 +43,7 @@ JWT — `pg_session_jwt` would need a real signed token to populate `auth.user_i
 rollback restores the real function. The JWT-to-uuid step it skips is covered separately
 by C11/C11b.
 
-### What they cover — 29 tests, all passing
+### What they cover — 34 tests, all passing
 
 **Isolation (`rls_test.sql`)**
 
@@ -78,6 +82,16 @@ by C11/C11b.
 | C12 | the stage-6 collection upsert (only `collection` in the body) leaves `settings` untouched, run as `authenticated` |
 | C13 | the per-user deck cap (0003): 100 inserts succeed, the 101st is rejected, and the cap is per-user |
 | C14 | a forged but well-formed JWT (valid uuid `sub`, no such user) cannot insert — the FK to `neon_auth."user"` rejects it |
+
+**Collection history safety net (`history_test.sql`)**
+
+| | |
+|---|---|
+| H1 | growing a collection writes **no** history — ordinary collecting stays free |
+| H2 | an update that empties a collection snapshots the previous value, with before/after key counts |
+| H3 | the last non-empty value is retrievable — the query a human runs to recover |
+| H4 | `authenticated`/`anonymous` hold no grants on the history table |
+| H5 | RLS is enabled **and** forced with zero policies, so it stays unreadable even if a grant is added by accident |
 
 T10 is worth reading twice. `neondb_owner` — the role in `DATABASE_URL` — has
 `rolbypassrls = true`, and `BYPASSRLS` overrides `FORCE ROW LEVEL SECURITY`. Anything
