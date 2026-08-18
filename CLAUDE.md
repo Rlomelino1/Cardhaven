@@ -200,12 +200,27 @@ Therefore: key everything on **collector number**, and derive a separate groupin
 deck-limit purposes. Do not "fix" the copy-limit bug by normalizing or collapsing card
 names — that would break the collection feature before it's built.
 
-## Known open bug
+## The Showcase 3-copy limit — fixed (stage 7)
 
-The 3-copy limit counts a Showcase printing and its base card as two different cards,
-because their names differ (all 352 names are unique; 54 are rarity "Showcase", 30
-also flagged `alternateArt`). By the rules they share one limit. The fix has to satisfy
-the constraint above — it is not a simple name normalization.
+Previously the 3-copy limit counted a Showcase printing and its base card as two
+different cards, because their names differ (all 352 names are unique; 54 are rarity
+"Showcase", 30 also flagged `alternateArt`). By the rules they share one limit.
+
+Fixed by grouping on collector number, not names, exactly as the section above
+requires. `copyGroup(card)` in `index.html` strips the variant suffix off the middle
+segment of the id (`ogn-039a-298` and `ogn-039-298` are both card `ogn-039`) and the
+legality check sums copies across the group; the battlefield "all different" check
+uses the same grouping. The collection is untouched — it still keys on the full ref,
+so a Showcase stays a distinct object there. This is pure client logic, no schema
+change. Covered by e2e tests in `tests/e2e/smoke.spec.js`.
+
+**The limit spans main deck + sideboard**, per Tournament Rules 403.4: *"Limits on
+copies of named cards apply to the combination of Main Deck and sideboard."* So 3 in
+the main deck plus 1 in the sideboard is illegal; 2 + 1 is fine. Runes and
+battlefields are separate decks under their own rules and are not counted. The
+sideboard's own 0-or-8 size rule is TR 403.2 — note both live in the **Tournament**
+rules, not the Core rules, which is why the core construction section defines no
+sideboard at all.
 
 ---
 

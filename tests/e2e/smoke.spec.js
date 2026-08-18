@@ -92,6 +92,76 @@ test.describe("persistence and preferences", () => {
   });
 });
 
+test.describe("copy limit (Showcase / base printings)", () => {
+  const BASE = "ogn-039-298";   // Kai'Sa - Survivor
+  const SHOW = "ogn-039a-298";  // Kai'Sa - Survivor (Alternate Art)
+
+  const RUNE = "ogn-007-298";   // Fury Rune
+
+  // zones: { main: [[ref, qty], ...], sideboard: [...], runes: [...] }
+  const setZones = (page, zones) => page.evaluate((zones) => {
+    freshDeck();
+    for (const [z, pairs] of Object.entries(zones))
+      S.zones[z] = pairs.map(([ref, qty]) => ({ ...findCard(ref), id: uid(), qty }));
+    render();
+    return document.getElementById("problems").innerText;
+  }, zones);
+
+  const setMain = (page, pairs) => setZones(page, { main: pairs });
+
+  test("3 base + 1 Showcase of one card is flagged over the 3-copy limit", async ({ page }) => {
+    await openApp(page);
+    const problems = await setMain(page, [[BASE, 3], [SHOW, 1]]);
+    expect(problems).toMatch(/Over 3 copies/);
+    expect(problems).toMatch(/Kai'Sa - Survivor \(4\)/);
+  });
+
+  test("2 base + 1 Showcase (3 total across printings) is legal", async ({ page }) => {
+    await openApp(page);
+    const problems = await setMain(page, [[BASE, 2], [SHOW, 1]]);
+    expect(problems).not.toMatch(/Over 3 copies/);
+  });
+
+  // Tournament Rules 403.4: "Limits on copies of named cards apply to the
+  // combination of Main Deck and sideboard." These two are the rule's own
+  // worked examples.
+  test("3 in the main deck + 1 in the sideboard is over the limit", async ({ page }) => {
+    await openApp(page);
+    const problems = await setZones(page, { main: [[BASE, 3]], sideboard: [[BASE, 1]] });
+    expect(problems).toMatch(/Over 3 copies \(main deck and sideboard combined\)/);
+    expect(problems).toMatch(/Kai'Sa - Survivor \(4\)/);
+  });
+
+  test("2 in the main deck + 1 in the sideboard is legal", async ({ page }) => {
+    await openApp(page);
+    const problems = await setZones(page, { main: [[BASE, 2]], sideboard: [[BASE, 1]] });
+    expect(problems).not.toMatch(/Over 3 copies/);
+  });
+
+  test("printing grouping applies across zones too (base main + Showcase side)", async ({ page }) => {
+    await openApp(page);
+    const problems = await setZones(page, { main: [[BASE, 3]], sideboard: [[SHOW, 1]] });
+    expect(problems).toMatch(/Kai'Sa - Survivor \(4\)/);
+  });
+
+  test("the rune deck is a separate deck and does not count toward the limit", async ({ page }) => {
+    await openApp(page);
+    const problems = await setZones(page, { main: [[RUNE, 3]], runes: [[RUNE, 3]] });
+    expect(problems).not.toMatch(/Over 3 copies/);
+  });
+
+  test("the collection still keys base and Showcase as distinct printings", async ({ page }) => {
+    await openApp(page, { hash: "#collection" });
+    const q = await page.evaluate((refs) => {
+      colBump(refs[0], 1); colBump(refs[0], 1); // base -> 2
+      colBump(refs[1], 1);                       // showcase -> 1
+      return { base: qtyOf(refs[0]), show: qtyOf(refs[1]) };
+    }, [BASE, SHOW]);
+    expect(q.base).toBe(2);
+    expect(q.show).toBe(1);
+  });
+});
+
 test.describe("vendored SDK", () => {
   test("the auth/data SDK loads from vendored files, not a CDN", async ({ page }) => {
     // Deliberately does NOT block esm.sh — it asserts nothing tries to reach it.
