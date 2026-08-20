@@ -83,6 +83,74 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
   display:inline-block; margin-right:7px; vertical-align:1px}
 .pip{width:9px; height:9px; border-radius:50%; display:block}
 
+/* ---------------------------- game switcher ------------------------------ */
+/* One game today. The switcher ships anyway so that per-game scoping is a
+   visible promise rather than an invisible one, and so the second game is a
+   registry entry instead of a header redesign. */
+.gamewrap{position:relative}
+.gamebtn{display:flex; align-items:center; gap:8px; background:var(--ink);
+  border:1px solid var(--edge); border-radius:3px; color:var(--text);
+  padding:5px 9px 5px 5px; font-size:13.5px; cursor:pointer}
+.gamebtn[aria-expanded="true"]{border-color:var(--brass)}
+.gmark{width:20px; height:20px; border-radius:3px; background:var(--brass);
+  color:var(--ink); font-family:ui-monospace,Menlo,monospace; font-size:8.5px;
+  font-weight:700; font-style:normal; display:inline-flex; align-items:center;
+  justify-content:center; flex:none; letter-spacing:.02em}
+.gcaret{font-size:8px; color:var(--mute); line-height:1}
+.gamemenu{position:absolute; top:calc(100% + 9px); left:0; width:310px; max-width:88vw;
+  background:var(--panel); border:1px solid var(--edge); border-radius:4px;
+  box-shadow:0 14px 34px rgba(0,0,0,.45); z-index:60; padding:5px}
+.gamemenu[hidden]{display:none}
+.gmhead{padding:8px 11px 7px; font-family:ui-monospace,Menlo,monospace; font-size:9px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
+.gmrow{display:flex; align-items:center; gap:10px; width:100%; padding:9px 11px;
+  border-radius:2px; text-align:left; color:var(--text)}
+.gmrow.active{background:var(--hover-wash)}
+/* Planned games are decoration: no handler, no focus stop, no pointer. */
+.gmrow.planned{opacity:.45; cursor:default}
+.gmrow.planned .gmark{background:var(--edge); color:var(--mute)}
+.gmbody{flex:1; min-width:0}
+.gmname{display:block; font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.gmsub{display:block; margin-top:3px; font-family:ui-monospace,Menlo,monospace;
+  font-size:8.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.gmstate{font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--mute); white-space:nowrap}
+.gmstate.on{color:var(--teal)}
+.gmfoot{border-top:1px solid var(--edge); margin-top:5px; padding:10px 11px 6px;
+  font-size:12px; color:var(--mute)}
+
+/* ------------------------------- set bar --------------------------------- */
+.setbar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:10px;
+  background:var(--panel); border:1px solid var(--edge); border-radius:4px;
+  padding:8px 14px}
+.setbar[hidden]{display:none}
+.setlbl{font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--mute)}
+.setchips{display:flex; gap:6px; flex-wrap:wrap; align-items:center}
+.setcount{margin-left:auto; font-family:ui-monospace,Menlo,monospace; font-size:9.5px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--mute); white-space:nowrap}
+.setchip{background:var(--ink); border:1px solid var(--edge); color:var(--text2);
+  border-radius:2px; padding:6px 11px; font-size:12.5px; cursor:pointer;
+  display:inline-flex; align-items:baseline; gap:7px}
+.setchip b{font-family:ui-monospace,Menlo,monospace; font-size:9px; font-weight:400;
+  color:var(--mute)}
+.setchip.on{background:var(--brass); border-color:var(--brass); color:var(--go-fg);
+  font-weight:600}
+.setchip.on b{color:var(--go-fg); opacity:.75}
+/* The set code stamped on a card tile and on a deck-panel row. */
+.setbadge{position:absolute; left:6px; bottom:6px; background:rgba(10,8,18,.85);
+  color:#CFC9DE; border:1px solid rgba(234,231,244,.28); border-radius:2px;
+  font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.09em;
+  padding:2px 5px; line-height:1.1}
+.dset{font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:.1em;
+  color:var(--mute); flex:none}
+/* Informational, not a legality error: the deck is fine, the browser just
+   isn't showing those cards right now. */
+#problems li.scopenote{border-left-color:var(--mute); background:var(--hover-wash);
+  color:var(--text2)}
+
 /* --------------------------- deck switcher menu -------------------------- */
 .switchwrap{position:relative}
 .caret{width:27px; height:27px; background:var(--ink); border:1px solid var(--edge);
@@ -345,7 +413,9 @@ body.view-collection #collectionView{display:block}
   font-size:9px; line-height:16px; text-align:center; font-weight:700}
 .flagtag{font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.1em;
   text-transform:uppercase; color:var(--warn)}
-.variant{position:absolute; bottom:6px; left:6px; background:rgba(10,8,18,.85);
+/* Bottom-RIGHT since stage 8: the set badge took bottom-left, and the top
+   corners are the energy orb and the Signature marker. */
+.variant{position:absolute; bottom:6px; right:6px; background:rgba(10,8,18,.85);
   color:var(--text); border:1px solid rgba(234,231,244,.35); border-radius:2px;
   font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.08em;
   text-transform:uppercase; padding:2px 5px; line-height:1.1}
@@ -568,6 +638,12 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   .acct .pitch{display:none}
   .savestate{display:none}   /* the Save button itself still carries the state */
   .deckmenu{left:auto; right:-40px}
+  /* The set bar is a horizontal row of chips; on a phone it wraps to several
+     lines, so the count moves under them instead of fighting for the end of
+     line one. */
+  .setbar{padding:8px 10px; gap:8px}
+  .setcount{margin-left:0; flex:1 1 100%}
+  .gamebtn{font-size:12.5px}
   .shelf{grid-template-columns:repeat(auto-fill,minmax(94px,1fr)); gap:8px}
   .curve{min-height:72px}
   .viewnav{order:2}
@@ -607,7 +683,14 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
  
 <header>
   <div class="brand">
-    <span class="wordmark">Card Haven</span><span class="brandsub">Riftbound</span>
+    <span class="wordmark">Card Haven</span><span class="brandsub" id="ctxLabel">Deckbuilder</span>
+  </div>
+  <div class="gamewrap">
+    <button class="gamebtn" id="gameBtn" aria-haspopup="true" aria-expanded="false">
+      <i class="gmark" id="gameMark"></i><span id="gameLabel"></span>
+      <span class="gcaret">&#9660;</span>
+    </button>
+    <div class="gamemenu" id="gameMenu" hidden></div>
   </div>
   <nav class="viewnav" aria-label="View">
     <button class="vtab on" data-goview="deck" onclick="goView('deck')">Deckbuilder</button>
@@ -630,6 +713,20 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
     <div class="acct" id="acct"></div>
   </div>
 </header>
+
+<!-- Set scope. Two bars because the two views want opposite things from the
+     same chip row: the deckbuilder multi-selects sets to narrow the browser,
+     the collection single-selects one set to scope the whole page. -->
+<div class="setbar" id="setBar" hidden>
+  <span class="setlbl">Sets</span>
+  <div class="setchips" id="setChips"></div>
+  <span class="setcount" id="setScopeCount"></span>
+</div>
+<div class="setbar" id="colSetBar" hidden>
+  <span class="setlbl">Sets</span>
+  <div class="setchips" id="colSetChips"></div>
+  <span class="setcount" id="colSetCount"></span>
+</div>
 
 <div class="layout">
 <main class="browsecol">
@@ -680,7 +777,9 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
 <div id="collectionView">
   <div class="colsummary">
     <section class="cpanel cset">
-      <p class="csethead"><span class="csetname" id="colSetName">Origins</span>
+      <!-- Placeholder only; renderColSummary() names the active set. Kept
+           set-neutral so the registry is the single place a set is named. -->
+      <p class="csethead"><span class="csetname" id="colSetName">All sets</span>
         <span class="csetmeta" id="colSetMeta"></span></p>
       <p class="cpct"><b id="colPct">–</b><span class="pctsign">%</span>
         <span class="pctlabel">collected</span></p>
@@ -698,7 +797,7 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
       <p class="cmissnote" id="colMissNote"></p>
       <button class="btn cmisswide" onclick="colShowMissing()">Show only missing</button>
       <div class="cmissrow">
-        <button class="btn" onclick="colMarkAll()">Mark all owned</button>
+        <button class="btn" id="colMarkBtn" onclick="colMarkAll()">Mark set owned</button>
         <button class="btn quiet" onclick="colClear()">Clear</button>
       </div>
     </section>
@@ -780,6 +879,48 @@ const LS_VARIANTS = "rb.variants";
 const LS_OPEN_DECK = "rb.open-deck";   // per-user: `${LS_OPEN_DECK}:${userId}`
 const LS_COLLECTION = "rb.collection"; // signed-out collection map
 
+/* --------------------------- the game registry --------------------------- */
+/* Card Haven hosts one game today. Everything game-specific — the pool files,
+   the deck rows' `game` column, the localStorage namespace — is read from here
+   rather than hardcoded, so adding a second game is additive.
+
+   ADDING A SET IS A DATA-ONLY CHANGE: one entry below plus one committed pool
+   file under data/. Nothing in this file switches on a set code — set identity
+   is carried by each card's own `set` field and by the set-prefixed ref — so
+   there is no logic to edit. (Verified by grep; see docs/DECISIONS.md.) */
+const GAMES = {
+  riftbound: {
+    id: "riftbound",
+    label: "Riftbound",
+    mark: "RB",
+    sets: [
+      { code:"OGN", name:"Origins",      pool:"./data/ogn-pool.json" },
+      { code:"SFD", name:"Spiritforged", pool:"./data/sfd-pool.json" },
+    ],
+  },
+};
+const ACTIVE_GAME = "riftbound";   // the only entry today
+const GAME = GAMES[ACTIVE_GAME];
+/* The auth/data module is a separate <script type="module"> with its own scope,
+   and `const` at classic-script top level does not land on window. It needs the
+   game id for the decks table's `game` column, so publish it explicitly. */
+window.ACTIVE_GAME = ACTIVE_GAME;
+
+/* Display-only rows in the game dropdown. Deliberately NOT registry entries:
+   the registry describes games the app can actually run, and a fake entry there
+   would be reachable by every loop that walks it. These are inert decoration. */
+const PLANNED_GAMES = [
+  { mark:"MG", label:"Magic: The Gathering" },
+  { mark:"PK", label:"Pokémon TCG" },
+  { mark:"OP", label:"One Piece Card Game" },
+];
+
+/* Game-namespaced from day one. The four pre-existing Riftbound keys above are
+   NOT renamed — they ARE the riftbound namespace, and renaming them would
+   orphan every existing browser's decks and collection. rb.theme stays
+   app-level: a theme is not per game. */
+const LS_SET_SCOPE = `${ACTIVE_GAME}.setScope`;
+
 /* Dot / bar colors for the by-rarity panel, per the mockups. */
 const RARITY_DOT = {Common:"#9A93AC", Uncommon:"#E08A2E", Rare:"#3FA7A0",
   Epic:"#8B5CD6", Showcase:"#D9B62E"};
@@ -795,7 +936,11 @@ let S = {
   // deckId: the deck's database row, or null for a deck that exists only in
   // memory / localStorage. savedAt: when that row was last written.
   deckId:null, savedAt:null,
-  q:"", domainFilter:[], typeFilter:[], rarityFilter:[], variants:true, limit:48
+  q:"", domainFilter:[], typeFilter:[], rarityFilter:[], variants:true, limit:48,
+  // Which sets the card BROWSER shows. A display filter and nothing else: the
+  // deck panel, the legality checks, import and export all ignore it, and every
+  // released set is tournament-legal alongside every other. Device-local.
+  setScope: GAME.sets.map(s => s.code)
 };
 
 /* Where the open deck lives. "local" = signed out, one deck in localStorage,
@@ -827,7 +972,10 @@ let COL = {};
    map with an empty one. */
 let COL_READY = false;
 let COL_LOAD_FAILED = false;
-const COLF = {q:"", tab:"all", domains:[], types:[]};   // transient filters
+/* Transient filters. `set` is the collection's set scope: a set code, or "all"
+   for the aggregate view. Unlike the deck browser's scope it is not persisted —
+   it is a place you navigate to, not a preference you keep. */
+const COLF = {q:"", tab:"all", domains:[], types:[], set:"all"};
  
 const uid = () => Math.random().toString(36).slice(2,10);
 const nk = s => String(s).trim().toLowerCase();
@@ -880,10 +1028,99 @@ function copyGroupRef(ref){
   return num ? `${p[0]}-${num[0]}` : String(ref).toLowerCase();
 }
 const copyGroup = c => copyGroupRef(refOf(c));
+/* The base printing of a group: the one whose collector number carries no
+   variant suffix (ogn-039-298, not ogn-039a-298). */
+const isBasePrinting = ref => /^\d+$/.test(String(ref).split("-")[1] || "");
 /* Display label for a group: the base printing's name, i.e. the name with a
    trailing "(Alternate Art)" / "(Signature)" / "(Overnumbered)" marker removed.
-   Display only — never used as an identity key. */
+   Display only — never used as an identity key on its own. */
 const baseName = n => String(n).replace(/\s*\([^)]*\)\s*$/, "");
+
+/* ------------------- cross-set card identity (stage 8) -------------------
+   Layer 1 (copyGroupRef, above) groups printings of one card WITHIN a set by
+   collector number. That is necessary and not sufficient once a second set
+   exists, because Riftbound defines card identity for deck legality by NAME:
+   the 3-copy limit is on named cards (TR 403.4) and a card is legal if a card
+   of that name is in a legal set (TR 601.2.a). Reprints are the same card.
+
+   Layer 2 folds id-groups together by the base printing's name. Measured
+   against the real merged pool, it collapses 562 id-groups to 520 cards, and
+   every one of the 42 merges is a genuine same-card merge:
+     - 13 cross-set reprints (OGN base <-> its SFD Showcase printing:
+       Vayne - Hunter, the six Seals, Ahri - Inquisitive, ...);
+     - 29 WITHIN-set merges the id strip alone misses, because a set's
+       overnumbered Showcase printings get their own collector number rather
+       than a suffix on the base card's — ogn-247 vs ogn-299/299*, sfd-049 vs
+       sfd-224/224*. Five of those are Units, so this is a live main-deck bug
+       the id-only grouping had, not a theoretical one.
+
+   The canonical name is taken from ONE printing per group — the base printing —
+   and only then stripped of its trailing display marker. It is not a strip over
+   arbitrary variant names, which is what CLAUDE.md and the stage 7 decision log
+   forbid: variant names disagree with each other (a group can hold
+   "X (Overnumbered)" and "X (Signature)" and no bare "X" at all), so the strip
+   is safe exactly because it runs on the one name per group that is definitive.
+
+   Two different cards sharing a name would break this — that is a data
+   question, not a code one, so it is a test: `cross-set identity` in
+   tests/e2e/smoke.spec.js asserts every canonical group is functionally one
+   card, and goes red the day the pool stops being true.
+
+   The COLLECTION is untouched by all of this. It keys on the full ref, so an
+   OGN printing and its SFD reprint stay two distinct collectibles. */
+let CARD_INDEX = new Map();   // id-group -> {key, label}
+
+function buildCardIndex(){
+  const groups = new Map();
+  for(const c of S.pool){
+    const g = copyGroup(c);
+    if(!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(c);
+  }
+  CARD_INDEX = new Map();
+  for(const [g, list] of groups){
+    const base = list.find(c => isBasePrinting(refOf(c))) || list[0];
+    const label = baseName(base.name);
+    CARD_INDEX.set(g, {key: nk(label), label});
+  }
+}
+
+/* The sets actually present in the loaded pool: registry order first, then any
+   extra a hand-imported pool file brought along, so the chip row describes the
+   cards on screen rather than the registry's intentions. */
+function poolSets(){
+  const inPool = new Set(S.pool.map(c => String(c.set || "").toUpperCase()).filter(Boolean));
+  const known = GAME.sets.filter(s => inPool.has(s.code));
+  const extra = [...inPool]
+    .filter(code => !GAME.sets.some(s => s.code === code))
+    .map(code => ({code,
+      name: S.pool.find(c => String(c.set).toUpperCase() === code)?.setName || code}));
+  return [...known, ...extra];
+}
+const setNameOf = code =>
+  poolSets().find(s => s.code === code)?.name || code;
+const setCardsOf = code =>
+  S.pool.filter(c => String(c.set).toUpperCase() === code);
+
+/* Called whenever S.pool is replaced, from either source (the fetch or the
+   file picker). Rebuilds the identity index and reconciles the persisted set
+   scope with the sets that actually arrived. */
+function adoptPool(){
+  buildCardIndex();
+  const codes = poolSets().map(s => s.code);
+  S.setScope = S.setScope.filter(c => codes.includes(c));
+  if(!S.setScope.length) S.setScope = codes;
+  if(COLF.set !== "all" && !codes.includes(COLF.set)) COLF.set = "all";
+}
+
+/* Deck-legality identity for a ref. Falls back to the id-group for a ref the
+   pool can't explain (an unresolved entry), so such a ref groups with its own
+   printings and nothing else — never silently with a real card. */
+const cardKeyRef = ref => CARD_INDEX.get(copyGroupRef(ref))?.key || copyGroupRef(ref);
+const cardKey = c => cardKeyRef(refOf(c));
+/* Human label for a legality message about a ref's card. */
+const cardLabelRef = (ref, fallback) =>
+  CARD_INDEX.get(copyGroupRef(ref))?.label || fallback;
 
 /* The champion is held in memory as a name (the legality checks compare
    names), but stored as a ref so the payload has one identity scheme. */
@@ -1220,6 +1457,114 @@ function renderSaveState(){
   state.classList.toggle("dirty", dirty);
 }
 
+/* ---------------------------- game switcher ------------------------------ */
+/* The registry holds exactly one game, so this switcher switches nothing
+   today. It exists because every piece of game-scoped state — the deck rows'
+   `game` column, the localStorage namespace, the collection map — is already
+   routed through GAME, and the header is where that promise is made visible.
+   The planned rows are inert: no handler, no href, nothing to click. */
+let GAME_MENU_OPEN = false;
+
+window.toggleGameMenu = (open = !GAME_MENU_OPEN) => {
+  GAME_MENU_OPEN = open;
+  document.getElementById("gameMenu").hidden = !open;
+  document.getElementById("gameBtn").setAttribute("aria-expanded", String(open));
+  if(open) renderGameMenu();
+};
+
+function renderGameMenu(){
+  const collection = VIEW === "collection";
+  const sets = poolSets();
+  const summary = collection
+    ? `${sets.length} set${sets.length===1?"":"s"} · ${colLoggedPrintings()} printings logged`
+    : `${sets.length} set${sets.length===1?"":"s"} · ${S.pool.length.toLocaleString()} cards`;
+  const planned = PLANNED_GAMES.map(g => `
+    <div class="gmrow planned" aria-disabled="true">
+      <i class="gmark">${esc(g.mark)}</i>
+      <span class="gmbody"><span class="gmname">${esc(g.label)}</span>
+        <span class="gmsub">Not yet on Card Haven</span></span>
+      <span class="gmstate">Planned</span>
+    </div>`).join("");
+  document.getElementById("gameMenu").innerHTML =
+    `<p class="gmhead">Games</p>
+     <div class="gmrow active">
+       <i class="gmark">${esc(GAME.mark)}</i>
+       <span class="gmbody"><span class="gmname">${esc(GAME.label)}</span>
+         <span class="gmsub">${esc(summary)}</span></span>
+       <span class="gmstate on">Active</span>
+     </div>
+     ${planned}
+     <p class="gmfoot">${collection
+       ? "Each game keeps its own collection and decks."
+       : "Decks and collection stay per game."}</p>`;
+}
+
+function paintGameButton(){
+  document.getElementById("gameMark").textContent = GAME.mark;
+  document.getElementById("gameLabel").textContent = GAME.label;
+  document.getElementById("ctxLabel").textContent =
+    VIEW === "collection" ? "Collection" : "Deckbuilder";
+}
+
+document.getElementById("gameBtn").addEventListener("click", e => {
+  e.stopPropagation();
+  toggleGameMenu();
+});
+document.addEventListener("click", e => {
+  if(GAME_MENU_OPEN && !e.target.closest(".gamewrap")) toggleGameMenu(false);
+});
+
+/* ------------------------------ set scope -------------------------------- */
+/* Deck browser only. Multi-select, all selected by default, persisted per game
+   on this device — it is a display preference, not deck content, so it never
+   touches user_settings and never marks a deck dirty. */
+function readSetScope(){
+  try{
+    const raw = localStorage.getItem(LS_SET_SCOPE);
+    if(!raw) return null;
+    const v = JSON.parse(raw);
+    return Array.isArray(v) && v.length ? v.map(String) : null;
+  }catch{ return null; }
+}
+const writeSetScope = () => {
+  try{ localStorage.setItem(LS_SET_SCOPE, JSON.stringify(S.setScope)); }catch{}
+};
+
+const inScope = c => S.setScope.includes(String(c.set).toUpperCase());
+const scopedPool = () => S.pool.filter(inScope);
+
+window.toggleSetScope = code => {
+  const codes = poolSets().map(s => s.code);
+  if(code === "all") S.setScope = codes;
+  else {
+    const next = S.setScope.includes(code)
+      ? S.setScope.filter(c => c !== code)
+      : [...S.setScope, code];
+    // Deselecting the last set would leave an empty browser and no way back
+    // except a chip that is already off; snap to "all" instead.
+    S.setScope = next.length ? next : codes;
+  }
+  writeSetScope();
+  S.limit = 48;
+  render();
+};
+
+function renderSetBar(){
+  const bar = document.getElementById("setBar");
+  const sets = poolSets();
+  bar.hidden = VIEW !== "deck" || !sets.length;
+  if(bar.hidden) return;
+  const all = sets.every(s => S.setScope.includes(s.code));
+  document.getElementById("setChips").innerHTML =
+    `<button class="setchip${all ? " on" : ""}" onclick="toggleSetScope('all')">All sets</button>` +
+    sets.map(s => `<button class="setchip${S.setScope.includes(s.code) ? " on" : ""}"
+      onclick="toggleSetScope('${jsStr(s.code)}')">${esc(s.name)}
+      <b>${setCardsOf(s.code).length}</b></button>`).join("");
+  const n = S.setScope.length, cards = scopedPool().length;
+  document.getElementById("setScopeCount").textContent =
+    `${n} set${n === 1 ? "" : "s"} · ${cards} cards in scope`;
+}
+
 /* --------------------------- deck switcher menu -------------------------- */
 window.toggleDeckMenu = (open = !MENU_OPEN) => {
   MENU_OPEN = open;
@@ -1448,13 +1793,61 @@ const qtyOf = id => COL[id] || 0;
 function colNum(c){
   const m = String(c.riftboundId || "").split("-");
   if(m.length === 3) return `${m[0].toUpperCase()} ${m[1].toUpperCase()}/${m[2]}`;
-  return c.number != null ? `${(c.set||"OGN").toUpperCase()} ${String(c.number).padStart(3,"0")}` : "";
+  return c.number != null ? `${String(c.set||"").toUpperCase()} ${String(c.number).padStart(3,"0")}`.trim() : "";
 }
 
 /* Counts ignore map keys that no longer resolve against the pool — they are
    preserved on every write, just not displayed. */
 const colOwnedCount = list => list.reduce((n,c) => n + (qtyOf(refOf(c)) > 0 ? 1 : 0), 0);
 const colCopies = list => list.reduce((n,c) => n + qtyOf(refOf(c)), 0);
+/* Printings logged across the whole game, for the header and the game menu. */
+const colLoggedPrintings = () => colOwnedCount(S.pool);
+
+/* ----------------------- the collection's set scope ----------------------
+   COLF.set narrows the ENTIRE collection view — stats, rarity breakdown,
+   missing count, tabs, search and grid all read from this one slice. Storage
+   is untouched: the map is still one blob keyed by full, set-prefixed refs, so
+   a per-set view is a client-side filter over it exactly as "what am I missing"
+   is a client-side diff. Splitting it into per-set rows would multiply the sync
+   engine's states and drag the wipe-recovery machinery (COL_READY, the no-row
+   resolution path, the 0004 history trigger) along for nothing. */
+const colScoped = () =>
+  COLF.set === "all" ? S.pool : setCardsOf(COLF.set);
+const colScopeName = () =>
+  COLF.set === "all" ? "All sets" : setNameOf(COLF.set);
+/* Rarities present in the active set, in the canonical order. Derived from the
+   data, so a set that introduces a new rarity needs no code change. */
+const colRarities = () =>
+  [...new Set(colScoped().map(c => c.rarity).filter(Boolean))]
+    .sort((a,b) => {
+      const ia = RARITY_ORDER.indexOf(a), ib = RARITY_ORDER.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
+    });
+
+window.setColSet = code => {
+  COLF.set = code;
+  COLF.tab = "all";       // tab counts are per set; keep them meaningful
+  renderCollection();
+};
+
+function renderColSetBar(){
+  const bar = document.getElementById("colSetBar");
+  const sets = poolSets();
+  bar.hidden = VIEW !== "collection" || !sets.length;
+  if(bar.hidden) return;
+  const chip = (code, label, meta, on) =>
+    `<button class="setchip${on ? " on" : ""}" onclick="setColSet('${jsStr(code)}')">${esc(label)} <b>${meta}</b></button>`;
+  document.getElementById("colSetChips").innerHTML =
+    chip("all", "All sets", S.pool.length, COLF.set === "all") +
+    sets.map(s => {
+      const list = setCardsOf(s.code);
+      const meta = COL_READY ? `${colOwnedCount(list)}/${list.length}` : list.length;
+      return chip(s.code, s.name, meta, COLF.set === s.code);
+    }).join("");
+  const n = colScoped().length;
+  document.getElementById("colSetCount").textContent =
+    `${n} printing${n === 1 ? "" : "s"}`;
+}
 
 /* --------------------------- sync engine --------------------------------
    Event-driven, debounced, coalesced. This is not the banned polling/interval
@@ -1544,6 +1937,10 @@ function applyHash(){
   document.body.classList.toggle("view-collection", v === "collection");
   document.querySelectorAll(".vtab").forEach(b =>
     b.classList.toggle("on", b.dataset.goview === v));
+  paintGameButton();          // the context label rides on the view
+  renderSetBar();             // one bar per view; both hide themselves
+  renderColSetBar();
+  if(GAME_MENU_OPEN) renderGameMenu();
   renderCollectionAll();
 }
 window.goView = v => {
@@ -1603,8 +2000,11 @@ const colTabMatch = (q, tab) =>
 /* search ∧ chips, before the tab — the tab counts are computed on this. */
 function colBase(){
   const term = COLF.q.trim().toLowerCase();
-  const qnorm = term.replace(/^ogn[\s-]*/, "").replace(/[\s-]/g, "").replace(/^0+/, "");
-  return S.pool.filter(c =>
+  // Strip a leading set code so "ogn 039", "sfd-001" and "39" all reach the
+  // collector-number branch. Any leading run of letters, not a hardcoded list —
+  // a new set must never need a code change here.
+  const qnorm = term.replace(/^[a-z]+[\s-]*/, "").replace(/[\s-]/g, "").replace(/^0+/, "");
+  return colScoped().filter(c =>
     (!COLF.domains.length || c.domains.some(d => COLF.domains.includes(d))) &&
     (!COLF.types.length || COLF.types.includes(c.type)) &&
     colMatchesSearch(c, term, qnorm));
@@ -1656,14 +2056,19 @@ function updateColTile(id){
 }
 
 function renderColSummary(){
+  // Here rather than in renderCollection: colBump() takes the cheap path on the
+  // All tab (one tile re-rendered, not 640) and calls only this, so the chip
+  // row's owned/total has to refresh from here or it would go stale on a tap.
+  renderColSetBar();
   if(!S.pool.length) return;
-  const total = S.pool.length;
-  const ownedPrintings = colOwnedCount(S.pool);
-  const copies = colCopies(S.pool);
-  const playsets = S.pool.reduce((n,c) => n + (qtyOf(refOf(c)) === 3 ? 1 : 0), 0);
+  const scope = colScoped();
+  const total = scope.length;
+  const ownedPrintings = colOwnedCount(scope);
+  const copies = colCopies(scope);
+  const playsets = scope.reduce((n,c) => n + (qtyOf(refOf(c)) === 3 ? 1 : 0), 0);
   const pct = total ? Math.floor(ownedPrintings / total * 100) : 0;
 
-  document.getElementById("colSetName").textContent = S.pool[0]?.setName || S.pool[0]?.set || "Set";
+  document.getElementById("colSetName").textContent = colScopeName();
   document.getElementById("colSetMeta").textContent =
     `${total} printings · variants counted separately`;
   document.getElementById("colPct").textContent = COL_READY ? pct : "–";
@@ -1673,14 +2078,10 @@ function renderColSummary(){
   document.getElementById("colCopies").textContent =
     COL_READY ? `${copies}/${total * 3} copies · ${playsets} playset${playsets === 1 ? "" : "s"}` : "";
 
-  // by rarity
-  const rarities = [...new Set(S.pool.map(c => c.rarity).filter(Boolean))]
-    .sort((a,b) => {
-      const ia = RARITY_ORDER.indexOf(a), ib = RARITY_ORDER.indexOf(b);
-      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
-    });
+  // by rarity, within the active set
+  const rarities = colRarities();
   document.getElementById("colRarity").innerHTML = rarities.map(r => {
-    const list = S.pool.filter(c => c.rarity === r);
+    const list = scope.filter(c => c.rarity === r);
     const owned = COL_READY ? colOwnedCount(list) : 0;
     const w = list.length ? Math.round(owned / list.length * 100) : 0;
     return `<div class="crrow">
@@ -1690,8 +2091,8 @@ function renderColSummary(){
     </div>`;
   }).join("");
 
-  // still missing
-  const missing = S.pool.filter(c => qtyOf(refOf(c)) === 0);
+  // still missing, within the active set
+  const missing = scope.filter(c => qtyOf(refOf(c)) === 0);
   const missTop = missing.filter(c => c.rarity === "Epic" || c.rarity === "Showcase").length;
   document.getElementById("colMissN").textContent = COL_READY ? missing.length : "–";
   document.getElementById("colMissNote").textContent = !COL_READY ? "" :
@@ -1717,7 +2118,14 @@ function renderColSummary(){
 
 function renderCollection(){
   if(VIEW !== "collection" || !document.getElementById("colGrid")) return;
-  renderColSummary();
+  renderColSummary();   // paints the set chip row too
+
+  // Search and the bulk actions name the set they act on, so a destructive
+  // button can never read as if it applied to everything.
+  document.getElementById("colQ").placeholder =
+    `Search ${colScopeName()} by name, number, or artist`;
+  document.getElementById("colMarkBtn").textContent =
+    COLF.set === "all" ? "Mark all owned" : "Mark set owned";
 
   document.getElementById("colDomainRow").innerHTML = DOMAINS.map(d =>
     `<button class="chip dchip${COLF.domains.includes(d) ? " on" : ""}"
@@ -1726,13 +2134,10 @@ function renderCollection(){
     `<button class="chip${COLF.types.includes(t) ? " on" : ""}"
       onclick="toggleColChip('types','${t}')">${t}</button>`).join("");
 
+  const scope = colScoped();
   const base = colBase();
   const filtered = base.filter(c => colTabMatch(qtyOf(refOf(c)), COLF.tab));
-  const rarities = [...new Set(S.pool.map(c => c.rarity).filter(Boolean))]
-    .sort((a,b) => {
-      const ia = RARITY_ORDER.indexOf(a), ib = RARITY_ORDER.indexOf(b);
-      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
-    });
+  const rarities = colRarities();
   document.getElementById("colGrid").innerHTML = filtered.length
     ? rarities.map(r => {
         const cards = filtered.filter(c => c.rarity === r)
@@ -1740,8 +2145,9 @@ function renderCollection(){
                          String(a.riftboundId).localeCompare(String(b.riftboundId)));
         if(!cards.length) return "";
         // Section counts stay collection-truth (owned/total of the whole
-        // rarity), matching the mockups, regardless of active filters.
-        const all = S.pool.filter(c => c.rarity === r);
+        // rarity in the active set), matching the mockups, regardless of
+        // active filters.
+        const all = scope.filter(c => c.rarity === r);
         const owned = COL_READY ? colOwnedCount(all) : null;
         return `<h2 class="colsec">${esc(r)} <span>${owned === null ? all.length : `${owned}/${all.length}`}</span></h2>
           <div class="shelf colshelf">${cards.map(colTileHtml).join("")}</div>`;
@@ -1770,27 +2176,37 @@ window.toggleColChip = (k, v) => {
 };
 window.colShowMissing = () => setColTab("missing");
 
+/* Both bulk actions are scoped STRICTLY to the active set's slice, and both
+   mutate COL in a loop before a single colMutate() — one coalesced write, not
+   one per printing, so a 352-card sweep costs the sync engine exactly one
+   request. */
 window.colMarkAll = async () => {
   if(!COL_READY) return;
-  const total = S.pool.length;
+  const scope = colScoped(), where = colScopeName();
   const v = await ask("Mark every printing owned?",
-    `This raises all ${total} printings to at least 1 copy. Quantities you've already logged above 1 are untouched.`,
-    [{label:"Mark all owned", value:"yes", kind:"go"},
+    `This raises all ${scope.length} printings in ${where} to at least 1 copy. Quantities you've already logged above 1 are untouched.`,
+    [{label: COLF.set === "all" ? "Mark all owned" : "Mark set owned", value:"yes", kind:"go"},
      {label:"Cancel", value:"cancel", kind:"quiet"}]);
   if(v !== "yes") return;
-  for(const c of S.pool){ const id = refOf(c); if(!COL[id]) COL[id] = 1; }
+  for(const c of scope){ const id = refOf(c); if(!COL[id]) COL[id] = 1; }
   colMutate(); renderCollection();
 };
 
 window.colClear = async () => {
   if(!COL_READY) return;
-  const copies = colCopies(S.pool);
+  const scope = colScoped(), where = colScopeName();
+  const copies = colCopies(scope);
   const v = await ask("Clear the collection?",
-    `This wipes the logged collection — all ${copies} copies go back to zero. It can't be undone.`,
+    COLF.set === "all"
+      ? `This wipes the logged collection — all ${copies} copies go back to zero. It can't be undone.`
+      : `This clears ${where} only — its ${copies} logged copies go back to zero. Other sets are untouched. It can't be undone.`,
     [{label:"Clear it", value:"yes", kind:"danger"},
      {label:"Cancel", value:"cancel", kind:"quiet"}]);
   if(v !== "yes") return;
-  COL = {};
+  if(COLF.set === "all") COL = {};
+  // Delete only this set's refs. Keys that no longer resolve against the pool
+  // are left alone here as everywhere else — they are somebody's other set.
+  else for(const c of scope) delete COL[refOf(c)];
   colMutate(); renderCollection();
 };
  
@@ -1862,6 +2278,7 @@ function tileHtml(c, acts){
       ${art}
       ${c.energy>0?`<span class="orb">${c.energy}</span>`:""}
       ${c.signature?`<span class="sig">S</span>`:""}
+      ${c.set?`<span class="setbadge">${esc(String(c.set).toUpperCase())}</span>`:""}
       ${variant?`<span class="variant">${variant}</span>`:""}
     </button>
     <figcaption class="tname" title="${esc(c.name)}">${esc(c.name)}</figcaption>
@@ -1935,11 +2352,12 @@ function render(){
     if(b < 3) probs.push(`Add ${3-b} more battlefield${3-b===1?"":"s"}.`);
     else if(b > 3) probs.push(`Battlefields are ${b-3} over 3.`);
     // 103.4.c: all different — counting printings together, so a base
-    // battlefield and its Showcase are the "same" battlefield.
+    // battlefield, its Showcase and a reprint in another set are all the
+    // "same" battlefield (stage 8: cardKey, not the within-set id group).
     const bfCopies = new Map();
     for(const c of S.zones.battlefields){
-      const g = copyGroup(c);
-      const e = bfCopies.get(g) || {copies:0, label:baseName(c.name)};
+      const g = cardKey(c);
+      const e = bfCopies.get(g) || {copies:0, label:cardLabelRef(refOf(c), baseName(c.name))};
       e.copies += c.qty; bfCopies.set(g, e);
     }
     const dupBf = [...bfCopies.values()].filter(e=>e.copies>1);
@@ -1952,7 +2370,8 @@ function render(){
   const off = everywhere.filter(offDomain);                        // 103.1.b: domain identity
   if(off.length) probs.push(`Outside ${esc(S.legend.name)}'s domains (${S.legend.domains.join(" / ")}): ${off.map(c=>esc(c.name)).join(", ")}.`);
   // 103.2.b: at most 3 copies of a card, counting every printing together — a
-  // base and its Showcase share one limit (CLAUDE.md). The count spans the main
+  // base, its Showcase and any reprint in a later set share one limit
+  // (CLAUDE.md; see cardKey above). The count spans the main
   // deck AND the sideboard, per Tournament Rules 403.4, quoted: "Limits on
   // copies of named cards apply to the combination of Main Deck and sideboard."
   // (Verified against playriftbound.com, not assumed — 3 in main + 1 in the
@@ -1968,9 +2387,10 @@ function render(){
   };
   for(const z of ["main","sideboard"]){
     const isSide = z === "sideboard";
-    for(const c of S.zones[z]) countCopy(copyGroup(c), c.qty, baseName(c.name), isSide);
+    for(const c of S.zones[z])
+      countCopy(cardKey(c), c.qty, cardLabelRef(refOf(c), baseName(c.name)), isSide);
     for(const u of S.unresolved.filter(u => u.zone === z))
-      countCopy(copyGroupRef(u.ref), u.qty, u.ref, isSide);
+      countCopy(cardKeyRef(u.ref), u.qty, cardLabelRef(u.ref, u.ref), isSide);
   }
   const over = [...groupCopies.values()].filter(e=>e.copies>3);
   if(over.length){
@@ -1992,7 +2412,17 @@ function render(){
     probs.push("Your chosen Champion isn't in the main deck.");
   if(S.champion && S.legend && tagOf(S.champion)!==tagOf(S.legend.name))
     probs.push(`${esc(S.champion)} doesn't match your Legend — the Champion's tag must match.`);
-  document.getElementById("problems").innerHTML = probs.map(p=>`<li>${p}</li>`).join("");
+  // Out-of-scope notice. Informational, never a legality error: every released
+  // set is legal alongside every other, and the set scope is a browser display
+  // filter. It reports the zone the deck panel is currently showing, which is
+  // the list the reader is looking at when they wonder where a card went.
+  const outOfScope = S.zones[ZONE_TAB].filter(c => !inScope(c))
+    .reduce((n,c) => n + c.qty, 0);
+  const scopeNote = outOfScope
+    ? `<li class="scopenote">${outOfScope} card${outOfScope===1?"":"s"} in this zone sit${outOfScope===1?"s":""} outside the current set scope — still legal, just not browsable right now.</li>`
+    : "";
+  document.getElementById("problems").innerHTML =
+    probs.map(p=>`<li>${p}</li>`).join("") + scopeNote;
  
   // filters
   document.getElementById("domainRow").innerHTML = DOMAINS.map(d=>
@@ -2018,7 +2448,7 @@ function render(){
   // Asking for Showcase explicitly overrides the variants toggle — otherwise
   // the filter would return nothing.
   const wantsVariantRarity = S.rarityFilter.some(r => r === "Showcase");
-  const res = S.pool.filter(c=>{
+  const res = scopedPool().filter(c=>{
     if(!S.variants && !wantsVariantRarity && (c.alternateArt || c.rarity==="Showcase")) return false;
     if(S.rarityFilter.length && !S.rarityFilter.includes(c.rarity)) return false;
     if(S.domainFilter.length && !c.domains.some(d=>S.domainFilter.includes(d))) return false;
@@ -2032,9 +2462,15 @@ function render(){
   // Never let the page size drift past the result count.
   S.limit = Math.max(48, Math.min(S.limit, Math.max(48, res.length)));
  
-  // Count of what search + every active filter currently shows.
-  document.getElementById("resultCount").textContent =
-    `${res.length} card${res.length===1?"":"s"}`;
+  // Count of what search + every active filter currently shows. Idle — nothing
+  // typed, no chip on — it is exactly the in-scope pool, and the mockup labels
+  // it that way; once a filter narrows it, "in scope" would be describing the
+  // wrong number, so the suffix drops.
+  const narrowed = !!term || S.rarityFilter.length || S.domainFilter.length ||
+    S.typeFilter.length || !S.variants;
+  document.getElementById("resultCount").textContent = narrowed
+    ? `${res.length} card${res.length===1?"":"s"}`
+    : `${res.length} cards in scope`;
   document.getElementById("results").innerHTML = res.slice(0,S.limit).map(c=>{
     const id = jsStr(c.riftboundId||c.name);
     // Only offer destinations the card is actually legal in: Runes go to the
@@ -2085,6 +2521,7 @@ function render(){
         <i class="dot" style="background:${c.domains[0]?`var(--${c.domains[0]})`:"var(--Colorless)"}"></i>
         <button class="dname" title="${esc(c.name)}"
           onclick="openCard('${jsStr(c.riftboundId||c.name)}')">${esc(c.name)}</button>
+        ${c.set?`<span class="dset">${esc(String(c.set).toUpperCase())}</span>`:""}
         <span class="denergy">${c.energy||""}</span>
         <span class="qty">
           <button class="step" onclick="bump('${zk}','${c.id}',-1)">–</button>
@@ -2098,7 +2535,9 @@ function render(){
       + `</ul>`
     : `<p class="dempty">Nothing here yet.</p>`;
 
+  renderSetBar();
   if(MENU_OPEN) renderDeckMenu();
+  if(GAME_MENU_OPEN) renderGameMenu();
   renderSaveState();
 }
 
@@ -2247,6 +2686,7 @@ document.getElementById("picker").addEventListener("change", e => {
       const deckPart = raw.deck || (raw.zones ? raw : null);
       if(Array.isArray(list) && list.length){
         S.pool = list.filter(c => c && c.name).map(normalize);
+        adoptPool();
         POOL_READY = true;
         note(`${S.pool.length} cards loaded · ${S.pool.filter(c=>c.image).length} with art`);
       } else if(!deckPart){
@@ -2335,6 +2775,7 @@ document.addEventListener("keydown", e => {
   closeModal();
   closeAsk("cancel");
   if(MENU_OPEN) toggleDeckMenu(false);
+  if(GAME_MENU_OPEN) toggleGameMenu(false);
 });
 document.getElementById("deckCaret").addEventListener("click", e => {
   e.stopPropagation();
@@ -2350,7 +2791,25 @@ document.addEventListener("click", e => {
    use a deckbuilder - and nobody else could, since the file only exists in
    this repo. The picker stays as a fallback for a failed fetch and as the
    way to load a set that hasn't been committed yet. */
-const POOL_URL = "./data/ogn-pool.json";
+/* One fetch per set in the registry, all in flight at once, merged into the
+   single in-memory pool. Two sets (or four) is a couple of hundred KB behind an
+   ETag — lazy-loading per selected set would buy nothing and cost a state
+   machine, so it is deliberately not done.
+
+   A set that fails fails the WHOLE load: retry-all, naming the set. A partial
+   pool is worse than none here — every card of the missing set would show up as
+   an unresolved deck entry and as a hole in the collection, which is exactly
+   how a transient 404 gets mistaken for data loss. */
+async function fetchSet(set){
+  // cache: "default" on purpose - these files change only when a set drops,
+  // and Pages serves them with an ETag, so repeat visits revalidate cheaply.
+  const res = await fetch(set.pool, { cache: "default" });
+  if(!res.ok) throw new Error(`${set.name}: ${res.status} ${res.statusText}`);
+  const raw  = await res.json();
+  const list = Array.isArray(raw) ? raw : (raw.pool || raw.cards || []);
+  if(!Array.isArray(list) || !list.length) throw new Error(`${set.name}: no cards in the pool file`);
+  return list.filter(c => c && c.name).map(normalize);
+}
 
 window.loadPool = async function loadPool(){
   const msg   = document.getElementById("onboardMsg");
@@ -2359,15 +2818,10 @@ window.loadPool = async function loadPool(){
   msg.textContent = "Loading cards…";
   retry.hidden = pick.hidden = true;
   try{
-    // cache: "default" on purpose - this file changes only when a set drops,
-    // and Pages serves it with an ETag, so repeat visits revalidate cheaply.
-    const res = await fetch(POOL_URL, { cache: "default" });
-    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    const raw  = await res.json();
-    const list = Array.isArray(raw) ? raw : (raw.pool || raw.cards || []);
-    if(!Array.isArray(list) || !list.length) throw new Error("no cards in the pool file");
-    S.pool = list.filter(c => c && c.name).map(normalize);
-    note(`${S.pool.length} cards · ${S.pool.filter(c=>c.image).length} with art`);
+    const parts = await Promise.all(GAME.sets.map(fetchSet));
+    S.pool = parts.flat();
+    adoptPool();
+    note(`${S.pool.length} cards · ${GAME.sets.length} sets · ${S.pool.filter(c=>c.image).length} with art`);
     POOL_READY = true;
     applyPending();   // a stashed local blob or cloud deck can hydrate now
     render();
@@ -2383,6 +2837,8 @@ try{
   const v = localStorage.getItem(LS_VARIANTS);
   if(v !== null) S.variants = v === "true";
 }catch{}
+// Set scope is reconciled against the sets that actually load, in adoptPool().
+{ const scope = readSetScope(); if(scope) S.setScope = scope; }
 if(load()) note("Deck restored from this browser");
 // Signed-out collection is synchronous; a session arriving later replaces it
 // through onCloudSession with the merged server map.
@@ -2489,13 +2945,19 @@ const flatten = ({data, error}) =>
   ({data, error: error ? (error.message || String(error)) : null});
 
 const DECK_COLS = "id,name,payload,updated_at";
+/* Which game's decks this build reads and writes. Read from the registry the
+   classic script owns, never written as a literal, so a second game changes one
+   constant and not five call sites. Migration 0005 added the column with a
+   DEFAULT, so rows written before it exist are already labelled 'riftbound'
+   and stay visible. */
+const GAME_ID = window.ACTIVE_GAME || "riftbound";
 window.cloud = {
   list: async () => flatten(await db.from("decks")
-    .select(DECK_COLS).order("updated_at", {ascending:false})),
+    .select(DECK_COLS).eq("game", GAME_ID).order("updated_at", {ascending:false})),
   get: async id => flatten(await db.from("decks")
     .select(DECK_COLS).eq("id", id).single()),
   insert: async row => flatten(await db.from("decks")
-    .insert(row).select("id,updated_at").single()),
+    .insert({...row, game: GAME_ID}).select("id,updated_at").single()),
   update: async (id, row) => flatten(await db.from("decks")
     .update(row).eq("id", id).select("id,updated_at").single()),
   remove: async id => flatten(await db.from("decks").delete().eq("id", id)),

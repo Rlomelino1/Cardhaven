@@ -43,7 +43,22 @@ wants either.
 | `typeFilter` | no | nowhere | Correctly transient. |
 | `rarityFilter` | no | nowhere | Correctly transient. |
 | `limit` | no | nowhere | Pagination cursor, reset to 48 on every filter change. Correctly transient. |
+| `setScope` | yes — localStorage `riftbound.setScope` (stage 8) | **this device only** | Which sets the card browser shows. A display filter, not deck content and not a cross-device preference: it is per-device by intent, and a write per chip tap is traffic the CU-hour budget can't spare. Game-namespaced from day one. |
 | `target` | no | nowhere | **Dead state** — declared at `index.html:276`, never read or written anywhere else. Flagged, not removed (out of scope for this stage). |
+
+## Added after this audit
+
+| Where | What | Note |
+|---|---|---|
+| `decks.game` (column, migration 0005) | which Card Haven game a deck belongs to | `text not null default 'riftbound'`. The payload's refs only mean anything inside one game's pool. The client filters its deck list on it; RLS does not mention it — `game` filters, it does not authorise. |
+| `user_settings.collection` | unchanged, and deliberately **not** game-scoped | The map is keyed by full set-prefixed refs (`ogn-039-298`, `sfd-224*-221`), so a second game's refs occupy their own key space inside the same jsonb object. Per-set views are a client-side filter over the one blob. |
+| localStorage `riftbound.setScope` | the deck browser's set scope | See the table above. |
+| localStorage `rb.theme` | app-level, **not** per game | A theme is not a property of a game; left un-namespaced on purpose. |
+
+The four pre-existing Riftbound localStorage keys (`riftbound-deckbuilder-v1`,
+`rb.collection`, `rb.variants`, `rb.open-deck`) **are** the riftbound namespace. They
+were not renamed in stage 8 and must not be: renaming orphans every existing browser's
+decks and collection.
 
 ## `pool` must not go in the database
 

@@ -11,6 +11,7 @@ are hard to read.
 | 0002 | `0002_app_user_id_survives_auth_reprovision.sql` | 2026-08-16 | live — see the incident note in the file header |
 | 0003 | `0003_limit_decks_per_user.sql` | 2026-08-17 | live — 100-deck-per-user cap, a free-tier abuse backstop |
 | 0004 | `0004_collection_history_safety_net.sql` | 2026-08-17 | live — snapshots a collection before any update that removes printings |
+| 0005 | `0005_scope_decks_by_game.sql` | 2026-08-19 | live — `decks.game`, defaulted to `riftbound`; scopes a deck to one Card Haven game |
 
 ## Running
 
@@ -43,7 +44,7 @@ JWT — `pg_session_jwt` would need a real signed token to populate `auth.user_i
 rollback restores the real function. The JWT-to-uuid step it skips is covered separately
 by C11/C11b.
 
-### What they cover — 35 tests, all passing
+### What they cover — 41 tests, all passing
 
 **Isolation (`rls_test.sql`)**
 
@@ -62,6 +63,8 @@ by C11/C11b.
 | T10 | the admin role bypasses RLS (`BYPASSRLS` beats `FORCE`) — asserted, not wished away |
 | T10b | no Data API role (`authenticator`, `authenticated`, `anonymous`) can bypass RLS |
 | T11 | control: 3 rows really exist, so every zero above is RLS and not an empty table |
+| T12 | (0005) a `game` filter narrows **within** the owner's own rows |
+| T13 | (0005) `game` scoping did not widen RLS — B still sees only its own deck, whichever game is asked for. `game` filters; it does not authorise |
 
 **Constraints, cascade, cast (`constraint_test.sql`)**
 
@@ -82,6 +85,10 @@ by C11/C11b.
 | C12 | the stage-6 collection upsert (only `collection` in the body) leaves `settings` untouched, run as `authenticated` |
 | C13 | the per-user deck cap (0003): 100 inserts succeed, the 101st is rejected, and the cap is per-user |
 | C14 | a forged but well-formed JWT (valid uuid `sub`, no such user) cannot insert — the FK to `neon_auth."user"` rejects it |
+| C15 | (0005) a client that predates the migration omits `game`; the default labels the row `riftbound` |
+| C15b | (0005) an explicit `game` is stored as sent |
+| C16 | (0005) a malformed game identifier (spaces, uppercase, empty) is rejected |
+| C17 | (0005) listing by `game` returns only that game's decks, and only this user's |
 
 **Collection history safety net (`history_test.sql`)**
 

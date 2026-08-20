@@ -225,6 +225,49 @@ exception
     insert into results values ('C14 forged valid-uuid JWT cannot insert (FK)', false);
 end $$;
 
+-- C15..C17: migration 0005's `game` column.
+-- Re-point app_user_id() at user C's replacement (C was deleted by C10), so
+-- these run against a live account rather than a dangling FK.
+do $$
+declare defaulted text; other text; rejected boolean := false; kept int;
+begin
+  insert into neon_auth."user" (id, name, email, "emailVerified", "createdAt", "updatedAt")
+  values ('ffffffff-6666-4666-8666-ffffffffffff','Test F','f@example.invalid',true,now(),now());
+  create or replace function public.app_user_id() returns uuid
+    language sql stable as $f$ select 'ffffffff-6666-4666-8666-ffffffffffff'::uuid $f$;
+  set local role authenticated;
+
+  -- C15: a client that predates 0005 omits `game`; the default labels it.
+  insert into public.decks (name, payload) values ('pre-0005 deck', '{}');
+  select game into defaulted from public.decks where name = 'pre-0005 deck';
+
+  -- and a client that sends one is taken at its word
+  insert into public.decks (name, payload, game) values ('other game deck', '{}', 'pokemon');
+  select game into other from public.decks where name = 'other game deck';
+
+  -- C16: the identifier is constrained (no spaces, no uppercase, not empty)
+  begin
+    insert into public.decks (name, payload, game) values ('bad game', '{}', 'Not A Game');
+  exception when check_violation then rejected := true;
+  end;
+
+  -- C17: listing by game returns only that game's decks, and RLS still scopes
+  -- the whole thing to this user -- `game` filters, it does not authorise.
+  select count(*) into kept from public.decks where game = 'riftbound';
+
+  reset role;
+  insert into results values ('C15 game defaults to riftbound for a pre-0005 client', defaulted = 'riftbound');
+  insert into results values ('C15b an explicit game is stored as sent', other = 'pokemon');
+  insert into results values ('C16 a malformed game identifier is rejected', rejected);
+  insert into results values ('C17 filtering by game sees only this user''s riftbound decks', kept = 1);
+exception when others then
+  reset role;
+  insert into results values ('C15 game defaults to riftbound for a pre-0005 client', false);
+  insert into results values ('C15b an explicit game is stored as sent', false);
+  insert into results values ('C16 a malformed game identifier is rejected', false);
+  insert into results values ('C17 filtering by game sees only this user''s riftbound decks', false);
+end $$;
+
 -- C11: app_user_id() cast safety -- a non-uuid sub must yield NULL, not 22P02
 select 'C11 non-uuid JWT sub yields NULL instead of erroring' as test,
        bool_and(result is null) as pass

@@ -124,4 +124,32 @@ select 'T11 control: 3 rows really exist, so the zeros above were RLS' as test,
  where user_id in ('aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa',
                    'bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb');
 
+-- ---------------------------------------------------------------------------
+-- T12/T13 (migration 0005): `game` filters, it does not authorise.
+-- Last, because they add a row and every count above is pinned.
+-- FORCE was lifted for the OWNER by T11; `authenticated` is unaffected.
+-- ---------------------------------------------------------------------------
+alter table public.decks force row level security;
+
+create or replace function public.app_user_id() returns uuid
+  language sql stable as $$ select 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa'::uuid $$;
+set local role authenticated;
+insert into public.decks (name, payload, game) values ('A pokemon deck', '{}', 'pokemon');
+
+select 'T12 a game filter narrows within the owner''s own rows' as test,
+       ((select count(*) from public.decks where game = 'riftbound') = 2
+        and (select count(*) from public.decks where game = 'pokemon') = 1
+        and (select count(*) from public.decks) = 3) as pass;
+reset role;
+
+create or replace function public.app_user_id() returns uuid
+  language sql stable as $$ select 'bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb'::uuid $$;
+set local role authenticated;
+-- The policies never mention `game`, so isolation must be exactly what it was:
+-- B sees its own single deck and none of A's, whichever game is asked for.
+select 'T13 game scoping did not widen RLS - B still sees only its own' as test,
+       ((select count(*) from public.decks where game = 'riftbound') = 1
+        and (select count(*) from public.decks where game = 'pokemon') = 0) as pass;
+reset role;
+
 rollback;
