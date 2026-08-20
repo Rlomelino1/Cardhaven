@@ -127,3 +127,86 @@ before the conversion lands. The constraints check size and structure, not card 
 - The known Showcase/base 3-copy bug is visible here: `addCard` dedupes on
   `nk(c.name)` (`index.html:528`), and all 352 names are unique, so a Showcase printing
   and its base card occupy separate entries with separate 3-copy caps. Stage 7.
+
+---
+
+# Stage 9 amendment — the collection is nested by game
+
+The row above that says `user_settings.collection` is *"unchanged, and deliberately not
+game-scoped"* was true through stage 8 and is **no longer true**. Stage 9 changed the
+stored shape. The reasoning that made unscoped correct — refs are set-prefixed, so two
+games occupy separate key spaces inside one object — held only as long as the second
+game's refs could not collide with Riftbound's. Pokémon ids are `sv1-1`, `base1-58`,
+`swsh12pt5gg-GG01`: the same `set-number` shape. Nothing guarantees a future Riftbound
+set code is not also a Pokémon set id, and "cannot collide unless it happens to" is not
+a property to hang a collection on.
+
+## The shape
+
+```json
+{
+  "riftbound": { "ogn-039-298": 3, "sfd-224*-221": 1 },
+  "pokemon":   { "sv1-1": 4, "base1-58": 2 }
+}
+```
+
+Still **one row, one blob, one sync engine.** Splitting it per game would multiply the
+engine's states and drag the wipe-recovery machinery (`COL_READY`, the no-row resolution
+path, the 0004 history trigger) into a change that buys nothing — the same argument
+migration 0005 made for leaving it alone, applied to the shape rather than the row.
+
+`COL` is now the *active game's inner map, held by reference*, so every existing
+`COL[id]` mutation in the app lands inside the nested object and gets persisted. The one
+place that could not be a mutation — `colClear()` on "all sets", which replaced `COL`
+wholesale — assigns through `COLALL[ACTIVE_GAME]` instead.
+
+## Legacy blobs are lifted, never rejected
+
+Every browser and every `user_settings` row in production holds the flat shape. So:
+
+- **Shape is decided by inspection, not by trust**: nested means every top-level key is
+  a known game id *and* every value is an object. A flat map fails that on its first
+  numeric value (`{"ogn-001-298": 3}`), which is exactly the tell. `{}` satisfies it
+  trivially and is correct read either way.
+- A flat blob is read as the **riftbound** map and written back nested on the next sync.
+- Clamping is per **owning** game, because the caps differ: 3 Riftbound, 4 Pokémon.
+- A key under a game this build has never heard of is **preserved untouched** — not
+  dropped, not clamped to a cap that isn't its own. Same principle as an unresolved ref:
+  keep somebody's data, just don't display it.
+- `liftCollection()` is published on `window` because the auth module's merge-on-sign-in
+  needs the same lift, and there must be exactly one implementation of "what shape is
+  this blob".
+
+The merge on sign-in lifts **both sides** and maxes per printing **within each game**, so
+a flat server blob meeting a nested local one merges as Riftbound rather than colliding
+with a game key. Covered by `tests/e2e/collection-sync.spec.js`.
+
+## Size, measured
+
+Migration 0006 raises the ceiling from 64 KB to **1 MB**. The number came from a
+measurement, not an estimate: every real card id from the vendored search index, each
+carrying a quantity, nested under its game, is **480,812 bytes of jsonb** — while being
+only 255,908 bytes of JSON *text*. jsonb stores a key-offset table per object, which here
+costs about 88% on top of the text, so sizing this constraint from the text length
+under-reads by nearly half. That is how the migration was first drafted at 512 KB, which
+would have left a complete Pokémon collection 3% of headroom.
+
+The collection is written **whole**, so a user at 100% Pokémon completion costs ~470 KB
+per sync. The engine debounces to one write two seconds after the last tap, so a long
+binder session is tens of writes; the free tier's 5 GB/month is ~10,000 of them.
+
+## Other stage 9 additions
+
+| Where | What | Note |
+|---|---|---|
+| localStorage `pokemon.deck` | the signed-out Pokémon deck | Its own key. The four Riftbound keys are untouched — renaming them orphans every existing browser. |
+| localStorage `pokemon.open-deck:{userId}` | which Pokémon deck row was last open | Per game, or switching games would reopen a deck id belonging to the other one. |
+| localStorage `pokemon.openSet` | which of the 174 sets is loaded | Per device, like `riftbound.setScope`. One open set per game, shared by the deckbuilder and the collection. |
+| localStorage `ch.game` | which game was last active | App-level, like `rb.theme` — it is not a property of a game. |
+| `decks.game` | now carries `'pokemon'` too | Column unchanged since 0005; the client reads the active game live rather than caching it, so a switch reaches the deck list. |
+
+`rb.variants` stays Riftbound-only: it toggles Showcase and alt-art printings, and
+**variant tracking for Pokémon (reverse holo, holo, 1st edition) was explicitly deferred
+out of stage 9.** One row per printing, as Riftbound has. A future stage can pick it up
+deliberately; nothing in the slim vendored schema preserves variant information, so that
+stage starts with a re-vendor.

@@ -86,6 +86,39 @@ renders 48 of them at ~112 px wide. The same CDN returns a 240 px WebP of the sa
 in **15 KB**. Since settled — see "Thumbnail sizing" under Resolved in `docs/BLOCKED.md`;
 grid tiles now request the WebP.
 
+## Data footprint (stage 9)
+
+Pages serves everything in the repo, so the card data *is* deployed. What is on the
+wire, and when:
+
+| File(s) | Size | Fetched |
+|---|---|---|
+| `index.html` | 216 KB | every load |
+| `vendor/neon/` | 665 KB across ~132 modules | every load (ESM graph) |
+| `data/ogn-pool.json` + `data/sfd-pool.json` | 435 KB | every load **while Riftbound is the active game** |
+| `data/pokemon/sets.json` | 47 KB | on Pokémon activation |
+| `data/pokemon/search-index.json` | 2.07 MB | on Pokémon activation |
+| `data/pokemon/{set}-pool.json` × 174 | 6.76 MB total, 2–116 KB each | **one at a time**, when that set is opened |
+| **repo total for card data** | **9.3 MB** | never all at once |
+
+The 174 per-set pools are the point of the lazy design: a Pokémon session fetches the
+manifest, the index, and the one or two sets actually looked at — roughly 2.2 MB, behind
+an ETag, then nothing. Loading all of them would be 6.76 MB per visit and would still be
+the wrong shape, because 20,444 tiles is not a page.
+
+The search index is not deferred past game activation, and that is deliberate rather
+than an oversight: a 60-card deck spans many sets, only the open set's pool is in memory,
+and deck rows plus the copy limit resolve through the index. Without it a saved deck
+renders as sixty unresolved entries. It is fetched once and kept in memory.
+
+Card art is hotlinked and counts against nobody's budget here — see the CDN section
+above for Riot, and `images.pokemontcg.io` / `images.scrydex.com` for Pokémon. Both
+Pokémon hosts are in the page's CSP `img-src`; **`raw.githubusercontent.com` is not**, and
+must not be — it is read by `scripts/build-pokemon-pools.mjs` at vendoring time and never
+by the page. `tests/e2e/pokemon.spec.js` asserts nothing reaches it at runtime.
+
+Nothing here touches the Neon budgets: pool files are static assets on Pages, not rows.
+
 ## Not done, deliberately
 
 No keep-alive, no uptime monitor, no cold-start UI, and nothing that polls. Neon's

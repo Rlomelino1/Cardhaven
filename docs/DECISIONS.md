@@ -315,3 +315,138 @@ in a real browser. Most of the modal already matched; these are the gaps that we
 - Required check is matched by **job name** (`e2e`), not workflow name; renaming the job silently blocks every merge on a check that never reports. Recorded in `ci.yml` and `CLAUDE.md` because it is invisible until it bites.
 - `strict` is on (a branch must be up to date with main before merging), so the suite that gates a merge ran against the code that will actually be on main; rejected the looser setting, which lets two independently-green PRs combine into a broken main.
 - The SQL suite still runs locally only. Gating on it would mean a production database credential in CI secrets for a suite that only changes when a migration does; rejected that trade, unchanged from the hardening plan.
+
+## Stage 9 — Pokémon TCG, the second game (2026-08-20)
+
+### Reported back, because measurement contradicted a settled number
+
+- **The collection size cap is 1 MB, not the 512 KB the stage brief settled on.** The
+  brief's rationale was "~20k entries ≈ 300 KB", which is the JSON *text* size. Measured
+  in Postgres with every real card id from the vendored index: `pg_column_size` of a
+  complete Pokémon collection is **480,812 bytes**, against 255,908 bytes of text —
+  jsonb keeps a key-offset table per object, costing ~88% on top. 512 KB would have left
+  a full collection 3% of headroom and started rejecting syncs near completion,
+  silently. 1 MB is ~2.2x a complete collection and still ~7x too small to absorb a
+  client that posts card objects instead of counts, which is what the cap is for.
+  Rejected removing the cap (that removes the guard) and rejected 512 KB (that is the
+  drafting error).
+- **Image URLs are copied verbatim from the source, not built from `{set}/{number}.png`.**
+  The brief's settled decision #3 named `images.pokemontcg.io` as *the* host. It isn't:
+  the four Mega Evolution sets serve card art, set symbols and logos from
+  `images.scrydex.com` under a different path shape — 661 cards today. A pattern-built
+  URL is wrong for those and will be wrong again the next time upstream moves. Both
+  hosts are in the CSP. The hotlink-don't-host rule is unchanged.
+- **The search index carries one field beyond the brief's `{id,n,s,num,img}`**: a sparse
+  `b:1` Basic Energy flag. The copy-limit exemption has to be answerable for a card seen
+  only through the index, and the alternative was downloading a set pool to find out
+  whether a card is Basic Energy. Measured cost: 183 flagged entries out of 20,444.
+- **"Assert no pokemon pool fetches before a set is opened" was reinterpreted.**
+  Something has to be on screen when you switch to Pokémon, so exactly one pool — the
+  persisted or newest set — loads at activation. The test asserts *one* fetch rather than
+  zero, and that opening another set fetches exactly that one, once.
+
+### Architecture
+
+- **Adapter hooks on the registry entry, not a `GameAdapter` class or a plugin system.**
+  Twelve small functions per game (`normalize`, `refOf`, `cardKeyRef`, `cardLabelRef`,
+  `setCode`, `numLabel`, `tileMeta`, `tileBadges`, `modalMeta`, `colTag`, `searchMatch`,
+  `validate`) plus a `rules` object. Rejected a class hierarchy and rejected branching on
+  `GAME.id` at call sites; the rule is that nothing outside the registry asks which game
+  is running.
+- **Riftbound's hooks are its stage 8 expressions *moved*, not rewritten**, and the
+  mutable aliases (`ZONES`, `DOMAINS`, `TYPES`, …) keep every call site byte-identical.
+  Verified with nine element-scoped screenshot comparisons against a stage-8 worktree:
+  header, set bar, browser+deck panel empty and full, collection summary, controls, set
+  bar, collection tiles at 0/1/3 copies, paper theme, card modal, deck switcher menu —
+  all zero-pixel. The two intended deltas are the footer's Pokémon notice and the game
+  menu's new row.
+- **`domains` and `type` keep their Riftbound names** for the game-neutral jobs of
+  "coloured filter axis" and "primary type axis". Rejected renaming to `axis`/`kind`: the
+  export format uses those names, and every exported deck file in the wild would stop
+  importing. Documented instead.
+- **The game switch happens in place, not via `location.reload()`.** A reload is fewer
+  lines and would silently discard an unsaved deck; in-place reuses the existing
+  three-way dirty prompt. Cost is one explicit reset of per-game state.
+- **The auth module reads `window.ACTIVE_GAME` per query** instead of capturing it at
+  load. A captured constant had the module listing Riftbound rows on a Pokémon screen.
+- **Merge-on-signup now sweeps every game's signed-out deck**, each inserted with its own
+  `game`. The handoff fires once per session, so a deck left behind would sit unimported.
+  This applies the already-decided merge rule (2026-08-14: keep both, import as an
+  additional deck) per game; it is not a new decision about merge behaviour.
+
+### Lazy sets
+
+- **174 sets load one at a time; the search index is the deck-resolution layer.** Chosen
+  because a 60-card deck spans many sets while only one pool is in memory — without the
+  index a saved deck renders as sixty unresolved entries. Rejected loading all 174 pools
+  (6.76 MB per visit, and 20,444 tiles is not a page) and rejected a mega file.
+- **The index is not deferred past game activation**, though the brief said "lazily on
+  first use". Deck hydration *is* the first use, on the first paint. The lazy part is the
+  per-set pools.
+- **Cross-set search yields to the chip filters rather than ignoring them.** The index
+  carries no supertype, energy type or rarity, so a chipped search stays inside the
+  loaded set and the result count says so ("this set only (filters on)"). Rejected
+  silently dropping the chips, and rejected fetching pools to satisfy them.
+- **A series-grouped collapsible picker replaces the chip row for a lazy game**, one open
+  set shared by the deckbuilder and the collection. Rejected a per-view open set: staying
+  in the set you are working in is the behaviour you want when flipping between views.
+- **`findCard` keeps a linear scan behind the ref map.** The map is the fast path; the
+  scan means anything that puts cards in `S.pool` without going through `adoptPool()`
+  stays visible instead of silently disappearing. A test that pushes fixtures into the
+  pool found this the honest way.
+
+### Collection
+
+- **Nested by game inside one blob and one row**, not per-game rows. Same argument 0005
+  made for the row: splitting multiplies the sync engine's states and drags the
+  wipe-recovery machinery along for nothing.
+- **A flat blob is lifted, never rejected**, and shape is decided by inspection — every
+  top-level key a known game id *and* every value an object — not by trusting the sender.
+  Both sides of the sign-in merge are lifted, so a flat server blob meeting a nested
+  local one merges as Riftbound.
+- **A key under an unknown game id is preserved untouched**, not dropped and not clamped
+  to a cap that isn't its own. Same principle as an unresolved ref.
+- **The 0004 shrink trigger is left alone.** The one-time flat-to-nested rewrite reads as
+  a shrink (N top-level keys become one or two) and archives the flat pre-image once per
+  account, which makes the shape migration itself recoverable for free. Rejected
+  special-casing the trigger: it would be a second implementation of the shape rule, in
+  SQL, drifting from the client's. Pinned by H7/H7b.
+- **A non-object collection is refused by the 0004 trigger, not the CHECK** — it calls
+  `jsonb_object_keys` on the new value and raises first. The write does not land either
+  way; C22 documents which layer does it rather than asserting the wrong error class.
+
+### Fixed in passing
+
+- **Cards with no rarity were dropped from the collection grid entirely.** The rarity
+  sections filtered falsy values out of the section list, so 295 Pokémon printings had no
+  heading to live under and never rendered. They group under one explicit "Unclassified"
+  heading now. Riftbound was unaffected — every printing there has a rarity — which is
+  why it survived stage 8.
+- **The collection's number search assumed the ref's middle segment held the collector
+  number.** It now prefers the card's own `number` field when it has one, so a Pokémon
+  search for `GG69` or `107` reaches the right branch.
+- **Collector-number sorting assumed numbers were numeric.** 1,621 Pokémon numbers are
+  not (`GG69`, `TG12`, `SV107`); they now sort after the numerics, alphabetically, with a
+  stable tiebreak on the ref.
+- **`#curveBlock` collapsed a 15px flex gap** in the deck panel when the energy curve was
+  wrapped so it could hide as a unit. Caught by the pixel comparison, not by a test.
+
+### Minor calls, logged and moved on
+
+- Vendor script writes repo-relative (`data/pokemon/`) rather than to the cwd like
+  `build-pool-v2.mjs`, which needs its output moved by hand afterwards.
+- Per-set pool files are minified, `sets.json` is pretty-printed. 6.76 MB of generated
+  data is not diff-reviewable either way; a 174-entry manifest is.
+- Absent fields are omitted from slim records rather than written as `null` — at 20,444
+  cards the nulls alone are hundreds of KB.
+- Pokémon tiles put the regulation mark in the Signature badge slot (a single letter in a
+  16px square is what both are) and HP in the variant slot. No energy orb: a 20px circle
+  does not hold "110".
+- The Pokémon rarity ladder is ordered for the fourteen rarities people think in; the
+  other 25 fall in after them alphabetically, via the same data-driven fallback the
+  Riftbound list already relied on.
+- Pokémon energy types share the CSS variable namespace with Riftbound domains, so every
+  `var(--<axis value>)` rule works for both games unchanged. `Colorless` is shared: it
+  means the same thing in both, and the grey was already right.
+- Chase rarities for the "still missing" sentence are per game — "Epic or Showcase" for
+  Riftbound, "Double Rare or better" for Pokémon — rather than a hardcoded pair.

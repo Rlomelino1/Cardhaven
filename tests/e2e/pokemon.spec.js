@@ -560,3 +560,21 @@ test.describe("the game switcher", () => {
     expect(r.plannedInteractive).toBe(0);
   });
 });
+
+test.describe("the collection's set picker stays current", () => {
+  test("logging a copy refreshes the picker's own counts", async ({ page }) => {
+    // renderColSummary paints both set controls, because colBump() takes the
+    // cheap single-tile path and calls only that — so whichever control the
+    // active game uses has to refresh from there or it goes stale on a tap.
+    await page.addInitScript(() => localStorage.setItem("ch.game", "pokemon"));
+    await page.goto("/#collection");
+    await page.waitForFunction(() => typeof POOL_READY !== "undefined" && POOL_READY,
+      null, { timeout: 20000 });
+    const before = await page.locator("#pickSetCount").textContent();
+    await page.evaluate(() => colBump(refOf(S.pool[0]), 1));
+    const after = await page.locator("#pickSetCount").textContent();
+    expect(before).toMatch(/^0\//);
+    expect(after).toMatch(/^1\//);
+    expect(after).toContain("1 logged overall");
+  });
+});
