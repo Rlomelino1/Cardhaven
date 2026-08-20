@@ -12,9 +12,18 @@
      elsewhere), img-src to Riot's CDN, and base-uri/object-src/form-action shut
      the usual escalation paths. Validated non-breaking against the live app
      before shipping. Endpoints must match the NEON config below. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<!-- Three card-art hosts, one per source. Riot's CDN serves Riftbound.
+     Pokémon art comes from images.pokemontcg.io for 170 of the 174 English
+     sets and from images.scrydex.com for the four Mega Evolution sets — cards,
+     set symbols and logos alike — which is why both are listed and why the
+     vendor script copies image URLs verbatim instead of building them from a
+     {set}/{number}.png pattern. raw.githubusercontent.com is deliberately
+     absent: it is read by scripts/build-pokemon-pools.mjs at vendoring time
+     and never by the page (asserted in tests/e2e/pokemon.spec.js). -->
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
-<title>Card Haven — Riftbound Deck Builder</title>
+<link rel="preconnect" href="https://images.pokemontcg.io">
+<title>Card Haven — Deck Builder &amp; Collection</title>
 <script>
 /* Theme class before first paint, or Paper users get a Midnight flash. */
 try{ if(localStorage.getItem("rb.theme")==="paper")
@@ -37,6 +46,14 @@ try{ if(localStorage.getItem("rb.theme")==="paper")
   --chip-on-ink:#12101c;
   --Fury:#D94A3D; --Calm:#4FA86B; --Mind:#3D7FD9;
   --Body:#E08A2E; --Chaos:#8B5CD6; --Order:#D9B62E; --Colorless:#8A8397;
+  /* Pokémon energy types. Same role in the layout as Riftbound's domains —
+     the coloured filter-chip axis and the tile frame — so they live in the
+     same variable namespace and every rule that reads var(--<axis value>)
+     works for both games unchanged. Colorless is shared: it means the same
+     thing in both games and the grey is already right. */
+  --Grass:#5AA55C; --Fire:#D9502F; --Water:#3D8FD9; --Lightning:#E0B92E;
+  --Psychic:#A45CD6; --Fighting:#C4682E; --Darkness:#4A4A66; --Metal:#8A93A6;
+  --Dragon:#A88B3C; --Fairy:#D96BA8;
 }
 :root.paper{
   --ink:#F2EDE3; --panel:#FBF8F1; --edge:#DCD5C5;
@@ -151,6 +168,59 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
 #problems li.scopenote{border-left-color:var(--mute); background:var(--hover-wash);
   color:var(--text2)}
 
+/* ---------------------- set picker (lazy-set games) ----------------------
+   A chip row is the right control for two sets and the wrong one for 174.
+   Pokémon gets a single-select picker instead: one open set at a time, its
+   pool fetched on demand, grouped by series and collapsible. Same panel
+   serves the deckbuilder and the collection — one open set per game, not one
+   per view, so switching views keeps you in the set you were working in. */
+.setpickwrap{position:relative}
+.setpickwrap[hidden]{display:none}
+.setpickbtn{display:flex; align-items:center; gap:9px; background:var(--ink);
+  border:1px solid var(--edge); border-radius:3px; color:var(--text);
+  padding:5px 10px 5px 6px; font-size:13px; cursor:pointer; max-width:min(420px,72vw)}
+.setpickbtn[aria-expanded="true"]{border-color:var(--brass)}
+.ssym{width:22px; height:22px; object-fit:contain; flex:none;
+  background:var(--hover-wash); border-radius:2px}
+.spname{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap}
+.spseries{font-family:ui-monospace,Menlo,monospace; font-size:8.5px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--mute);
+  white-space:nowrap}
+.setpick{position:absolute; top:calc(100% + 9px); left:0; width:400px; max-width:92vw;
+  background:var(--panel); border:1px solid var(--edge); border-radius:4px;
+  box-shadow:0 14px 34px rgba(0,0,0,.45); z-index:60; padding:7px}
+.setpick[hidden]{display:none}
+#setPickQ{background:var(--ink); border:1px solid var(--edge); color:var(--text);
+  border-radius:2px; padding:8px 10px; font-size:13px; width:100%; margin-bottom:6px}
+.splist{max-height:60vh; overflow:auto}
+.spgroup{border-top:1px solid var(--edge)}
+.spgroup:first-child{border-top:none}
+.spghead{display:flex; align-items:center; gap:9px; width:100%; background:none;
+  border:none; color:var(--text2); cursor:pointer; padding:9px 8px; text-align:left;
+  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase}
+.spghead .twist{font-size:8px; color:var(--mute); width:9px; flex:none}
+.spghead .spgn{margin-left:auto; color:var(--mute)}
+.sprow{display:flex; align-items:center; gap:10px; width:100%; background:none;
+  border:none; border-radius:2px; color:var(--text); cursor:pointer;
+  padding:7px 9px; text-align:left}
+.sprow.on{background:var(--hover-wash)}
+.sprow.on .spn{color:var(--brass)}
+.spn{flex:1; min-width:0; font-size:13.5px; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap}
+.spmeta{font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.08em;
+  color:var(--mute); white-space:nowrap}
+.spempty{padding:14px 10px; font-size:12.5px; color:var(--mute)}
+/* Regulation mark reuses the Signature slot: a single letter in a 16px square
+   is exactly what both are. HP takes the bottom-right variant slot. */
+.regmark{position:absolute; top:6px; right:6px; width:16px; height:16px;
+  border-radius:2px; background:rgba(10,8,18,.85); color:var(--text2);
+  border:1px solid rgba(234,231,244,.3);
+  font-family:ui-monospace,Menlo,monospace; font-size:9px; line-height:15px;
+  text-align:center; font-weight:700}
+
 /* --------------------------- deck switcher menu -------------------------- */
 .switchwrap{position:relative}
 .caret{width:27px; height:27px; background:var(--ink); border:1px solid var(--edge);
@@ -211,6 +281,12 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
   font-size:13px; line-height:1; align-self:flex-start}
 
 .ztabs{display:flex; gap:4px; border-top:1px solid var(--edge); padding-top:12px}
+.ztabs[hidden],.legendbox[hidden]{display:none}
+/* The energy curve heading and the curve were two direct children of the
+   deck panel until stage 9 wrapped them so they could hide together. The
+   panel is a 15px-gap column, so the wrapper has to reproduce that gap or the
+   heading closes up against the bars. */
+#curveBlock{display:flex; flex-direction:column; gap:15px}
 .ztab{flex:1; background:none; border:none; border-radius:3px; padding:7px 2px;
   color:var(--mute); font-size:12px; cursor:pointer; white-space:nowrap}
 .ztab b{font-size:10px; margin-left:3px; font-weight:400}
@@ -727,6 +803,25 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   <div class="setchips" id="colSetChips"></div>
   <span class="setcount" id="colSetCount"></span>
 </div>
+<!-- Third bar, for a game whose sets are fetched one at a time. It replaces
+     both bars above rather than joining them: with 174 sets there is one open
+     set, shared by the deckbuilder and the collection. -->
+<div class="setbar" id="pickSetBar" hidden>
+  <span class="setlbl">Set</span>
+  <div class="setpickwrap" id="setPickWrap">
+    <button class="setpickbtn" id="setPickBtn" aria-haspopup="true" aria-expanded="false">
+      <img class="ssym" id="setPickSym" alt="" referrerpolicy="no-referrer">
+      <span class="spname" id="setPickName">&hellip;</span>
+      <span class="spseries" id="setPickSeries"></span>
+      <span class="gcaret">&#9660;</span>
+    </button>
+    <div class="setpick" id="setPickPanel" hidden>
+      <input id="setPickQ" placeholder="Filter 174 sets by name" aria-label="Filter sets">
+      <div class="splist" id="setPickList"></div>
+    </div>
+  </div>
+  <span class="setcount" id="pickSetCount"></span>
+</div>
 
 <div class="layout">
 <main class="browsecol">
@@ -762,8 +857,13 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   <div class="legendbox" id="legendBox"></div>
   <ul class="checks" id="checks"></ul>
   <div class="ztabs" id="zoneTabs"></div>
-  <h2>Energy curve <span id="avg">avg 0.00</span></h2>
-  <div class="curve" id="curve"></div>
+  <!-- Riftbound-only panels. A Pokémon deck has no Legend, no domains, and no
+       per-card energy cost to plot, so both hide rather than render an empty
+       frame; the deck list and the checks are the whole panel there. -->
+  <div id="curveBlock">
+    <h2>Energy curve <span id="avg">avg 0.00</span></h2>
+    <div class="curve" id="curve"></div>
+  </div>
   <div id="zoneList"></div>
   <div class="actions">
     <button class="btn go" onclick="exportDeck()">Export deck</button>
@@ -819,11 +919,20 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
 </div>
 
 <footer>
+  <!-- The Riot paragraph is required verbatim by Riot's fan content policy and
+       is not to be edited or moved. The Pokémon paragraph is a second notice
+       beside it, added when Pokémon support shipped, not a rewrite of it. -->
   <p class="legal">
     Unofficial fan tool for personal use. Riftbound, League of Legends, and all card
     assets belong to Riot Games. Created under Riot Games' &ldquo;Legal Jibber Jabber&rdquo;
     policy using assets owned by Riot Games. Riot Games does not endorse or sponsor
     this project.
+  </p>
+  <p class="legal">
+    Card Haven is not affiliated with, endorsed, sponsored, or specifically approved
+    by Nintendo, Creatures Inc., GAME FREAK inc., or The Pok&eacute;mon Company.
+    Pok&eacute;mon and all related names and card images are trademarks and copyrights
+    of their respective owners.
   </p>
 </footer>
 
@@ -857,73 +966,466 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
  
 <script>
 /* ------------------------------- constants ------------------------------ */
-const DOMAINS = ["Fury","Calm","Mind","Body","Chaos","Order"];
-const ALL_DOMAINS = [...DOMAINS, "Colorless"];
-const TYPES = ["Unit","Spell","Gear","Rune","Battlefield","Legend"];
-const RARITY_ORDER = ["Common","Uncommon","Rare","Epic","Showcase","Ultimate"];
-const ZONES = {
+/* ---------------------------- Riftbound ---------------------------------- */
+const RB_DOMAINS = ["Fury","Calm","Mind","Body","Chaos","Order"];
+const RB_ALL_DOMAINS = [...RB_DOMAINS, "Colorless"];
+const RB_TYPES = ["Unit","Spell","Gear","Rune","Battlefield","Legend"];
+const RB_RARITY_ORDER = ["Common","Uncommon","Rare","Epic","Showcase","Ultimate"];
+const RB_ZONES = {
   main:{label:"Main deck", short:"Main", target:40, rule:"min"},
   runes:{label:"Rune deck", short:"Runes", target:12, rule:"exact"},
   battlefields:{label:"Battlefields", short:"Fields", target:3, rule:"exact"},
   sideboard:{label:"Sideboard", short:"Side", target:8, rule:"zeroOrExact"}
 };
 /* Label ink on an active domain chip, chosen per fill for contrast. */
-const DOMAIN_INK = {Fury:"#FFFFFF", Calm:"#12101C", Mind:"#FFFFFF",
+const RB_DOMAIN_INK = {Fury:"#FFFFFF", Calm:"#12101C", Mind:"#FFFFFF",
   Body:"#12101C", Chaos:"#FFFFFF", Order:"#12101C"};
-/* localStorage keys. KEY holds the signed-out working deck — same key it has
-   always had, so existing browsers keep their deck across this change. The
-   others are device preferences, split out because the deck blob is deleted
-   when a deck is imported into an account and a preference must survive that. */
-const KEY = "riftbound-deckbuilder-v1";
+/* Dot / bar colors for the by-rarity panel, per the mockups. */
+const RB_RARITY_DOT = {Common:"#9A93AC", Uncommon:"#E08A2E", Rare:"#3FA7A0",
+  Epic:"#8B5CD6", Showcase:"#D9B62E"};
+
+/* ----------------------------- Pokémon ----------------------------------- */
+/* The energy types occupy the same slot in the UI as Riftbound's domains: the
+   coloured chip row and the tile frame. Measured against the vendored pool —
+   exactly these eleven appear across all 174 sets. */
+const PK_ENERGY_TYPES = ["Grass","Fire","Water","Lightning","Psychic","Fighting",
+  "Darkness","Metal","Dragon","Fairy","Colorless"];
+const PK_TYPE_INK = {Grass:"#12101C", Fire:"#FFFFFF", Water:"#FFFFFF",
+  Lightning:"#12101C", Psychic:"#FFFFFF", Fighting:"#FFFFFF", Darkness:"#FFFFFF",
+  Metal:"#12101C", Dragon:"#12101C", Fairy:"#12101C", Colorless:"#12101C"};
+/* The supertype row. These three are the whole vocabulary (17244 / 2806 / 394
+   cards) and they are what the Energy copy-limit exemption keys off. */
+const PK_SUPERTYPES = ["Pokémon","Trainer","Energy"];
+/* 39 distinct rarities exist across the English sets; only the ladder people
+   actually think in is ordered here, and the sorter puts the rest after it
+   alphabetically — same data-driven fallback the Riftbound list relies on. */
+const PK_RARITY_ORDER = ["Common","Uncommon","Rare","Rare Holo","Double Rare",
+  "Rare Ultra","Ultra Rare","Illustration Rare","Special Illustration Rare",
+  "Hyper Rare","Shiny Rare","Rare Secret","ACE SPEC Rare","Promo"];
+const PK_RARITY_DOT = {Common:"#9A93AC", Uncommon:"#5AA55C", Rare:"#3D8FD9",
+  "Rare Holo":"#3FA7A0", "Double Rare":"#8B5CD6", "Illustration Rare":"#D96BA8",
+  "Special Illustration Rare":"#E0B92E", "Hyper Rare":"#C9A227", Promo:"#C4682E"};
+/* One zone. A Pokémon deck is exactly 60 cards and there is no sideboard in
+   the construction rules, so the zone tab row collapses to nothing. */
+const PK_ZONES = {
+  main:{label:"Deck", short:"Deck", target:60, rule:"exact"}
+};
+
+/* localStorage. The four pre-existing Riftbound keys are NOT renamed — they
+   ARE the riftbound namespace, and renaming them orphans every existing
+   browser's decks and collection. New game-specific keys carry the game id.
+   rb.theme and the active-game key are app-level: neither is per game.
+
+   rb.collection is shared by every game and holds a map nested BY game id;
+   see liftCollection(). rb.variants is Riftbound-only (it toggles Showcase /
+   alt-art printings, a concept Pokémon has no equivalent for in this stage). */
 const LS_VARIANTS = "rb.variants";
-const LS_OPEN_DECK = "rb.open-deck";   // per-user: `${LS_OPEN_DECK}:${userId}`
-const LS_COLLECTION = "rb.collection"; // signed-out collection map
+const LS_COLLECTION = "rb.collection"; // signed-out collection, nested by game
+const LS_GAME = "ch.game";             // which game was last active
 
-/* --------------------------- the game registry --------------------------- */
-/* Card Haven hosts one game today. Everything game-specific — the pool files,
-   the deck rows' `game` column, the localStorage namespace — is read from here
-   rather than hardcoded, so adding a second game is additive.
+/* ---------------------------- game adapters ------------------------------
+   Hoisted function declarations, referenced by the registry above. Each one
+   is small on purpose: the moment an adapter needs a paragraph, the shared
+   code above it is probably asking the wrong question. */
 
-   ADDING A SET IS A DATA-ONLY CHANGE: one entry below plus one committed pool
-   file under data/. Nothing in this file switches on a set code — set identity
-   is carried by each card's own `set` field and by the set-prefixed ref — so
-   there is no logic to edit. (Verified by grep; see docs/DECISIONS.md.) */
+/* ---- Riftbound. Unchanged behaviour: these are the stage 8 expressions
+        moved behind a named hook, not rewritten. ---- */
+function rbNormalize(c){
+  return {
+    name:String(c.name), energy:Number(c.energy)||0,
+    might:c.might ?? null, power:c.power ?? null,
+    type:String(c.type ?? "Unit"), supertype:c.supertype ?? null,
+    rarity:c.rarity ?? null,
+    domains:(Array.isArray(c.domains)?c.domains:[]).filter(d=>RB_ALL_DOMAINS.includes(d)),
+    set:c.set ?? "", setName:c.setName ?? null, number:c.number ?? null,
+    riftboundId:c.riftboundId ?? c.riftbound_id ?? null,
+    signature:!!c.signature, alternateArt:!!(c.alternateArt ?? c.alternate_art),
+    image:c.image ?? c.image_url ?? null, artist:c.artist ?? null,
+    text:c.text ?? null
+  };
+}
+/* The ref is riftboundId (collector-number identity, e.g. "ogn-001-298"),
+   falling back to name for cards without one. */
+const rbRefOf = c => c.riftboundId || c.name;
+/* Deck-legality identity: the cross-set card index built from the pool. Falls
+   back to the id-group for a ref the pool can't explain (an unresolved entry),
+   so such a ref groups with its own printings and nothing else — never
+   silently with a real card. */
+const rbCardKeyRef = ref => CARD_INDEX.get(copyGroupRef(ref))?.key || copyGroupRef(ref);
+const rbCardLabelRef = (ref, fallback) =>
+  CARD_INDEX.get(copyGroupRef(ref))?.label || fallback;
+/* "OGN 007A/298" from "ogn-007a-298". The denominator comes from the id, so
+   overnumbered Showcase printings legitimately read above it. */
+function rbNumLabel(c){
+  const m = String(c.riftboundId || "").split("-");
+  if(m.length === 3) return `${m[0].toUpperCase()} ${m[1].toUpperCase()}/${m[2]}`;
+  return c.number != null
+    ? `${String(c.set||"").toUpperCase()} ${String(c.number).padStart(3,"0")}`.trim() : "";
+}
+const rbTileMeta = c =>
+  `${esc(c.type)}${c.domains.length ? " · " + c.domains.join(" / ") : ""}` +
+  (offDomain(c) ? ` · <span class="flagtag">off-domain</span>` : "");
+const rbTileBadges = c =>
+  (c.energy > 0 ? `<span class="orb">${c.energy}</span>` : "") +
+  (c.signature ? `<span class="sig">S</span>` : "") +
+  (c.set ? `<span class="setbadge">${esc(String(c.set).toUpperCase())}</span>` : "") +
+  (rbColTag(c) ? `<span class="variant">${rbColTag(c)}</span>` : "");
+const rbModalMeta = c =>
+  `<p class="sub">${esc(c.type)}${c.supertype?" · "+esc(c.supertype):""}${c.rarity?" · "+esc(c.rarity):""}${c.set?" · "+esc(c.set):""}${c.number!=null?" #"+c.number:""}</p>
+   <p class="sub">energy ${c.energy}${c.might!=null?" · might "+c.might:""}${c.power!=null?" · power "+c.power:""}${c.domains.length?" · "+c.domains.join(" / "):""}</p>`;
+const rbColTag = c => c.rarity === "Showcase" ? "Showcase" : c.alternateArt ? "Alt art" : null;
+const rbSearchMatch = (c, term) =>
+  c.name.toLowerCase().includes(term)
+  || (c.text||"").toLowerCase().includes(term)
+  || (c.artist||"").toLowerCase().includes(term);
+
+/* ---- Pokémon ---- */
+/* The slim vendored record, plus the two fields the shared UI reads under
+   Riftbound's names: `domains` is the energy-type axis, `type` the supertype.
+   `basicEnergy` is computed here rather than tested at every call site,
+   because the copy-limit exemption also has to answer for a card seen only
+   through the search index, where supertype and subtypes are absent. */
+function pkNormalize(c){
+  const subtypes = Array.isArray(c.subtypes) ? c.subtypes.map(String) : [];
+  const types = (Array.isArray(c.types) ? c.types : [])
+    .map(String).filter(t => PK_ENERGY_TYPES.includes(t));
+  return {
+    name:String(c.name), pokemonId:String(c.id ?? c.pokemonId ?? ""),
+    supertype:c.supertype ?? null, subtypes,
+    hp:c.hp != null ? String(c.hp) : null,
+    types, domains:types,
+    type:c.supertype ?? null,
+    rarity:c.rarity ?? null,
+    regulationMark:c.regulationMark ?? null,
+    legalities:(c.legalities && typeof c.legalities === "object") ? c.legalities : null,
+    basicEnergy: c.supertype === "Energy" && subtypes.includes("Basic"),
+    set:c.set ?? "", setName:c.setName ?? null,
+    // A STRING, always: Pokémon collector numbers include GG69, TG12, SV107.
+    number:c.number != null ? String(c.number) : null,
+    image:c.imageSmall ?? c.image ?? null,
+    imageLarge:c.imageLarge ?? null,
+    artist:c.artist ?? null,
+    // No rules text is vendored (attacks and abilities are out of scope), so
+    // the shared card-text renderer simply has nothing to draw.
+    text:null,
+    energy:0, might:null, power:null, signature:false, alternateArt:false,
+  };
+}
+const pkRefOf = c => c.pokemonId || c.name;
+/* The 4-copy limit is on the card NAME, across every printing in every set.
+   For a ref the index can't explain, fall back to the ref so it groups only
+   with itself. */
+const pkCardKeyRef = ref => { const e = pkIndexEntry(ref); return e ? nk(e.n) : String(ref).toLowerCase(); };
+const pkCardLabelRef = (ref, fallback) => pkIndexEntry(ref)?.n || fallback;
+const pkNumLabel = c => {
+  const total = pkSetTotal(String(c.set || ""));
+  return c.number == null ? "" :
+    `${String(c.set||"").toUpperCase()} ${c.number}${total ? "/" + total : ""}`;
+};
+const pkTileMeta = c => [
+  c.supertype, c.hp ? `${c.hp} HP` : null, c.types?.length ? c.types.join(" / ") : null
+].filter(Boolean).map(esc).join(" · ");
+const pkTileBadges = c =>
+  (c.regulationMark ? `<span class="regmark" title="Regulation mark ${esc(c.regulationMark)}">${esc(c.regulationMark)}</span>` : "") +
+  (c.set ? `<span class="setbadge">${esc(String(c.set).toUpperCase())}</span>` : "") +
+  (c.hp ? `<span class="variant">${esc(c.hp)} HP</span>` : "");
+const pkModalMeta = c => {
+  const line1 = [c.supertype, c.subtypes?.length ? c.subtypes.join(" · ") : null,
+    c.rarity].filter(Boolean).map(esc).join(" · ");
+  const line2 = [c.hp ? `${c.hp} HP` : null, c.types?.length ? c.types.join(" / ") : null,
+    c.regulationMark ? `regulation ${c.regulationMark}` : null,
+    c.set ? `${String(c.set).toUpperCase()}${c.number != null ? " #" + c.number : ""}` : null
+  ].filter(Boolean).map(esc).join(" · ");
+  // Formats are stored, never enforced: legality by format is out of scope.
+  const legal = c.legalities
+    ? Object.entries(c.legalities).filter(([,v]) => v === "Legal").map(([k]) => k)
+    : [];
+  return `<p class="sub">${line1}</p><p class="sub">${line2}</p>` +
+    (legal.length ? `<p class="sub">legal in ${legal.map(esc).join(", ")}</p>` : "");
+};
+/* Nothing analogous to a Showcase printing is tracked this stage — variant
+   tracking (reverse holo, 1st edition) was deliberately deferred. */
+const pkColTag = c => c.basicEnergy ? "Basic" : null;
+const pkSearchMatch = (c, term) =>
+  c.name.toLowerCase().includes(term)
+  || (c.artist||"").toLowerCase().includes(term)
+  || String(c.pokemonId||"").toLowerCase().includes(term);
+
+/* Riftbound legality. Advisory only — nothing here ever blocks a save; people
+   save works in progress. Rule numbers cite Core Rules 2026-07-16, and the
+   copy limit cites Tournament Rules 403.4. */
+function rbValidate(){
+  const probs = [];
+  if(POOL_READY){
+    const m = zoneCount("main");                                   // 103.2: at least 40
+    if(m < 40) probs.push(`Main deck needs ${40-m} more card${40-m===1?"":"s"}.`);
+    const r = zoneCount("runes");                                  // 103.3.a: exactly 12
+    if(r < 12) probs.push(`Rune deck is ${12-r} short of 12.`);
+    else if(r > 12) probs.push(`Rune deck is ${r-12} over 12.`);
+    const b = zoneCount("battlefields");                           // 3 for standard play
+    if(b < 3) probs.push(`Add ${3-b} more battlefield${3-b===1?"":"s"}.`);
+    else if(b > 3) probs.push(`Battlefields are ${b-3} over 3.`);
+    // 103.4.c: all different — counting printings together, so a base
+    // battlefield, its Showcase and a reprint in another set are all the
+    // "same" battlefield (stage 8: cardKey, not the within-set id group).
+    const bfCopies = new Map();
+    for(const c of S.zones.battlefields){
+      const g = cardKey(c);
+      const e = bfCopies.get(g) || {copies:0, label:cardLabelRef(refOf(c), baseName(c.name))};
+      e.copies += c.qty; bfCopies.set(g, e);
+    }
+    const dupBf = [...bfCopies.values()].filter(e=>e.copies>1);
+    if(dupBf.length) probs.push(`Battlefields must all be different — duplicate: ${dupBf.map(e=>esc(e.label)).join(", ")}.`);
+    const sb = zoneCount("sideboard");
+    if(sb !== 0 && sb !== 8) probs.push(`Sideboard must be empty or exactly 8 cards — it has ${sb}.`);
+    if(!S.legend) probs.push(`No Legend set — filter to Legend and pick one to lock your domains.`);
+  }
+  const everywhere = [...S.zones.main, ...S.zones.runes, ...S.zones.sideboard];
+  const off = everywhere.filter(offDomain);                        // 103.1.b: domain identity
+  if(off.length) probs.push(`Outside ${esc(S.legend.name)}'s domains (${S.legend.domains.join(" / ")}): ${off.map(c=>esc(c.name)).join(", ")}.`);
+  // 103.2.b: at most 3 copies of a card, counting every printing together — a
+  // base, its Showcase and any reprint in a later set share one limit
+  // (CLAUDE.md; see cardKey above). The count spans the main
+  // deck AND the sideboard, per Tournament Rules 403.4, quoted: "Limits on
+  // copies of named cards apply to the combination of Main Deck and sideboard."
+  // (Verified against playriftbound.com, not assumed — 3 in main + 1 in the
+  // sideboard is illegal, 2 + 1 is fine.) Runes and battlefields are separate
+  // decks under their own rules and are deliberately not counted here.
+  // Unresolved entries in both counted zones count too, keyed off their ref.
+  const groupCopies = new Map();   // group -> {copies, side, label}
+  const countCopy = (g, qty, label, isSide) => {
+    const e = groupCopies.get(g) || {copies:0, side:0, label};
+    e.copies += qty;
+    if(isSide) e.side += qty;
+    groupCopies.set(g, e);
+  };
+  for(const z of ["main","sideboard"]){
+    const isSide = z === "sideboard";
+    for(const c of S.zones[z])
+      countCopy(cardKey(c), c.qty, cardLabelRef(refOf(c), baseName(c.name)), isSide);
+    for(const u of S.unresolved.filter(u => u.zone === z))
+      countCopy(cardKeyRef(u.ref), u.qty, cardLabelRef(u.ref, u.ref), isSide);
+  }
+  const over = [...groupCopies.values()].filter(e=>e.copies>3);
+  if(over.length){
+    // Name the sideboard only when it actually contributed, so the ordinary
+    // main-deck-only case doesn't cite a zone the user never touched.
+    const withSide = over.some(e => e.side > 0);
+    probs.push(`Over 3 copies${withSide ? " (main deck and sideboard combined)" : ""}: `
+      + over.map(e=>`${esc(e.label)} (${e.copies})`).join(", ") + `.`);
+  }
+  if(S.legend){                                                    // 103.2.d: 3 Signature cards, matching tag
+    const t = tagOf(S.legend.name);
+    const sigs = S.zones.main.filter(c=>c.signature);
+    const matching = sigs.filter(c=>tagOf(c.name)===t).reduce((n,c)=>n+c.qty,0);
+    if(matching > 3) probs.push(`${matching} Signature cards for ${esc(S.legend.name)} — the limit is 3.`);
+    const offTag = sigs.filter(c=>tagOf(c.name)!==t);
+    if(offTag.length) probs.push(`Signature cards that don't match ${esc(S.legend.name)}: ${offTag.map(c=>esc(c.name)).join(", ")}.`);
+  }
+  if(S.champion && !S.zones.main.some(c=>nk(c.name)===nk(S.champion)))   // 103.2.a
+    probs.push("Your chosen Champion isn't in the main deck.");
+  if(S.champion && S.legend && tagOf(S.champion)!==tagOf(S.legend.name))
+    probs.push(`${esc(S.champion)} doesn't match your Legend — the Champion's tag must match.`);
+  return probs;
+}
+
+/* Pokémon legality. Two rules, both from Play! Pokémon deck construction: a
+   deck is EXACTLY 60 cards, and it holds at most 4 cards with the same NAME.
+   The limit is by name across every printing in every set — the opposite axis
+   from Riftbound's printing-group — so the count keys on cardKey(), which for
+   this game is the card's name. Basic Energy is exempt from the limit
+   entirely; a deck may be sixty Basic Water Energy if you like.
+
+   Advisory only: an incomplete deck is still savable, exactly as a Riftbound
+   deck under 40 is. Format legality (Standard / Expanded) is stored on the
+   card and deliberately not enforced. */
+function pkValidate(){
+  const probs = [];
+  const target = GAME.rules.deckSizeExact;
+  const limit = GAME.rules.copyLimit;
+  if(POOL_READY){
+    const n = zoneCount("main");
+    if(n < target) probs.push(`Deck needs ${target-n} more card${target-n===1?"":"s"} — a deck is exactly ${target}.`);
+    else if(n > target) probs.push(`Deck is ${n-target} card${n-target===1?"":"s"} over ${target}.`);
+  }
+  // Copies by name. Unresolved entries count too, keyed off their ref — a card
+  // in the deck is in the deck whether or not its set is loaded.
+  const byName = new Map();   // name key -> {copies, label, exempt}
+  const count = (key, qty, label, exempt) => {
+    const e = byName.get(key) || {copies:0, label, exempt};
+    e.copies += qty;
+    e.exempt = e.exempt || exempt;
+    byName.set(key, e);
+  };
+  for(const c of S.zones.main)
+    count(cardKey(c), c.qty, c.name, !!c.basicEnergy);
+  for(const u of S.unresolved.filter(u => u.zone === "main"))
+    count(cardKeyRef(u.ref), u.qty, cardLabelRef(u.ref, u.ref), !!pkIndexEntry(u.ref)?.b);
+  const over = [...byName.values()].filter(e => !e.exempt && e.copies > limit);
+  if(over.length)
+    probs.push(`Over ${limit} copies by card name: `
+      + over.map(e => `${esc(e.label)} (${e.copies})`).join(", ") + `.`);
+  return probs;
+}
+/* --------------------------- the game registry ---------------------------
+   Two games, one app. Every difference between them is a value or a function
+   in this object; nothing outside it asks "which game is this?". That is the
+   adapter pattern the stage 9 brief settled on, and it is the standing rule
+   for any future game: keep its own best data source and its own vendor
+   script, transform into the one internal card shape below.
+
+   The internal card shape, common core (every game fills these):
+     name  set  setName  number  rarity  artist  image  text
+   plus, per game, whatever its own rules and UI need. Two fields carry a
+   Riftbound name for a game-neutral job and are NOT renamed, because the
+   export format and every existing exported deck file use them:
+     domains  the coloured filter axis — Riftbound domains, Pokémon energy types
+     type     the primary type axis     — Riftbound card type, Pokémon supertype
+
+   ADDING A SET to an eager game is still a data-only change: one `sets` entry
+   plus one committed pool file. For a lazy game it is not even that — the
+   vendored manifest is the list.
+
+   ADDING A GAME means one entry here plus one vendor script. There is
+   deliberately no plugin system, no schema generalisation, and no third
+   entry: the hooks below are the entire abstraction budget. */
 const GAMES = {
   riftbound: {
     id: "riftbound",
     label: "Riftbound",
     mark: "RB",
+    /* Eager: every set is fetched at load and merged into one pool. Two sets
+       is a couple of hundred KB behind an ETag. */
+    lazySets: false,
     sets: [
       { code:"OGN", name:"Origins",      pool:"./data/ogn-pool.json" },
       { code:"SFD", name:"Spiritforged", pool:"./data/sfd-pool.json" },
     ],
+    zones: RB_ZONES,
+    axis: RB_DOMAINS, axisLabel: "domains", axisInk: RB_DOMAIN_INK,
+    types: RB_TYPES,
+    rarityOrder: RB_RARITY_ORDER, rarityDot: RB_RARITY_DOT,
+    variantsToggle: true,
+    chaseRarities: ["Epic","Showcase"], chaseLabel: "Epic or Showcase",
+    energyCurve: true,
+    legend: true,
+    rules: {
+      deckSizeExact: null,          // per-zone targets instead; see RB_ZONES
+      copyLimit: 3,
+      copyLimitScope: "printing-group",
+      collectionCap: 3,
+      playset: 3,
+      unlimitedCopies: null,
+    },
+    ls: { deck:"riftbound-deckbuilder-v1", openDeck:"rb.open-deck" },
+    normalize: rbNormalize,
+    refOf: rbRefOf,
+    cardKeyRef: rbCardKeyRef,
+    cardLabelRef: rbCardLabelRef,
+    setCode: c => String(c.set || "").toUpperCase(),
+    numLabel: rbNumLabel,
+    tileMeta: rbTileMeta,
+    tileBadges: rbTileBadges,
+    modalMeta: rbModalMeta,
+    colTag: rbColTag,
+    searchMatch: rbSearchMatch,
+    validate: rbValidate,
+  },
+
+  pokemon: {
+    id: "pokemon",
+    label: "Pokémon TCG",
+    mark: "PK",
+    /* Lazy: 174 sets and 20,444 cards. The manifest and the search index load
+       at game activation — deck rows and the copy limit cannot be drawn
+       without the index — and a set's full pool only when that set is opened.
+       Never all of them, never one mega file. */
+    lazySets: true,
+    sets: [],                                  // filled from the manifest
+    setsManifest: "./data/pokemon/sets.json",
+    searchIndex:  "./data/pokemon/search-index.json",
+    poolFor: id => `./data/pokemon/${encodeURIComponent(id)}-pool.json`,
+    zones: PK_ZONES,
+    axis: PK_ENERGY_TYPES, axisLabel: "types", axisInk: PK_TYPE_INK,
+    types: PK_SUPERTYPES,
+    rarityOrder: PK_RARITY_ORDER, rarityDot: PK_RARITY_DOT,
+    variantsToggle: false,
+    chaseRarities: ["Double Rare","Ultra Rare","Rare Ultra","Illustration Rare",
+      "Special Illustration Rare","Hyper Rare","ACE SPEC Rare"],
+    chaseLabel: "Double Rare or better",
+    energyCurve: false,
+    legend: false,
+    rules: {
+      deckSizeExact: 60,
+      copyLimit: 4,
+      /* By NAME, across every printing in every set — the opposite axis from
+         Riftbound's printing-group. Basic Energy is exempt entirely. */
+      copyLimitScope: "name",
+      collectionCap: 4,
+      playset: 4,
+      unlimitedCopies: c => !!c.basicEnergy,
+    },
+    ls: { deck:"pokemon.deck", openDeck:"pokemon.open-deck" },
+    normalize: pkNormalize,
+    refOf: pkRefOf,
+    cardKeyRef: pkCardKeyRef,
+    cardLabelRef: pkCardLabelRef,
+    setCode: c => String(c.set || ""),
+    numLabel: pkNumLabel,
+    tileMeta: pkTileMeta,
+    tileBadges: pkTileBadges,
+    modalMeta: pkModalMeta,
+    colTag: pkColTag,
+    searchMatch: pkSearchMatch,
+    validate: pkValidate,
   },
 };
-const ACTIVE_GAME = "riftbound";   // the only entry today
-const GAME = GAMES[ACTIVE_GAME];
-/* The auth/data module is a separate <script type="module"> with its own scope,
-   and `const` at classic-script top level does not land on window. It needs the
-   game id for the decks table's `game` column, so publish it explicitly. */
-window.ACTIVE_GAME = ACTIVE_GAME;
+const GAME_IDS = Object.keys(GAMES);
+
+/* Mutable because the switcher in the header actually switches now. Every
+   call site reads through these aliases rather than through GAMES[...], so
+   adoptGame() is the single place a game change takes effect. */
+let ACTIVE_GAME = "riftbound";
+let GAME = GAMES[ACTIVE_GAME];
+let DOMAINS, TYPES, RARITY_ORDER, DOMAIN_INK, RARITY_DOT, ZONES;
+
+function adoptGame(){
+  GAME = GAMES[ACTIVE_GAME];
+  DOMAINS = GAME.axis;
+  TYPES = GAME.types;
+  RARITY_ORDER = GAME.rarityOrder;
+  DOMAIN_INK = GAME.axisInk;
+  RARITY_DOT = GAME.rarityDot;
+  ZONES = GAME.zones;
+  /* The auth/data module is a separate <script type="module"> with its own
+     scope, and a top-level binding here does not land on window. It needs the
+     active game id for the decks table's `game` column, and it re-reads this
+     on every query rather than caching it, so a switch reaches it too. */
+  window.ACTIVE_GAME = ACTIVE_GAME;
+  document.body.classList.toggle("game-pokemon", ACTIVE_GAME === "pokemon");
+}
+
+const readActiveGame = () => {
+  try{
+    const v = localStorage.getItem(LS_GAME);
+    return GAME_IDS.includes(v) ? v : "riftbound";
+  }catch{ return "riftbound"; }
+};
+
+/* Per-game localStorage keys. Functions, not constants: the active game can
+   change without a reload now. */
+const deckKey = () => GAME.ls.deck;
+const openDeckKey = uid => `${GAME.ls.openDeck}:${uid}`;
+const setScopeKey = () => `${ACTIVE_GAME}.setScope`;
+const openSetKey  = () => `${ACTIVE_GAME}.openSet`;
 
 /* Display-only rows in the game dropdown. Deliberately NOT registry entries:
    the registry describes games the app can actually run, and a fake entry there
    would be reachable by every loop that walks it. These are inert decoration. */
 const PLANNED_GAMES = [
   { mark:"MG", label:"Magic: The Gathering" },
-  { mark:"PK", label:"Pokémon TCG" },
   { mark:"OP", label:"One Piece Card Game" },
 ];
-
-/* Game-namespaced from day one. The four pre-existing Riftbound keys above are
-   NOT renamed — they ARE the riftbound namespace, and renaming them would
-   orphan every existing browser's decks and collection. rb.theme stays
-   app-level: a theme is not per game. */
-const LS_SET_SCOPE = `${ACTIVE_GAME}.setScope`;
-
-/* Dot / bar colors for the by-rarity panel, per the mockups. */
-const RARITY_DOT = {Common:"#9A93AC", Uncommon:"#E08A2E", Rare:"#3FA7A0",
-  Epic:"#8B5CD6", Showcase:"#D9B62E"};
 
 /* --------------------------------- state -------------------------------- */
 let S = {
@@ -940,7 +1442,11 @@ let S = {
   // Which sets the card BROWSER shows. A display filter and nothing else: the
   // deck panel, the legality checks, import and export all ignore it, and every
   // released set is tournament-legal alongside every other. Device-local.
-  setScope: GAME.sets.map(s => s.code)
+  // Eager games only — a lazy game has one open set instead; see S.openSet.
+  setScope: [],
+  // Lazy games: the set whose pool is loaded and on screen, shared by the
+  // deckbuilder and the collection. Null until the manifest lands.
+  openSet: null
 };
 
 /* Where the open deck lives. "local" = signed out, one deck in localStorage,
@@ -958,11 +1464,45 @@ let BASELINE = null;       // snapshot() of the last saved state, for dirty chec
 let ZONE_TAB = "main";     // which zone the deck panel is showing; transient
 let MENU_OPEN = false;     // deck switcher dropdown
 
+/* ------------------- the lazy game's index and pool cache ----------------
+   A 60-card Pokémon deck spans many sets, and only the open set's full pool is
+   loaded — so a deck row would otherwise render as 60 unresolved entries. The
+   search index is the resolution layer as well as the search layer: it holds
+   {id, n, s, num, img} for all 20,444 cards (plus a sparse Basic Energy flag),
+   which is everything a deck row, a tile, and the copy limit need. Full card
+   detail (HP, types, legalities) arrives when its set is opened, and the card
+   modal opens a set on demand to get it. */
+let PIDX = null;                    // the index array, or null before it loads
+let PIDX_BY_ID = new Map();         // ref -> index entry
+const POOL_CACHE = new Map();       // set id -> normalized cards, once fetched
+const pkIndexEntry = ref => PIDX_BY_ID.get(String(ref)) || null;
+const pkSetTotal = id => GAME.sets.find(s => s.code === id)?.cards ?? 0;
+
+/* A card the index can describe but no loaded pool can. Enough to draw a tile,
+   a deck row, and to answer the copy limit; `light` marks what it is missing so
+   the modal knows to fetch the real record. */
+function pkLightCard(entry){
+  return {
+    name:entry.n, pokemonId:entry.id, set:entry.s, setName:setNameOf(entry.s),
+    number:entry.num || null, image:entry.img || null, imageLarge:null,
+    rarity:null, supertype:null, subtypes:[], hp:null, types:[], domains:[],
+    type:null, regulationMark:null, legalities:null, basicEnergy:!!entry.b,
+    artist:null, text:null, energy:0, might:null, power:null,
+    signature:false, alternateArt:false, light:true
+  };
+}
+
 /* ----------------------- collection state (stage 6) ---------------------- */
 let VIEW = "deck";         // "deck" | "collection", driven by the URL hash
-/* The collection map: riftboundId -> qty (1..3). A printing at zero is
-   DELETED, never stored as 0. Every printing is its own object — a base card
-   and its Showcase are two keys, deliberately (see CLAUDE.md). Keys that no
+/* The collection, nested by game (stage 9): {riftbound:{ref:qty}, pokemon:{…}}.
+   One row, one blob, one sync engine — splitting it per game would multiply
+   the engine's states and drag the wipe-recovery machinery along for nothing
+   (see migration 0005's header). COL is the ACTIVE game's inner map, held by
+   reference so every existing COL[id] mutation lands in the nested object. */
+let COLALL = {};
+/* A printing at zero is DELETED, never stored as 0. Every printing is its own
+   object — a base card and its Showcase are two keys, deliberately, and so are
+   an Origins card and its Spiritforged reprint (see CLAUDE.md). Keys that no
    longer resolve against the pool are preserved on every write, just not
    counted in the UI. */
 let COL = {};
@@ -981,7 +1521,9 @@ const uid = () => Math.random().toString(36).slice(2,10);
 const nk = s => String(s).trim().toLowerCase();
 const sum = l => l.reduce((n,c)=>n+c.qty,0);
 const tagOf = n => nk(String(n).split(" - ")[0].replace(/\(.*\)/,""));
+/* Which zone a card type belongs in. A game with one zone has one answer. */
 const zoneFor = t => {
+  if(Object.keys(GAME.zones).length === 1) return "main";
   t = String(t).toLowerCase();
   return t==="legend" ? "legend" : t==="rune" ? "runes"
        : t==="battlefield" ? "battlefields" : "main";
@@ -1008,10 +1550,22 @@ const jsStr = s => String(s ?? "")
    40-card deck is ~2 KB as refs against ~150 KB as full card objects, and the
    difference is what the free tier's transfer budget lives on.
 
-   The ref is riftboundId (collector-number identity, e.g. "ogn-001-298"),
-   falling back to name for cards without one. Collector number is the key by
-   decision — a base printing and its Showcase printing are distinct refs. */
-const refOf = c => c.riftboundId || c.name;
+   Identity is the active game's, resolved through the registry: Riftbound uses
+   riftboundId (collector-number identity, e.g. "ogn-001-298"), Pokémon the
+   card id ("sv1-1"). Collector-number identity is the key by decision — a base
+   printing and its Showcase printing are distinct refs, and so are an Origins
+   card and its Spiritforged reprint. */
+const refOf = c => GAME.refOf(c);
+/* The card pool's own normalizer, per game. */
+const normalize = c => GAME.normalize(c);
+/* How many copies of THIS card a deck may hold. Basic Energy is exempt from
+   Pokémon's limit entirely (Rule 4.2.1), so it is capped only by the deck. */
+function copyCap(card){
+  const r = GAME.rules;
+  if(r.unlimitedCopies && card && r.unlimitedCopies(card))
+    return r.deckSizeExact || 99;
+  return r.copyLimit;
+}
 
 /* Deck-limit identity — the OPPOSITE of refOf, by decision (CLAUDE.md). For the
    3-copy limit a base printing and its Showcase/alt-art printing are ONE card,
@@ -1069,8 +1623,13 @@ const baseName = n => String(n).replace(/\s*\([^)]*\)\s*$/, "");
    The COLLECTION is untouched by all of this. It keys on the full ref, so an
    OGN printing and its SFD reprint stay two distinct collectibles. */
 let CARD_INDEX = new Map();   // id-group -> {key, label}
+let POOL_BY_REF = new Map();  // ref -> the loaded card, rebuilt with the pool
 
 function buildCardIndex(){
+  CARD_INDEX = new Map();
+  // Only the printing-group scope needs it; a name-scoped game reads names
+  // straight off the card and would build 20,444 entries for nothing.
+  if(GAME.rules.copyLimitScope !== "printing-group") return;
   const groups = new Map();
   for(const c of S.pool){
     const g = copyGroup(c);
@@ -1085,42 +1644,50 @@ function buildCardIndex(){
   }
 }
 
-/* The sets actually present in the loaded pool: registry order first, then any
-   extra a hand-imported pool file brought along, so the chip row describes the
-   cards on screen rather than the registry's intentions. */
+/* The set code a card belongs to, in the active game's spelling — Riftbound
+   codes are uppercase ("OGN"), Pokémon set ids are not ("sv3pt5"). */
+const setCodeOf = c => GAME.setCode(c);
+
+/* The sets the browser can offer. For an eager game that is what actually
+   arrived in the pool — registry order first, then any extra a hand-imported
+   pool file brought along, so the chip row describes the cards on screen
+   rather than the registry's intentions. For a lazy game it is the vendored
+   manifest: 174 sets exist whether or not their pools are in memory. */
 function poolSets(){
-  const inPool = new Set(S.pool.map(c => String(c.set || "").toUpperCase()).filter(Boolean));
+  if(GAME.lazySets) return GAME.sets;
+  const inPool = new Set(S.pool.map(setCodeOf).filter(Boolean));
   const known = GAME.sets.filter(s => inPool.has(s.code));
   const extra = [...inPool]
     .filter(code => !GAME.sets.some(s => s.code === code))
     .map(code => ({code,
-      name: S.pool.find(c => String(c.set).toUpperCase() === code)?.setName || code}));
+      name: S.pool.find(c => setCodeOf(c) === code)?.setName || code}));
   return [...known, ...extra];
 }
 const setNameOf = code =>
   poolSets().find(s => s.code === code)?.name || code;
-const setCardsOf = code =>
-  S.pool.filter(c => String(c.set).toUpperCase() === code);
+const setMetaOf = code => poolSets().find(s => s.code === code) || null;
+const setCardsOf = code => S.pool.filter(c => setCodeOf(c) === code);
 
 /* Called whenever S.pool is replaced, from either source (the fetch or the
    file picker). Rebuilds the identity index and reconciles the persisted set
-   scope with the sets that actually arrived. */
+   scope with the sets that actually arrived. A lazy game has no multi-select
+   scope to reconcile — one set is open, and it is the pool. */
 function adoptPool(){
+  POOL_BY_REF = new Map(S.pool.map(c => [refOf(c), c]));
   buildCardIndex();
+  if(GAME.lazySets){ COLF.set = S.openSet; return; }
   const codes = poolSets().map(s => s.code);
   S.setScope = S.setScope.filter(c => codes.includes(c));
   if(!S.setScope.length) S.setScope = codes;
   if(COLF.set !== "all" && !codes.includes(COLF.set)) COLF.set = "all";
 }
 
-/* Deck-legality identity for a ref. Falls back to the id-group for a ref the
-   pool can't explain (an unresolved entry), so such a ref groups with its own
-   printings and nothing else — never silently with a real card. */
-const cardKeyRef = ref => CARD_INDEX.get(copyGroupRef(ref))?.key || copyGroupRef(ref);
+/* Deck-legality identity for a ref, and a human label for a message about it.
+   Both per game: Riftbound folds printings and cross-set reprints together by
+   the base printing's name, Pokémon counts by card name outright. */
+const cardKeyRef = ref => GAME.cardKeyRef(ref);
 const cardKey = c => cardKeyRef(refOf(c));
-/* Human label for a legality message about a ref's card. */
-const cardLabelRef = (ref, fallback) =>
-  CARD_INDEX.get(copyGroupRef(ref))?.label || fallback;
+const cardLabelRef = (ref, fallback) => GAME.cardLabelRef(ref, fallback);
 
 /* The champion is held in memory as a name (the legality checks compare
    names), but stored as a ref so the payload has one identity scheme. */
@@ -1160,20 +1727,21 @@ function serializeDeck(){
 function hydrateDeck(p){
   p = p || {};
   S.unresolved = [];
-  const zones = {main:[],runes:[],battlefields:[],sideboard:[]};
+  const zones = emptyZones();
   const src = p.zones || {};
   for(const k of Object.keys(zones)){
     for(const e of (Array.isArray(src[k]) ? src[k] : [])){
       if(!e) continue;
-      const qty = Math.max(1, Math.min(3, Number(e.qty) || 1));
+      const raw = Math.max(1, Number(e.qty) || 1);
       if(e.ref !== undefined){
         const card = findCard(e.ref);
-        if(card) zones[k].push({...card, id:uid(), qty});
-        else S.unresolved.push({zone:k, ref:String(e.ref), qty});
+        if(card) zones[k].push({...card, id:uid(), qty:Math.min(copyCap(card), raw)});
+        else S.unresolved.push({zone:k, ref:String(e.ref), qty:raw});
       } else if(e.name){
-        const card = findCard(e.riftboundId || e.name)
+        const card = findCard(e.riftboundId || e.pokemonId || e.id || e.name)
                   || S.pool.find(c => nk(c.name) === nk(e.name));
-        zones[k].push({...(card || normalize(e)), id:uid(), qty});
+        const resolved = card || normalize(e);
+        zones[k].push({...resolved, id:uid(), qty:Math.min(copyCap(resolved), raw)});
       }
     }
   }
@@ -1216,7 +1784,7 @@ window.hasUnsavedChanges = () => isDirty() && !deckIsBlank();
 function touch(){
   if(MODE === "local"){
     try{
-      localStorage.setItem(KEY, JSON.stringify({
+      localStorage.setItem(deckKey(), JSON.stringify({
         schema:2, deckName:S.deckName, savedAt:S.savedAt, deck:serializeDeck()
       }));
     }catch(e){ note("Couldn't save locally: " + e.message); }
@@ -1226,7 +1794,7 @@ function touch(){
 
 function load(){
   try{
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(deckKey());
     if(!raw) return false;
     const saved = JSON.parse(raw);
     // Blobs written before the pool was served from this origin carry a copy
@@ -1255,10 +1823,14 @@ function load(){
 
 /* Clears the working deck to a fresh untitled one. Never touches database
    rows — deleting a saved deck is a different, explicit action. */
+/* One empty list per zone the active game defines. */
+const emptyZones = () =>
+  Object.fromEntries(Object.keys(GAME.zones).map(k => [k, []]));
+
 function freshDeck(){
   S.deckName = "Untitled deck";
   S.legend = null; S.champion = null;
-  S.zones = {main:[],runes:[],battlefields:[],sideboard:[]};
+  S.zones = emptyZones();
   S.unresolved = [];
   S.deckId = null; S.savedAt = null;
   BASELINE = null;
@@ -1269,7 +1841,7 @@ function wipe(){
     ? "Clear the current deck from the table? Saved decks in your account are not affected."
     : "Clear the saved deck from this browser?";
   if(!confirm(msg)) return;
-  if(MODE === "local"){ try{ localStorage.removeItem(KEY); }catch{} }
+  if(MODE === "local"){ try{ localStorage.removeItem(deckKey()); }catch{} }
   freshDeck();
   touch(); render();
 }
@@ -1300,7 +1872,7 @@ function openDeckRow(row){
   hydrateDeck(row.payload);
   BASELINE = snapshot();
   if(CLOUD_USER){
-    try{ localStorage.setItem(`${LS_OPEN_DECK}:${CLOUD_USER.id}`, row.id); }catch{}
+    try{ localStorage.setItem(openDeckKey(CLOUD_USER.id), row.id); }catch{}
   }
   render();
 }
@@ -1318,7 +1890,7 @@ window.onCloudSession = function(user, decks, importedRow, collection){
     let row = importedRow;
     if(!row){
       let wanted = null;
-      try{ wanted = localStorage.getItem(`${LS_OPEN_DECK}:${user.id}`); }catch{}
+      try{ wanted = localStorage.getItem(openDeckKey(user.id)); }catch{}
       row = DECKS.find(d => d.id === wanted) || DECKS[0] || null;
     }
     PENDING_CLOUD = row;
@@ -1326,7 +1898,8 @@ window.onCloudSession = function(user, decks, importedRow, collection){
     // Collection: the module already merged the local map server-side.
     // null = the read failed; hold everything and retry until it lands.
     if(collection){
-      COL = sanitizeCollection(collection);
+      COLALL = liftCollection(collection);
+      adoptCollection();
       COL_READY = true; COL_LOAD_FAILED = false;
     } else {
       COL_READY = false; COL_LOAD_FAILED = true;
@@ -1338,7 +1911,8 @@ window.onCloudSession = function(user, decks, importedRow, collection){
     DECKS = [];
     // Signed out the collection lives on this device; the account's copy
     // stays in the account.
-    COL = readLocalCollection();
+    COLALL = readLocalCollection();
+    adoptCollection();
     COL_READY = true; COL_LOAD_FAILED = false;
     if(wasCloud){
       // Signing out mid-session: the account's decks stay in the account.
@@ -1354,14 +1928,39 @@ window.onCloudSession = function(user, decks, importedRow, collection){
   renderCollectionAll();
 };
 
-/* The signed-out deck, read raw for the merge-on-signup path. Serialized
-   without needing the pool: slim blobs already hold refs, and legacy fat
-   blobs carry riftboundId on every entry. Returns null when there is nothing
-   worth importing — an untouched empty deck would just be noise in the list. */
-window.localDeckForMerge = function(){
+/* Re-list and re-open decks for the active game. Used by the game switcher:
+   a game's decks are a different set of rows, filtered server-side by
+   decks.game (migration 0005). */
+async function reopenCloudDecks(){
+  const r = await window.cloud?.list?.();
+  if(!r || r.error){
+    console.warn("[cloud] deck list failed on game switch:", r?.error);
+    note(`Couldn't load your ${GAME.label} decks — Save will still work.`);
+    DECKS = []; openDeckRow(null);
+    return;
+  }
+  DECKS = r.data ?? [];
+  let wanted = null;
+  if(CLOUD_USER){
+    try{ wanted = localStorage.getItem(openDeckKey(CLOUD_USER.id)); }catch{}
+  }
+  openDeckRow(DECKS.find(d => d.id === wanted) || DECKS[0] || null);
+}
+
+/* One game's signed-out deck, read raw for the merge-on-signup path.
+   Serialized without needing the pool: slim blobs already hold refs, and
+   legacy fat blobs carry riftboundId on every entry. Reads GAMES[gameId]
+   rather than the active GAME, because signing in has to sweep up the local
+   deck of EVERY game — otherwise a Pokémon deck built signed-out would sit
+   in localStorage unimported until that game next happened to be active.
+   Returns null when there is nothing worth importing: an untouched empty deck
+   would just be noise in the list. */
+function localDeckFor(gameId){
+  const g = GAMES[gameId];
+  if(!g) return null;
   let b;
   try{
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(g.ls.deck);
     if(!raw) return null;
     b = JSON.parse(raw);
   }catch{ return null; }
@@ -1370,11 +1969,11 @@ window.localDeckForMerge = function(){
     name = b.deckName; payload = b.deck;
   } else if(b.zones){
     const zones = {};
-    for(const k of Object.keys(ZONES)){
+    for(const k of Object.keys(g.zones)){
       zones[k] = (Array.isArray(b.zones[k]) ? b.zones[k] : [])
         .filter(e => e && (e.riftboundId || e.name || e.ref))
         .map(e => ({ref: e.ref || e.riftboundId || e.name,
-                    qty: Math.max(1, Math.min(3, Number(e.qty) || 1))}));
+                    qty: Math.max(1, Math.min(g.rules.copyLimit, Number(e.qty) || 1))}));
     }
     payload = {
       schema:1,
@@ -1387,9 +1986,15 @@ window.localDeckForMerge = function(){
   const empty = !payload.legend && !payload.champion &&
     Object.values(payload.zones).every(z => !z.length);
   if(empty) return null;
-  return {name: String(name || "Untitled deck"), payload};
+  return {game: gameId, name: String(name || "Untitled deck"), payload};
+}
+/* Every game's local deck, for the module's merge-on-signup. An ARRAY since
+   stage 9 — one entry per game that has something worth importing. */
+window.localDeckForMerge = () => GAME_IDS.map(localDeckFor).filter(Boolean);
+window.clearLocalDeck = gameId => {
+  const key = GAMES[gameId]?.ls.deck || deckKey();
+  try{ localStorage.removeItem(key); }catch{}
 };
-window.clearLocalDeck = () => { try{ localStorage.removeItem(KEY); }catch{} };
 
 /* --------------------------------- saving ------------------------------- */
 let SAVING = false;
@@ -1414,7 +2019,7 @@ window.saveDeckCloud = async function(){
     const i = DECKS.findIndex(d => d.id === row.id);
     if(i >= 0) DECKS[i] = row; else DECKS.unshift(row);
     if(CLOUD_USER){
-      try{ localStorage.setItem(`${LS_OPEN_DECK}:${CLOUD_USER.id}`, row.id); }catch{}
+      try{ localStorage.setItem(openDeckKey(CLOUD_USER.id), row.id); }catch{}
     }
     if(MENU_OPEN) renderDeckMenu();   // a first save adds a row to the list
     note("Deck saved.");
@@ -1458,12 +2063,15 @@ function renderSaveState(){
 }
 
 /* ---------------------------- game switcher ------------------------------ */
-/* The registry holds exactly one game, so this switcher switches nothing
-   today. It exists because every piece of game-scoped state — the deck rows'
-   `game` column, the localStorage namespace, the collection map — is already
-   routed through GAME, and the header is where that promise is made visible.
+/* It switches for real now. Everything game-scoped — the pool, the deck rows'
+   `game` column, the localStorage namespace, the collection's game key, the
+   rules — is read through GAME, so a switch is: resolve the new entry, reset
+   the per-game state, load its pool, and re-list its decks. No reload: a
+   reload would silently discard an unsaved deck instead of asking about it,
+   and the signed-out deck for each game lives under its own key anyway.
    The planned rows are inert: no handler, no href, nothing to click. */
 let GAME_MENU_OPEN = false;
+let GAME_SWITCHING = false;
 
 window.toggleGameMenu = (open = !GAME_MENU_OPEN) => {
   GAME_MENU_OPEN = open;
@@ -1472,12 +2080,34 @@ window.toggleGameMenu = (open = !GAME_MENU_OPEN) => {
   if(open) renderGameMenu();
 };
 
+/* One line describing a game as it stands right now. For the inactive game
+   this can only report what is knowable without loading its pool — the deck
+   count comes from the cached rows, the collection count from its own map. */
+function gameSummary(id){
+  const g = GAMES[id];
+  if(id === ACTIVE_GAME){
+    const sets = poolSets().length;
+    return VIEW === "collection"
+      ? `${sets} set${sets===1?"":"s"} · ${colLoggedPrintings()} printings logged`
+      : `${sets} set${sets===1?"":"s"} · ${gameCardTotal().toLocaleString()} cards`;
+  }
+  const logged = Object.keys(COLALL[id] || {}).length;
+  return logged ? `${logged} printings logged` : "Nothing logged yet";
+}
+
 function renderGameMenu(){
   const collection = VIEW === "collection";
-  const sets = poolSets();
-  const summary = collection
-    ? `${sets.length} set${sets.length===1?"":"s"} · ${colLoggedPrintings()} printings logged`
-    : `${sets.length} set${sets.length===1?"":"s"} · ${S.pool.length.toLocaleString()} cards`;
+  const rows = GAME_IDS.map(id => {
+    const g = GAMES[id], on = id === ACTIVE_GAME;
+    const inner = `<i class="gmark">${esc(g.mark)}</i>
+       <span class="gmbody"><span class="gmname">${esc(g.label)}</span>
+         <span class="gmsub">${esc(gameSummary(id))}</span></span>
+       <span class="gmstate${on ? " on" : ""}">${on ? "Active" : "Switch"}</span>`;
+    return on
+      ? `<div class="gmrow active">${inner}</div>`
+      : `<button class="gmrow" onclick="switchGame('${jsStr(id)}')"
+           ${GAME_SWITCHING ? "disabled" : ""}>${inner}</button>`;
+  }).join("");
   const planned = PLANNED_GAMES.map(g => `
     <div class="gmrow planned" aria-disabled="true">
       <i class="gmark">${esc(g.mark)}</i>
@@ -1487,17 +2117,52 @@ function renderGameMenu(){
     </div>`).join("");
   document.getElementById("gameMenu").innerHTML =
     `<p class="gmhead">Games</p>
-     <div class="gmrow active">
-       <i class="gmark">${esc(GAME.mark)}</i>
-       <span class="gmbody"><span class="gmname">${esc(GAME.label)}</span>
-         <span class="gmsub">${esc(summary)}</span></span>
-       <span class="gmstate on">Active</span>
-     </div>
+     ${rows}
      ${planned}
      <p class="gmfoot">${collection
        ? "Each game keeps its own collection and decks."
        : "Decks and collection stay per game."}</p>`;
 }
+
+/* Switch games in place. The only thing that can block it is an unsaved deck,
+   and that is asked about rather than discarded. */
+window.switchGame = async id => {
+  if(GAME_SWITCHING || id === ACTIVE_GAME || !GAMES[id]) return;
+  toggleGameMenu(false);
+  // Same three-way prompt the deck switcher uses: save first, switch anyway,
+  // or cancel. Returns true only when it is safe to move on.
+  if(!await resolveDirty(
+      `Switching to ${GAMES[id].label} closes this deck, and it has unsaved changes.`,
+      "Switch anyway")) return;
+  GAME_SWITCHING = true;
+  ACTIVE_GAME = id;
+  try{ localStorage.setItem(LS_GAME, id); }catch{}
+  adoptGame();
+  // Per-game state, all of it. Anything left over from the other game here
+  // would be a card, a filter or a set code that means nothing in this one.
+  POOL_READY = false;
+  S.pool = []; POOL_BY_REF = new Map(); CARD_INDEX = new Map();
+  PIDX = null; PIDX_BY_ID = new Map(); POOL_CACHE.clear();
+  S.q = ""; S.domainFilter = []; S.typeFilter = []; S.rarityFilter = []; S.limit = 48;
+  S.openSet = null;
+  S.setScope = GAME.lazySets ? [] : GAME.sets.map(s => s.code);
+  if(!GAME.lazySets){ const sc = readSetScope(); if(sc) S.setScope = sc; }
+  COLF.q = ""; COLF.tab = "all"; COLF.domains = []; COLF.types = []; COLF.set = "all";
+  document.getElementById("q").value = "";
+  document.getElementById("colQ").value = "";
+  SETPICK_Q = ""; SETPICK_GROUPS = null;
+  freshDeck();
+  adoptCollection();
+  paintGameButton();
+  render();
+  await loadPool();
+  // Signed in: this game's decks are a different set of rows.
+  if(MODE === "cloud") await reopenCloudDecks();
+  else { PENDING_LOCAL = undefined; if(load()) applyPending(); }
+  GAME_SWITCHING = false;
+  render(); renderCollectionAll();
+  note(`${GAME.label} · ${S.pool.length} cards loaded`);
+};
 
 function paintGameButton(){
   document.getElementById("gameMark").textContent = GAME.mark;
@@ -1512,6 +2177,15 @@ document.getElementById("gameBtn").addEventListener("click", e => {
 });
 document.addEventListener("click", e => {
   if(GAME_MENU_OPEN && !e.target.closest(".gamewrap")) toggleGameMenu(false);
+  if(SETPICK_OPEN && !e.target.closest(".setpickwrap")) toggleSetPick(false);
+});
+document.getElementById("setPickBtn").addEventListener("click", e => {
+  e.stopPropagation();
+  toggleSetPick();
+});
+document.getElementById("setPickQ").addEventListener("input", e => {
+  SETPICK_Q = e.target.value;
+  renderSetPickList();
 });
 
 /* ------------------------------ set scope -------------------------------- */
@@ -1520,17 +2194,18 @@ document.addEventListener("click", e => {
    touches user_settings and never marks a deck dirty. */
 function readSetScope(){
   try{
-    const raw = localStorage.getItem(LS_SET_SCOPE);
+    const raw = localStorage.getItem(setScopeKey());
     if(!raw) return null;
     const v = JSON.parse(raw);
     return Array.isArray(v) && v.length ? v.map(String) : null;
   }catch{ return null; }
 }
 const writeSetScope = () => {
-  try{ localStorage.setItem(LS_SET_SCOPE, JSON.stringify(S.setScope)); }catch{}
+  try{ localStorage.setItem(setScopeKey(), JSON.stringify(S.setScope)); }catch{}
 };
 
-const inScope = c => S.setScope.includes(String(c.set).toUpperCase());
+const inScope = c => GAME.lazySets ? setCodeOf(c) === S.openSet
+                                  : S.setScope.includes(setCodeOf(c));
 const scopedPool = () => S.pool.filter(inScope);
 
 window.toggleSetScope = code => {
@@ -1550,9 +2225,10 @@ window.toggleSetScope = code => {
 };
 
 function renderSetBar(){
+  renderPickSetBar();          // the lazy game's control; hides itself
   const bar = document.getElementById("setBar");
   const sets = poolSets();
-  bar.hidden = VIEW !== "deck" || !sets.length;
+  bar.hidden = GAME.lazySets || VIEW !== "deck" || !sets.length;
   if(bar.hidden) return;
   const all = sets.every(s => S.setScope.includes(s.code));
   document.getElementById("setChips").innerHTML =
@@ -1622,8 +2298,10 @@ function renderDeckMenu(){
     </div>`;
   }).join("");
   menu.innerHTML =
-    `<div class="dmhead"><span>Your decks</span><span>${DECKS.length} deck${DECKS.length===1?"":"s"}</span></div>`
-    + (rows || `<div class="dmempty">No saved decks yet. Build one and hit Save.</div>`)
+    // The list is scoped to one game by decks.game (0005), so it says which.
+    `<div class="dmhead"><span>Your ${esc(GAME.label)} decks</span><span>${DECKS.length} deck${DECKS.length===1?"":"s"}</span></div>`
+    + (rows || `<div class="dmempty">No saved ${esc(GAME.label)} decks yet. Build one and hit Save.<br>
+         A deck belongs to the game it was built in.</div>`)
     + `<div class="dmacts">
         <button class="btn" onclick="newDeck()">+ New deck</button>
         <button class="btn" onclick="duplicateDeck()"
@@ -1760,48 +2438,99 @@ window.toggleTheme = () => {
    Collection (stage 6)
    ======================================================================== */
 
+/* ------------------ nested-by-game collection blob (stage 9) -------------
+   The stored shape is {game: {ref: qty}}. Before stage 9 it was one flat map,
+   implicitly Riftbound, and blobs in that shape are still out there in every
+   existing browser and in every existing user_settings row — so the flat shape
+   is LIFTED, never rejected: it is read as the riftbound map and written back
+   nested on the next sync.
+
+   "Nested" is decided by shape, not by trusting the sender: every top-level
+   key must be a game id AND every value an object. A flat map fails that on
+   its first numeric value ({"ogn-001-298": 3}), which is exactly the tell. An
+   empty object satisfies it trivially and is correct either way.
+
+   Clamping is per OWNING game, because the caps differ (3 Riftbound, 4
+   Pokémon). A key under a game this build has never heard of is preserved
+   untouched rather than dropped or clamped to a cap that isn't its own — same
+   principle as an unresolved ref: keep somebody's data, just don't display it. */
+const isNestedCollection = raw =>
+  !!raw && typeof raw === "object" &&
+  Object.entries(raw).every(([k, v]) =>
+    GAME_IDS.includes(k) && !!v && typeof v === "object" && !Array.isArray(v));
+
 /* Heal anything out of range instead of rendering an impossible state: a
-   hand-edited or ancient blob with 0, 7, or "two" becomes 1..3 or is gone. */
-function sanitizeCollection(raw){
+   hand-edited or ancient entry with 0, 7, or "two" becomes 1..cap or is gone. */
+function sanitizeGameMap(raw, cap){
   const out = {};
   if(!raw || typeof raw !== "object") return out;
   for(const [k, v] of Object.entries(raw)){
     const q = Math.floor(Number(v));
     if(!isFinite(q) || q < 1) continue;
-    out[k] = Math.min(3, q);
+    out[k] = cap ? Math.min(cap, q) : q;
   }
   return out;
+}
+
+/* raw (either shape) -> {game: {ref: qty}}, clamped. Published on window
+   because the auth module's merge-on-sign-in needs the same lift and there
+   must be exactly one implementation of it. */
+function liftCollection(raw){
+  if(!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const nested = isNestedCollection(raw) ? raw : {riftbound: raw};
+  const out = {};
+  for(const [game, map] of Object.entries(nested))
+    out[game] = sanitizeGameMap(map, GAMES[game]?.rules.collectionCap ?? 0);
+  return out;
+}
+window.liftCollection = liftCollection;
+
+/* Point COL at the active game's inner map, creating it if this is the first
+   card ever logged for that game. By reference, so every COL[id] mutation in
+   the app lands inside COLALL and gets persisted. */
+function adoptCollection(){
+  if(!COLALL[ACTIVE_GAME] || typeof COLALL[ACTIVE_GAME] !== "object")
+    COLALL[ACTIVE_GAME] = {};
+  COL = COLALL[ACTIVE_GAME];
 }
 
 function readLocalCollection(){
   try{
     const raw = localStorage.getItem(LS_COLLECTION);
-    return raw ? sanitizeCollection(JSON.parse(raw)) : {};
+    return raw ? liftCollection(JSON.parse(raw)) : {};
   }catch{ return {}; }
 }
-/* The signed-out map, for the module's max-merge. null when empty. */
+/* The signed-out blob, for the module's per-game max-merge. null when every
+   game's map is empty — an all-empty blob is nothing to contribute, and
+   writing it is what the 2026-08-17 wipe did. */
 window.localCollectionForMerge = function(){
-  const m = readLocalCollection();
-  return Object.keys(m).length ? m : null;
+  const all = readLocalCollection();
+  return Object.values(all).some(m => Object.keys(m).length) ? all : null;
 };
 window.clearLocalCollection = () => { try{ localStorage.removeItem(LS_COLLECTION); }catch{} };
 
 const qtyOf = id => COL[id] || 0;
+/* The active game's caps, read where they are used so a game switch needs no
+   invalidation pass. */
+const colCap = () => GAME.rules.collectionCap;
+const colPlayset = () => GAME.rules.playset;
 
-/* "OGN 007A/298" from "ogn-007a-298". The denominator comes from the id, so
-   overnumbered Showcase printings legitimately read above it. */
-function colNum(c){
-  const m = String(c.riftboundId || "").split("-");
-  if(m.length === 3) return `${m[0].toUpperCase()} ${m[1].toUpperCase()}/${m[2]}`;
-  return c.number != null ? `${String(c.set||"").toUpperCase()} ${String(c.number).padStart(3,"0")}`.trim() : "";
-}
+/* The collector-number stamp on a collection tile, per game. */
+const colNum = c => GAME.numLabel(c);
 
 /* Counts ignore map keys that no longer resolve against the pool — they are
    preserved on every write, just not displayed. */
 const colOwnedCount = list => list.reduce((n,c) => n + (qtyOf(refOf(c)) > 0 ? 1 : 0), 0);
 const colCopies = list => list.reduce((n,c) => n + qtyOf(refOf(c)), 0);
-/* Printings logged across the whole game, for the header and the game menu. */
-const colLoggedPrintings = () => colOwnedCount(S.pool);
+/* Printings logged across the whole game, for the header and the game menu.
+   A lazy game has one set in memory, so the whole-game number comes off the
+   map itself, narrowed to refs the index can still explain — the same rule the
+   per-set counts follow. */
+const colLoggedPrintings = () => GAME.lazySets
+  ? Object.keys(COL).filter(k => PIDX_BY_ID.has(k)).length
+  : colOwnedCount(S.pool);
+/* Every printing the game has, loaded or not. */
+const gameCardTotal = () => GAME.lazySets ? (PIDX ? PIDX.length : 0) : S.pool.length;
 
 /* ----------------------- the collection's set scope ----------------------
    COLF.set narrows the ENTIRE collection view — stats, rarity breakdown,
@@ -1811,14 +2540,24 @@ const colLoggedPrintings = () => colOwnedCount(S.pool);
    is a client-side diff. Splitting it into per-set rows would multiply the sync
    engine's states and drag the wipe-recovery machinery (COL_READY, the no-row
    resolution path, the 0004 history trigger) along for nothing. */
+/* A lazy game has no aggregate grid: 20,444 tiles is not a page, and the sets
+   whose pools aren't loaded have no cards to draw. Its scope is always the one
+   open set, and the whole-game number lives in the summary panel instead. */
 const colScoped = () =>
-  COLF.set === "all" ? S.pool : setCardsOf(COLF.set);
+  (GAME.lazySets || COLF.set !== "all") ? setCardsOf(colSetCode()) : S.pool;
+const colSetCode = () => GAME.lazySets ? S.openSet : COLF.set;
+/* "All sets" only exists for an eager game; a lazy game is always one set. */
+const colIsAll = () => !GAME.lazySets && COLF.set === "all";
 const colScopeName = () =>
-  COLF.set === "all" ? "All sets" : setNameOf(COLF.set);
-/* Rarities present in the active set, in the canonical order. Derived from the
-   data, so a set that introduces a new rarity needs no code change. */
+  (!GAME.lazySets && COLF.set === "all") ? "All sets" : setNameOf(colSetCode());
+/* The rarity sections, in the canonical order. Derived from the data, so a set
+   that introduces a new rarity needs no code change. Cards with no rarity at
+   all — 295 of the Pokémon printings — group under one explicit heading rather
+   than dropping out of the grid, which is what filtering them away did. */
+const RARITY_NONE = "Unclassified";
+const rarityOf = c => c.rarity || RARITY_NONE;
 const colRarities = () =>
-  [...new Set(colScoped().map(c => c.rarity).filter(Boolean))]
+  [...new Set(colScoped().map(rarityOf))]
     .sort((a,b) => {
       const ia = RARITY_ORDER.indexOf(a), ib = RARITY_ORDER.indexOf(b);
       return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
@@ -1833,7 +2572,8 @@ window.setColSet = code => {
 function renderColSetBar(){
   const bar = document.getElementById("colSetBar");
   const sets = poolSets();
-  bar.hidden = VIEW !== "collection" || !sets.length;
+  // The lazy game's picker is its own bar, shown in both views.
+  bar.hidden = GAME.lazySets || VIEW !== "collection" || !sets.length;
   if(bar.hidden) return;
   const chip = (code, label, meta, on) =>
     `<button class="setchip${on ? " on" : ""}" onclick="setColSet('${jsStr(code)}')">${esc(label)} <b>${meta}</b></button>`;
@@ -1856,8 +2596,16 @@ function renderColSetBar(){
 let colTimer = null, colRetryTimer = null, colInflight = false,
     colDirty = false, colFailed = false, colBackoff = 2000;
 
+/* A detached copy of the whole nested blob to send. One level deeper than the
+   old {...COL} because a game's inner map must not be shared with the state
+   the user is still tapping on while the request is in flight. Every game
+   travels, not just the active one — the row holds one blob. */
+const snapshotCollection = () =>
+  Object.fromEntries(Object.entries(COLALL).map(([g, m]) => [g, {...m}]));
+
 function colPersistLocal(){
-  try{ localStorage.setItem(LS_COLLECTION, JSON.stringify(COL)); }
+  // The whole nested blob, every game — one key, one write.
+  try{ localStorage.setItem(LS_COLLECTION, JSON.stringify(COLALL)); }
   catch(e){ note("Couldn't save locally: " + e.message); }
 }
 
@@ -1883,7 +2631,7 @@ async function colFlush(){
   if(!COL_READY) return;
   colDirty = false; colInflight = true;
   renderSyncState();
-  const r = await window.cloud.saveCollection({...COL});
+  const r = await window.cloud.saveCollection(snapshotCollection());
   colInflight = false;
   if(r.error){
     colDirty = true; colFailed = true;
@@ -1904,7 +2652,7 @@ async function colFlush(){
 function colFlushOnHide(){
   if(MODE !== "cloud" || !COL_READY || (!colDirty && !colTimer)) return;
   clearTimeout(colTimer); colTimer = null;
-  window.cloud?.collectionKeepalive?.({...COL});
+  window.cloud?.collectionKeepalive?.(snapshotCollection());
 }
 document.addEventListener("visibilitychange", () => {
   if(document.visibilityState === "hidden") colFlushOnHide();
@@ -1920,7 +2668,8 @@ function scheduleColLoadRetry(){
     if(MODE !== "cloud" || COL_READY || !window.cloud?.syncCollection) return;
     const r = await window.cloud.syncCollection();
     if(!r.error && r.map){
-      COL = sanitizeCollection(r.map);
+      COLALL = liftCollection(r.map);
+      adoptCollection();
       COL_READY = true; COL_LOAD_FAILED = false;
       renderCollectionAll();
     } else scheduleColLoadRetry();
@@ -1984,18 +2733,35 @@ function colMatchesSearch(c, term, qnorm){
   if(!term) return true;
   if(c.name.toLowerCase().includes(term)) return true;
   if((c.artist || "").toLowerCase().includes(term)) return true;
-  const id = String(c.riftboundId || "").toLowerCase();
+  const id = String(refOf(c) || "").toLowerCase();
   if(id.includes(term)) return true;
   if(qnorm){
-    const mid = (id.split("-")[1] || "").replace(/^0+/, "");
-    if(mid.startsWith(qnorm)) return true;
+    // The collector number, from the field for a game that has one as a field
+    // and from the middle id segment for a game that carries it there.
+    const num = c.number != null ? String(c.number).toLowerCase()
+                                : (id.split("-")[1] || "");
+    if(num.replace(/^0+/, "").startsWith(qnorm)) return true;
   }
   return false;
 }
+/* Collector-number order. Pokémon numbers are strings and not all numeric
+   (GG69, TG12, SV107), so numerics sort numerically and the rest fall in after
+   them alphabetically — which is where the promo and gallery runs belong.
+   Ties break on the ref so the order is stable across renders. */
+function byNumber(a, b){
+  const na = parseInt(a.number, 10), nb = parseInt(b.number, 10);
+  const ia = Number.isNaN(na), ib = Number.isNaN(nb);
+  if(ia !== ib) return ia ? 1 : -1;
+  if(!ia && na !== nb) return na - nb;
+  return String(a.number ?? "").localeCompare(String(b.number ?? "")) ||
+         String(refOf(a)).localeCompare(String(refOf(b)));
+}
+/* Playset means "a full playset for THIS game" — 3 copies of a Riftbound
+   printing, 4 of a Pokémon one — so both endpoints move with the game. */
 const colTabMatch = (q, tab) =>
   tab === "all" ? true :
   tab === "missing" ? q === 0 :
-  tab === "partial" ? (q >= 1 && q <= 2) : q === 3;
+  tab === "partial" ? (q >= 1 && q < colPlayset()) : q >= colPlayset();
 
 /* search ∧ chips, before the tab — the tab counts are computed on this. */
 function colBase(){
@@ -2013,8 +2779,9 @@ function colBase(){
 /* ------------------------------- rendering ------------------------------- */
 function colTileHtml(c){
   const id = refOf(c), q = qtyOf(id);
+  const cap = colCap();
   const missing = COL_READY && q === 0;
-  const tag = c.rarity === "Showcase" ? "Showcase" : c.alternateArt ? "Alt art" : null;
+  const tag = GAME.colTag(c);
   const border = c.domains[0] ? `var(--${c.domains[0]})` : "var(--Colorless)";
   const idq = jsStr(id);
   const art = c.image
@@ -2024,27 +2791,27 @@ function colTileHtml(c){
     : fallbackSvg(c);
   const own = !COL_READY ? "" :
     missing ? `<span class="cown miss">Missing</span>`
-            : `<span class="cown${q === 3 ? " full" : ""}">${q}/3</span>`;
-  const segs = [1,2,3].map(i =>
-    `<i class="${q >= i ? (q === 3 ? "full" : "on") : ""}"></i>`).join("");
+            : `<span class="cown${q >= cap ? " full" : ""}">${q}/${cap}</span>`;
+  const segs = Array.from({length: cap}, (_, i) =>
+    `<i class="${q >= i + 1 ? (q >= cap ? "full" : "on") : ""}"></i>`).join("");
   return `<figure class="ctile${missing ? " ismissing" : ""}" data-ref="${esc(id)}">
     <button class="cframe" style="--fc:${border}" title="${esc(c.name)}"
       onclick="openCard('${idq}')">
       ${art}
       <span class="hatch"></span>
       ${c.energy > 0 ? `<span class="orb">${c.energy}</span>` : ""}
-      ${tag ? `<span class="ctag">${tag}</span>` : ""}
-      <span class="cnum">${colNum(c)}</span>
+      ${tag ? `<span class="ctag">${esc(tag)}</span>` : ""}
+      <span class="cnum">${esc(colNum(c))}</span>
       ${own}
     </button>
     <figcaption class="tname" title="${esc(c.name)}">${esc(c.name)}</figcaption>
-    <p class="ttype">${esc(c.rarity || "")}${c.rarity ? " · " : ""}${esc(c.type)}</p>
+    <p class="ttype">${esc(c.rarity || "")}${c.rarity && c.type ? " · " : ""}${esc(c.type || "")}</p>
     <div class="cstep">
       <button class="step" onclick="colBump('${idq}',-1)"
         ${(!COL_READY || q === 0) ? "disabled" : ""} aria-label="Remove a copy">–</button>
-      <span class="cseg" aria-label="${q} of 3 copies">${segs}</span>
+      <span class="cseg" aria-label="${q} of ${cap} copies">${segs}</span>
       <button class="step" onclick="colBump('${idq}',1)"
-        ${(!COL_READY || q === 3) ? "disabled" : ""} aria-label="Add a copy">+</button>
+        ${(!COL_READY || q >= cap) ? "disabled" : ""} aria-label="Add a copy">+</button>
     </div>
   </figure>`;
 }
@@ -2063,25 +2830,29 @@ function renderColSummary(){
   if(!S.pool.length) return;
   const scope = colScoped();
   const total = scope.length;
+  const cap = colCap(), playset = colPlayset();
   const ownedPrintings = colOwnedCount(scope);
   const copies = colCopies(scope);
-  const playsets = scope.reduce((n,c) => n + (qtyOf(refOf(c)) === 3 ? 1 : 0), 0);
+  const playsets = scope.reduce((n,c) => n + (qtyOf(refOf(c)) >= playset ? 1 : 0), 0);
   const pct = total ? Math.floor(ownedPrintings / total * 100) : 0;
 
   document.getElementById("colSetName").textContent = colScopeName();
-  document.getElementById("colSetMeta").textContent =
-    `${total} printings · variants counted separately`;
+  // A lazy game's set line carries the whole-game total, because there is no
+  // "All sets" view to read it from.
+  document.getElementById("colSetMeta").textContent = GAME.lazySets
+    ? `${total} printings · ${colLoggedPrintings()} of ${gameCardTotal().toLocaleString()} logged across all sets`
+    : `${total} printings · variants counted separately`;
   document.getElementById("colPct").textContent = COL_READY ? pct : "–";
   document.getElementById("colBar").style.width = (COL_READY ? pct : 0) + "%";
   document.getElementById("colCards").textContent =
     COL_READY ? `${ownedPrintings} of ${total} cards` : `${total} cards`;
   document.getElementById("colCopies").textContent =
-    COL_READY ? `${copies}/${total * 3} copies · ${playsets} playset${playsets === 1 ? "" : "s"}` : "";
+    COL_READY ? `${copies}/${total * cap} copies · ${playsets} playset${playsets === 1 ? "" : "s"}` : "";
 
   // by rarity, within the active set
   const rarities = colRarities();
   document.getElementById("colRarity").innerHTML = rarities.map(r => {
-    const list = scope.filter(c => c.rarity === r);
+    const list = scope.filter(c => rarityOf(c) === r);
     const owned = COL_READY ? colOwnedCount(list) : 0;
     const w = list.length ? Math.round(owned / list.length * 100) : 0;
     return `<div class="crrow">
@@ -2091,14 +2862,16 @@ function renderColSummary(){
     </div>`;
   }).join("");
 
-  // still missing, within the active set
+  // still missing, within the active set. "Chase" is per game: the rarities
+  // people actually hunt, named in the sentence so it stays truthful for both.
   const missing = scope.filter(c => qtyOf(refOf(c)) === 0);
-  const missTop = missing.filter(c => c.rarity === "Epic" || c.rarity === "Showcase").length;
+  const chase = GAME.chaseRarities, chaseLabel = GAME.chaseLabel;
+  const missTop = missing.filter(c => chase.includes(c.rarity)).length;
   document.getElementById("colMissN").textContent = COL_READY ? missing.length : "–";
   document.getElementById("colMissNote").textContent = !COL_READY ? "" :
     missing.length === 0 ? "Set complete." :
-    missTop ? `${missTop} of them ${missTop === 1 ? "is an" : "are"} Epic or Showcase printing${missTop === 1 ? "" : "s"}.` :
-    "None of them are Epic or Showcase printings.";
+    missTop ? `${missTop} of them ${missTop === 1 ? "is a" : "are"} ${chaseLabel} printing${missTop === 1 ? "" : "s"}.` :
+    `None of them are ${chaseLabel} printings.`;
 
   // filter tabs (counts over search ∧ chips)
   const base = colBase();
@@ -2125,7 +2898,7 @@ function renderCollection(){
   document.getElementById("colQ").placeholder =
     `Search ${colScopeName()} by name, number, or artist`;
   document.getElementById("colMarkBtn").textContent =
-    COLF.set === "all" ? "Mark all owned" : "Mark set owned";
+    colIsAll() ? "Mark all owned" : "Mark set owned";
 
   document.getElementById("colDomainRow").innerHTML = DOMAINS.map(d =>
     `<button class="chip dchip${COLF.domains.includes(d) ? " on" : ""}"
@@ -2140,14 +2913,13 @@ function renderCollection(){
   const rarities = colRarities();
   document.getElementById("colGrid").innerHTML = filtered.length
     ? rarities.map(r => {
-        const cards = filtered.filter(c => c.rarity === r)
-          .sort((a,b) => (a.number ?? 0) - (b.number ?? 0) ||
-                         String(a.riftboundId).localeCompare(String(b.riftboundId)));
+        const cards = filtered.filter(c => rarityOf(c) === r)
+          .sort(byNumber);
         if(!cards.length) return "";
         // Section counts stay collection-truth (owned/total of the whole
         // rarity in the active set), matching the mockups, regardless of
         // active filters.
-        const all = scope.filter(c => c.rarity === r);
+        const all = scope.filter(c => rarityOf(c) === r);
         const owned = COL_READY ? colOwnedCount(all) : null;
         return `<h2 class="colsec">${esc(r)} <span>${owned === null ? all.length : `${owned}/${all.length}`}</span></h2>
           <div class="shelf colshelf">${cards.map(colTileHtml).join("")}</div>`;
@@ -2159,7 +2931,7 @@ function renderCollection(){
 window.colBump = (id, d) => {
   if(!COL_READY) return;
   const cur = qtyOf(id);
-  const next = Math.max(0, Math.min(3, cur + d));
+  const next = Math.max(0, Math.min(colCap(), cur + d));
   if(next === cur) return;
   if(next === 0) delete COL[id]; else COL[id] = next;
   colMutate();
@@ -2185,7 +2957,7 @@ window.colMarkAll = async () => {
   const scope = colScoped(), where = colScopeName();
   const v = await ask("Mark every printing owned?",
     `This raises all ${scope.length} printings in ${where} to at least 1 copy. Quantities you've already logged above 1 are untouched.`,
-    [{label: COLF.set === "all" ? "Mark all owned" : "Mark set owned", value:"yes", kind:"go"},
+    [{label: colIsAll() ? "Mark all owned" : "Mark set owned", value:"yes", kind:"go"},
      {label:"Cancel", value:"cancel", kind:"quiet"}]);
   if(v !== "yes") return;
   for(const c of scope){ const id = refOf(c); if(!COL[id]) COL[id] = 1; }
@@ -2197,13 +2969,13 @@ window.colClear = async () => {
   const scope = colScoped(), where = colScopeName();
   const copies = colCopies(scope);
   const v = await ask("Clear the collection?",
-    COLF.set === "all"
+    colIsAll()
       ? `This wipes the logged collection — all ${copies} copies go back to zero. It can't be undone.`
       : `This clears ${where} only — its ${copies} logged copies go back to zero. Other sets are untouched. It can't be undone.`,
     [{label:"Clear it", value:"yes", kind:"danger"},
      {label:"Cancel", value:"cancel", kind:"quiet"}]);
   if(v !== "yes") return;
-  if(COLF.set === "all") COL = {};
+  if(colIsAll()) COLALL[ACTIVE_GAME] = COL = {};
   // Delete only this set's refs. Keys that no longer resolve against the pool
   // are left alone here as everywhere else — they are somebody's other set.
   else for(const c of scope) delete COL[refOf(c)];
@@ -2212,21 +2984,6 @@ window.colClear = async () => {
  
 /* -------------------------------- helpers ------------------------------- */
 const note = t => document.getElementById("notice").textContent = t;
- 
-function normalize(c){
-  return {
-    name:String(c.name), energy:Number(c.energy)||0,
-    might:c.might ?? null, power:c.power ?? null,
-    type:String(c.type ?? "Unit"), supertype:c.supertype ?? null,
-    rarity:c.rarity ?? null,
-    domains:(Array.isArray(c.domains)?c.domains:[]).filter(d=>ALL_DOMAINS.includes(d)),
-    set:c.set ?? "", setName:c.setName ?? null, number:c.number ?? null,
-    riftboundId:c.riftboundId ?? c.riftbound_id ?? null,
-    signature:!!c.signature, alternateArt:!!(c.alternateArt ?? c.alternate_art),
-    image:c.image ?? c.image_url ?? null, artist:c.artist ?? null,
-    text:c.text ?? null
-  };
-}
  
 const offDomain = c => S.legend && c.domains.length &&
   !c.domains.every(d => d==="Colorless" || S.legend.domains.includes(d));
@@ -2257,10 +3014,15 @@ window.imgFail = function(img, name){
 };
  
 /* Riot serves card art through Sanity's image CDN, which honours w/fm/q params.
-   Tiles render at ~112px, so a 240px webp is 15 KB against the original's 818 KB.
-   Still a hotlink — same asset, same host, just asking for the size we display.
-   The card modal keeps the full-size original. */
+   Tiles render at ~112px, so a 240px webp is 15 KB against the original's
+   818 KB. Still a hotlink — same asset, same host, just asking for the size we
+   display; the card modal keeps the full-size original. The Pokémon
+   sources already publish a small and a large variant per card, and the small
+   one IS the thumbnail, so nothing is appended there: images.scrydex.com in
+   particular is not a transforming CDN and a stray query string on it buys
+   nothing. Which of the two happens is the game's business, not the tile's. */
 function thumb(url, w = 240){
+  if(GAME.lazySets) return url;
   return url + (url.includes("?") ? "&" : "?") + `w=${w}&fm=webp`;
 }
 
@@ -2270,19 +3032,16 @@ function tileHtml(c, acts){
          referrerpolicy="no-referrer"
          onerror="imgFail(this,'${jsStr(c.name)}')">`
     : fallbackSvg(c);
-  const variant = c.rarity === "Showcase" ? "Showcase" : c.alternateArt ? "Alt art" : null;
+  const tag = GAME.colTag(c);
   return `<figure class="tile${offDomain(c)?" flagged":""}">
     <button class="frame" style="background:${frameStyle(c)}"
-      title="${esc(c.name)}${variant?" — "+variant:""}"
-      onclick="openCard('${jsStr(c.riftboundId||c.name)}')">
+      title="${esc(c.name)}${tag?" — "+esc(tag):""}"
+      onclick="openCard('${jsStr(refOf(c))}')">
       ${art}
-      ${c.energy>0?`<span class="orb">${c.energy}</span>`:""}
-      ${c.signature?`<span class="sig">S</span>`:""}
-      ${c.set?`<span class="setbadge">${esc(String(c.set).toUpperCase())}</span>`:""}
-      ${variant?`<span class="variant">${variant}</span>`:""}
+      ${GAME.tileBadges(c)}
     </button>
     <figcaption class="tname" title="${esc(c.name)}">${esc(c.name)}</figcaption>
-    <p class="ttype">${esc(c.type)}${c.domains.length?" · "+c.domains.join(" / "):""}${offDomain(c)?` · <span class="flagtag">off-domain</span>`:""}</p>
+    <p class="ttype">${GAME.tileMeta(c)}</p>
     <div class="acts">${acts}</div>
   </figure>`;
 }
@@ -2293,8 +3052,13 @@ function render(){
   document.getElementById("onboard").hidden = S.pool.length > 0;
   document.getElementById("browser").hidden = S.pool.length === 0;
  
-  // legend box
+  // Panels a game may not have. The zone tab row is pointless with one zone.
   const lb = document.getElementById("legendBox");
+  lb.hidden = !GAME.legend;
+  document.getElementById("curveBlock").hidden = !GAME.energyCurve;
+  document.getElementById("zoneTabs").hidden = Object.keys(ZONES).length < 2;
+
+  // legend box
   if(S.legend){
     const art = S.legend.image
       ? `<img src="${esc(thumb(S.legend.image, 120))}" alt="" referrerpolicy="no-referrer">`
@@ -2342,82 +3106,17 @@ function render(){
       + `. They stay in the deck when you save. `
       + `<button class="btn sm quiet" onclick="dropUnresolved()">Remove them</button>`);
   }
-  if(POOL_READY){
-    const m = zoneCount("main");                                   // 103.2: at least 40
-    if(m < 40) probs.push(`Main deck needs ${40-m} more card${40-m===1?"":"s"}.`);
-    const r = zoneCount("runes");                                  // 103.3.a: exactly 12
-    if(r < 12) probs.push(`Rune deck is ${12-r} short of 12.`);
-    else if(r > 12) probs.push(`Rune deck is ${r-12} over 12.`);
-    const b = zoneCount("battlefields");                           // 3 for standard play
-    if(b < 3) probs.push(`Add ${3-b} more battlefield${3-b===1?"":"s"}.`);
-    else if(b > 3) probs.push(`Battlefields are ${b-3} over 3.`);
-    // 103.4.c: all different — counting printings together, so a base
-    // battlefield, its Showcase and a reprint in another set are all the
-    // "same" battlefield (stage 8: cardKey, not the within-set id group).
-    const bfCopies = new Map();
-    for(const c of S.zones.battlefields){
-      const g = cardKey(c);
-      const e = bfCopies.get(g) || {copies:0, label:cardLabelRef(refOf(c), baseName(c.name))};
-      e.copies += c.qty; bfCopies.set(g, e);
-    }
-    const dupBf = [...bfCopies.values()].filter(e=>e.copies>1);
-    if(dupBf.length) probs.push(`Battlefields must all be different — duplicate: ${dupBf.map(e=>esc(e.label)).join(", ")}.`);
-    const sb = zoneCount("sideboard");
-    if(sb !== 0 && sb !== 8) probs.push(`Sideboard must be empty or exactly 8 cards — it has ${sb}.`);
-    if(!S.legend) probs.push(`No Legend set — filter to Legend and pick one to lock your domains.`);
-  }
-  const everywhere = [...S.zones.main, ...S.zones.runes, ...S.zones.sideboard];
-  const off = everywhere.filter(offDomain);                        // 103.1.b: domain identity
-  if(off.length) probs.push(`Outside ${esc(S.legend.name)}'s domains (${S.legend.domains.join(" / ")}): ${off.map(c=>esc(c.name)).join(", ")}.`);
-  // 103.2.b: at most 3 copies of a card, counting every printing together — a
-  // base, its Showcase and any reprint in a later set share one limit
-  // (CLAUDE.md; see cardKey above). The count spans the main
-  // deck AND the sideboard, per Tournament Rules 403.4, quoted: "Limits on
-  // copies of named cards apply to the combination of Main Deck and sideboard."
-  // (Verified against playriftbound.com, not assumed — 3 in main + 1 in the
-  // sideboard is illegal, 2 + 1 is fine.) Runes and battlefields are separate
-  // decks under their own rules and are deliberately not counted here.
-  // Unresolved entries in both counted zones count too, keyed off their ref.
-  const groupCopies = new Map();   // group -> {copies, side, label}
-  const countCopy = (g, qty, label, isSide) => {
-    const e = groupCopies.get(g) || {copies:0, side:0, label};
-    e.copies += qty;
-    if(isSide) e.side += qty;
-    groupCopies.set(g, e);
-  };
-  for(const z of ["main","sideboard"]){
-    const isSide = z === "sideboard";
-    for(const c of S.zones[z])
-      countCopy(cardKey(c), c.qty, cardLabelRef(refOf(c), baseName(c.name)), isSide);
-    for(const u of S.unresolved.filter(u => u.zone === z))
-      countCopy(cardKeyRef(u.ref), u.qty, cardLabelRef(u.ref, u.ref), isSide);
-  }
-  const over = [...groupCopies.values()].filter(e=>e.copies>3);
-  if(over.length){
-    // Name the sideboard only when it actually contributed, so the ordinary
-    // main-deck-only case doesn't cite a zone the user never touched.
-    const withSide = over.some(e => e.side > 0);
-    probs.push(`Over 3 copies${withSide ? " (main deck and sideboard combined)" : ""}: `
-      + over.map(e=>`${esc(e.label)} (${e.copies})`).join(", ") + `.`);
-  }
-  if(S.legend){                                                    // 103.2.d: 3 Signature cards, matching tag
-    const t = tagOf(S.legend.name);
-    const sigs = S.zones.main.filter(c=>c.signature);
-    const matching = sigs.filter(c=>tagOf(c.name)===t).reduce((n,c)=>n+c.qty,0);
-    if(matching > 3) probs.push(`${matching} Signature cards for ${esc(S.legend.name)} — the limit is 3.`);
-    const offTag = sigs.filter(c=>tagOf(c.name)!==t);
-    if(offTag.length) probs.push(`Signature cards that don't match ${esc(S.legend.name)}: ${offTag.map(c=>esc(c.name)).join(", ")}.`);
-  }
-  if(S.champion && !S.zones.main.some(c=>nk(c.name)===nk(S.champion)))   // 103.2.a
-    probs.push("Your chosen Champion isn't in the main deck.");
-  if(S.champion && S.legend && tagOf(S.champion)!==tagOf(S.legend.name))
-    probs.push(`${esc(S.champion)} doesn't match your Legend — the Champion's tag must match.`);
+  // Everything else is the active game's rules. Riftbound's checks are the
+  // stage 8 block verbatim, moved behind the registry hook.
+  probs.push(...GAME.validate());
   // Out-of-scope notice. Informational, never a legality error: every released
   // set is legal alongside every other, and the set scope is a browser display
   // filter. It reports the zone the deck panel is currently showing, which is
   // the list the reader is looking at when they wonder where a card went.
-  const outOfScope = S.zones[ZONE_TAB].filter(c => !inScope(c))
-    .reduce((n,c) => n + c.qty, 0);
+  // A lazy game has no multi-set scope to fall outside of: one set is open,
+  // and a deck spanning others is the normal case, not a notice.
+  const outOfScope = GAME.lazySets ? 0
+    : S.zones[ZONE_TAB].filter(c => !inScope(c)).reduce((n,c) => n + c.qty, 0);
   const scopeNote = outOfScope
     ? `<li class="scopenote">${outOfScope} card${outOfScope===1?"":"s"} in this zone sit${outOfScope===1?"s":""} outside the current set scope — still legal, just not browsable right now.</li>`
     : "";
@@ -2430,8 +3129,12 @@ function render(){
       style="--c:var(--${d});--dt:${DOMAIN_INK[d]}" onclick="toggleFilter('domainFilter','${d}')">${d}</button>`).join("");
   document.getElementById("typeRow").innerHTML = TYPES.map(t=>
     `<button class="chip${S.typeFilter.includes(t)?" on":""}"
-      onclick="toggleFilter('typeFilter','${t}')">${t}</button>`).join("") +
-    `<button class="chip${S.variants?" on":""}" onclick="toggleVariants()">Variants</button>`;
+      onclick="toggleFilter('typeFilter','${jsStr(t)}')">${esc(t)}</button>`).join("") +
+    // Variants is a Riftbound control: it hides Showcase and alt-art
+    // printings, which is not a distinction this stage tracks for Pokémon.
+    (GAME.variantsToggle
+      ? `<button class="chip${S.variants?" on":""}" onclick="toggleVariants()">Variants</button>`
+      : "");
   // Rarities come from the pool itself, so a new set with new rarities still works.
   const rarities = [...new Set(S.pool.map(c=>c.rarity).filter(Boolean))]
     .sort((a,b)=>{
@@ -2448,31 +3151,40 @@ function render(){
   // Asking for Showcase explicitly overrides the variants toggle — otherwise
   // the filter would return nothing.
   const wantsVariantRarity = S.rarityFilter.some(r => r === "Showcase");
-  const res = scopedPool().filter(c=>{
+  const chipsOn = S.rarityFilter.length || S.domainFilter.length || S.typeFilter.length;
+  /* A lazy game searches every set through the index rather than only the set
+     whose pool happens to be open — 174 sets is not something to page through
+     by hand. The chip filters read fields the index does not carry (supertype,
+     energy types, rarity), so when any chip is on the search stays inside the
+     loaded set and the result count says which of the two happened. Ignoring
+     the chips silently would be the worse of the two. */
+  const crossSet = GAME.lazySets && !!term && !chipsOn;
+  const res = crossSet ? pkIndexMatches(term) : scopedPool().filter(c=>{
     if(!S.variants && !wantsVariantRarity && (c.alternateArt || c.rarity==="Showcase")) return false;
     if(S.rarityFilter.length && !S.rarityFilter.includes(c.rarity)) return false;
     if(S.domainFilter.length && !c.domains.some(d=>S.domainFilter.includes(d))) return false;
     if(S.typeFilter.length && !S.typeFilter.includes(c.type)) return false;
     if(!term) return true;
-    return c.name.toLowerCase().includes(term)
-      || (c.text||"").toLowerCase().includes(term)
-      || (c.artist||"").toLowerCase().includes(term);
+    return GAME.searchMatch(c, term);
   });
- 
+
   // Never let the page size drift past the result count.
   S.limit = Math.max(48, Math.min(S.limit, Math.max(48, res.length)));
- 
+
   // Count of what search + every active filter currently shows. Idle — nothing
   // typed, no chip on — it is exactly the in-scope pool, and the mockup labels
   // it that way; once a filter narrows it, "in scope" would be describing the
   // wrong number, so the suffix drops.
-  const narrowed = !!term || S.rarityFilter.length || S.domainFilter.length ||
-    S.typeFilter.length || !S.variants;
-  document.getElementById("resultCount").textContent = narrowed
-    ? `${res.length} card${res.length===1?"":"s"}`
+  const narrowed = !!term || chipsOn || (GAME.variantsToggle && !S.variants);
+  document.getElementById("resultCount").textContent =
+    crossSet ? `${res.length} card${res.length===1?"":"s"} · all ${poolSets().length} sets`
+    : GAME.lazySets && term ? `${res.length} card${res.length===1?"":"s"} · this set only (filters on)`
+    : narrowed ? `${res.length} card${res.length===1?"":"s"}`
     : `${res.length} cards in scope`;
-  document.getElementById("results").innerHTML = res.slice(0,S.limit).map(c=>{
-    const id = jsStr(c.riftboundId||c.name);
+  document.getElementById("results").innerHTML = res.slice(0,S.limit).map(x=>{
+    // Cross-set hits arrive as index entries; materialise only what renders.
+    const c = asCard(x);
+    const id = jsStr(refOf(c));
     // Only offer destinations the card is actually legal in: Runes go to the
     // rune deck, Battlefields to battlefields, everything else main or side.
     const sug = zoneFor(c.type);
@@ -2480,8 +3192,8 @@ function render(){
     if(sug === "legend")      acts = `<button class="btn sm" onclick="addCard('${id}','legend')">Legend</button>`;
     else if(sug === "runes")  acts = `<button class="btn sm" onclick="addCard('${id}','runes')">+ Rune</button>`;
     else if(sug === "battlefields") acts = `<button class="btn sm" onclick="addCard('${id}','battlefields')">+ Field</button>`;
-    else acts = `<button class="btn sm" onclick="addCard('${id}','main')">+ Main</button>`
-             + `<button class="btn sm quiet" onclick="addCard('${id}','sideboard')">+ Side</button>`;
+    else acts = `<button class="btn sm" onclick="addCard('${id}','main')">+ ${ZONES.sideboard ? "Main" : "Deck"}</button>`
+             + (ZONES.sideboard ? `<button class="btn sm quiet" onclick="addCard('${id}','sideboard')">+ Side</button>` : "");
     return tileHtml(c, acts);
   }).join("");
  
@@ -2544,7 +3256,32 @@ function render(){
 window.setZoneTab = k => { ZONE_TAB = k; render(); };
  
 /* --------------------------------- actions ------------------------------ */
-const findCard = id => S.pool.find(c => (c.riftboundId||c.name) === id);
+/* Resolution order: the loaded pool first, then — for a lazy game — the search
+   index, which can describe every card in every set whether or not its pool is
+   in memory. That second step is what stops a 60-card Pokémon deck spanning
+   twelve sets from rendering as sixty unresolved entries. */
+function findCard(ref){
+  // The map is the fast path, the scan is the correct one: anything that puts
+  // cards in S.pool without going through adoptPool() would otherwise become
+  // invisible to every lookup, which is a silent failure rather than a slow one.
+  const hit = POOL_BY_REF.get(String(ref)) || S.pool.find(c => refOf(c) === ref);
+  if(hit) return hit;
+  if(GAME.lazySets){
+    const e = pkIndexEntry(ref);
+    if(e) return pkLightCard(e);
+  }
+  return null;
+}
+/* An index entry (has `n`) or a card (has `name`) -> a card. */
+const asCard = x => x && x.name !== undefined
+  ? x : (POOL_BY_REF.get(String(x.id)) || pkLightCard(x));
+/* Index entries whose name or id matches. Entries, not cards: a one-letter
+   query matches thousands, and only the rendered page needs objects. */
+function pkIndexMatches(term){
+  if(!PIDX) return [];
+  return PIDX.filter(e =>
+    e.n.toLowerCase().includes(term) || e.id.toLowerCase().includes(term));
+}
  
 window.toggleFilter = (k,v) => {
   S[k] = S[k].includes(v) ? S[k].filter(x=>x!==v) : [...S[k], v];
@@ -2569,7 +3306,7 @@ window.addCard = (id, zone) => {
   }
   const list = S.zones[zone];
   const hit = list.find(c => nk(c.name) === nk(card.name));
-  if(hit) hit.qty = Math.min(3, hit.qty + 1);
+  if(hit) hit.qty = Math.min(copyCap(card), hit.qty + 1);
   else list.push({...card, id: uid(), qty: 1});
   touch(); render();
 };
@@ -2583,7 +3320,7 @@ window.setChampion = id => {
 window.bump = (zone, id, d) => {
   const list = S.zones[zone];
   const c = list.find(x => x.id === id); if(!c) return;
-  c.qty = Math.min(3, c.qty + d);
+  c.qty = Math.min(copyCap(c), c.qty + d);
   S.zones[zone] = list.filter(x => x.qty > 0);
   touch(); render();
 };
@@ -2646,33 +3383,47 @@ function rich(raw){
     .join("");
 }
  
-window.openCard = id => {
-  const c = findCard(id) ||
-    Object.values(S.zones).flat().find(x => (x.riftboundId||x.name) === id);
+window.openCard = async id => {
+  let c = findCard(id) ||
+    Object.values(S.zones).flat().find(x => refOf(x) === id);
   if(!c) return;
-  const art = c.image
-    ? `<img src="${esc(c.image)}" alt="${esc(c.name)}" referrerpolicy="no-referrer"
+  paintCard(c);
+  document.getElementById("modal").classList.add("open");
+  /* A light card carries only what the search index knows. Fetch its set so
+     the panel can show HP, types, subtypes and formats — the pool is cached,
+     so the second look at a card from that set is instant. */
+  if(c.light){
+    const full = await loadSetPool(c.set).then(list =>
+      list.find(x => refOf(x) === id)).catch(() => null);
+    if(full && document.getElementById("modal").classList.contains("open"))
+      paintCard(full);
+  }
+};
+
+function paintCard(c){
+  const full = c.imageLarge || c.image;
+  const art = full
+    ? `<img src="${esc(full)}" alt="${esc(c.name)}" referrerpolicy="no-referrer"
          onerror="imgFail(this,'${jsStr(c.name)}')">`
     : fallbackSvg(c);
+  const ref = jsStr(refOf(c));
   document.getElementById("modalBox").innerHTML = `${art}
     <div class="meta">
       <h3>${esc(c.name)}</h3>
-      <p class="sub">${esc(c.type)}${c.supertype?" · "+esc(c.supertype):""}${c.rarity?" · "+esc(c.rarity):""}${c.set?" · "+esc(c.set):""}${c.number!=null?" #"+c.number:""}</p>
-      <p class="sub">energy ${c.energy}${c.might!=null?" · might "+c.might:""}${c.power!=null?" · power "+c.power:""}${c.domains.length?" · "+c.domains.join(" / "):""}</p>
+      ${GAME.modalMeta(c)}
       ${c.text?`<p class="text">${rich(c.text)}</p>`:""}
       ${c.artist?`<p class="artist">Art by ${esc(c.artist)}</p>`:""}
       <div class="modalacts">
-        ${VIEW === "deck" && c.type === "Legend"
-          ? `<button class="btn" onclick="addCard('${jsStr(c.riftboundId||c.name)}','legend');closeModal()">Set as Legend</button>`
+        ${VIEW === "deck" && GAME.legend && c.type === "Legend"
+          ? `<button class="btn" onclick="addCard('${ref}','legend');closeModal()">Set as Legend</button>`
           : ""}
-        ${VIEW === "deck" && c.supertype === "Champion"
-          ? `<button class="btn" onclick="setChampion('${jsStr(c.riftboundId||c.name)}');closeModal()">Set as Champion</button>`
+        ${VIEW === "deck" && GAME.legend && c.supertype === "Champion"
+          ? `<button class="btn" onclick="setChampion('${ref}');closeModal()">Set as Champion</button>`
           : ""}
         <button class="btn quiet" onclick="closeModal()">Close</button>
       </div>
     </div>`;
-  document.getElementById("modal").classList.add("open");
-};
+}
 window.closeModal = () => document.getElementById("modal").classList.remove("open");
  
 /* ------------------------------ import/export --------------------------- */
@@ -2696,6 +3447,11 @@ document.getElementById("picker").addEventListener("change", e => {
       }
       if(deckPart){
         if(!POOL_READY) throw new Error("load the card pool before importing a deck");
+        // A deck's refs only mean anything inside its own game's pool, so an
+        // export from the other game is refused by name rather than imported
+        // as sixty unresolved entries.
+        if(raw.kind && GAMES[raw.kind] && raw.kind !== ACTIVE_GAME)
+          throw new Error(`that's a ${GAMES[raw.kind].label} deck — switch games first`);
         S.deckName = raw.name || raw.deckName || "Imported deck";
         // An imported deck is a new deck on the table, not an overwrite of
         // whatever row happened to be open.
@@ -2721,7 +3477,10 @@ function exportDeck(){
     zones[k] = S.zones[k].concat(
       S.unresolved.filter(u => u.zone === k).map(u => ({ref:u.ref, qty:u.qty})));
   }
-  const payload = {kind:"riftbound", version:3, name:S.deckName,
+  // kind names the GAME, so an export says which pool its refs belong to.
+  // "riftbound" was the value before there was a second game and is still
+  // exactly what a Riftbound export writes, so old and new files agree.
+  const payload = {kind:ACTIVE_GAME, version:3, name:S.deckName,
     legend:S.legend, champion:S.champion, zones};
   const url = URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],
     {type:"application/json"}));
@@ -2776,6 +3535,7 @@ document.addEventListener("keydown", e => {
   closeAsk("cancel");
   if(MENU_OPEN) toggleDeckMenu(false);
   if(GAME_MENU_OPEN) toggleGameMenu(false);
+  if(SETPICK_OPEN) toggleSetPick(false);
 });
 document.getElementById("deckCaret").addEventListener("click", e => {
   e.stopPropagation();
@@ -2800,15 +3560,58 @@ document.addEventListener("click", e => {
    pool is worse than none here — every card of the missing set would show up as
    an unresolved deck entry and as a hole in the collection, which is exactly
    how a transient 404 gets mistaken for data loss. */
+// cache: "default" on purpose - these files change only when a set drops,
+// and Pages serves them with an ETag, so repeat visits revalidate cheaply.
+async function fetchJson(url, label){
+  const res = await fetch(url, { cache: "default" });
+  if(!res.ok) throw new Error(`${label}: ${res.status} ${res.statusText}`);
+  return res.json();
+}
+
 async function fetchSet(set){
-  // cache: "default" on purpose - these files change only when a set drops,
-  // and Pages serves them with an ETag, so repeat visits revalidate cheaply.
-  const res = await fetch(set.pool, { cache: "default" });
-  if(!res.ok) throw new Error(`${set.name}: ${res.status} ${res.statusText}`);
-  const raw  = await res.json();
+  const raw  = await fetchJson(set.pool, set.name);
   const list = Array.isArray(raw) ? raw : (raw.pool || raw.cards || []);
   if(!Array.isArray(list) || !list.length) throw new Error(`${set.name}: no cards in the pool file`);
   return list.filter(c => c && c.name).map(normalize);
+}
+
+/* ------------------------- lazy pools (Pokémon) --------------------------
+   Three fetches at game activation — the set manifest, the search index, and
+   the one open set's pool — then one fetch per set the user actually opens,
+   cached for the rest of the session. Never all 174, never one mega file.
+
+   The slim per-set files do not repeat the set id on every card (at 20,444
+   cards that repetition is real bytes), so it is stamped on here from the set
+   being loaded. Card identity still travels on the card's own id ("sv1-1"). */
+async function loadSetPool(code){
+  if(POOL_CACHE.has(code)) return POOL_CACHE.get(code);
+  const meta = setMetaOf(code);
+  const label = meta?.name || code;
+  const raw = await fetchJson(GAME.poolFor(code), label);
+  const list = (Array.isArray(raw) ? raw : [])
+    .filter(c => c && c.name)
+    .map(c => normalize({...c, set: code, setName: meta?.name || code}));
+  if(!list.length) throw new Error(`${label}: no cards in the pool file`);
+  POOL_CACHE.set(code, list);
+  return list;
+}
+
+async function loadLazyGame(){
+  const [manifest, index] = await Promise.all([
+    fetchJson(GAME.setsManifest, "the set list"),
+    fetchJson(GAME.searchIndex,  "the card index"),
+  ]);
+  if(!Array.isArray(manifest) || !manifest.length) throw new Error("the set list is empty");
+  if(!Array.isArray(index) || !index.length) throw new Error("the card index is empty");
+  // `code` is the shared vocabulary of the set bar, the scope helpers and the
+  // pool paths; for this game a set's code IS its id.
+  GAME.sets = manifest.map(s => ({...s, code: s.id}));
+  PIDX = index;
+  PIDX_BY_ID = new Map(index.map(e => [e.id, e]));
+  let want = null;
+  try{ want = localStorage.getItem(openSetKey()); }catch{}
+  S.openSet = GAME.sets.some(s => s.code === want) ? want : GAME.sets[0].code;
+  S.pool = await loadSetPool(S.openSet);
 }
 
 window.loadPool = async function loadPool(){
@@ -2818,10 +3621,12 @@ window.loadPool = async function loadPool(){
   msg.textContent = "Loading cards…";
   retry.hidden = pick.hidden = true;
   try{
-    const parts = await Promise.all(GAME.sets.map(fetchSet));
-    S.pool = parts.flat();
+    if(GAME.lazySets) await loadLazyGame();
+    else S.pool = (await Promise.all(GAME.sets.map(fetchSet))).flat();
     adoptPool();
-    note(`${S.pool.length} cards · ${GAME.sets.length} sets · ${S.pool.filter(c=>c.image).length} with art`);
+    note(GAME.lazySets
+      ? `${setNameOf(S.openSet)} · ${S.pool.length} cards · ${PIDX.length.toLocaleString()} searchable across ${GAME.sets.length} sets`
+      : `${S.pool.length} cards · ${GAME.sets.length} sets · ${S.pool.filter(c=>c.image).length} with art`);
     POOL_READY = true;
     applyPending();   // a stashed local blob or cloud deck can hydrate now
     render();
@@ -2829,22 +3634,146 @@ window.loadPool = async function loadPool(){
   }catch(err){
     msg.textContent = `Couldn't load the card pool (${err.message}).`;
     retry.hidden = pick.hidden = false;
+    // A lazy game's file picker expects a whole pool file; it cannot stand in
+    // for a manifest plus an index, so it is not offered as a fallback there.
+    pick.hidden = GAME.lazySets;
     note("Card pool unavailable");
   }
+};
+
+/* ---------------------------- the set picker -----------------------------
+   174 sets is not a chip row. One open set at a time, chosen from a panel
+   grouped by series, newest series first — the manifest is already sorted by
+   release date, so group order falls out of the data. */
+let SETPICK_OPEN = false, SETPICK_Q = "", SETPICK_GROUPS = null;
+
+window.toggleSetPick = (open = !SETPICK_OPEN) => {
+  SETPICK_OPEN = open;
+  document.getElementById("setPickPanel").hidden = !open;
+  document.getElementById("setPickBtn").setAttribute("aria-expanded", String(open));
+  if(open){
+    renderSetPickList();
+    document.getElementById("setPickQ").focus();
+  }
+};
+
+/* Owned printings per set, without loading a single pool: every collection key
+   that the index can place is counted against its set. This is what lets the
+   picker show 12/191 for a set whose cards are not in memory. */
+function colOwnedBySet(){
+  const by = new Map();
+  if(!PIDX) return by;
+  for(const k of Object.keys(COL)){
+    const e = PIDX_BY_ID.get(k);
+    if(e) by.set(e.s, (by.get(e.s) || 0) + 1);
+  }
+  return by;
+}
+
+window.openSet = async code => {
+  toggleSetPick(false);
+  if(!GAME.lazySets || code === S.openSet) return;
+  const label = setNameOf(code);
+  note(`Loading ${label}…`);
+  try{
+    const list = await loadSetPool(code);
+    S.openSet = code;
+    try{ localStorage.setItem(openSetKey(), code); }catch{}
+    S.pool = list;
+    adoptPool();
+    S.limit = 48;
+    note(`${label} · ${list.length} cards`);
+  }catch(err){
+    note(`Couldn't load ${label} (${err.message}).`);
+  }
+  render();
+  renderCollectionAll();
+};
+
+function renderPickSetBar(){
+  const bar = document.getElementById("pickSetBar");
+  bar.hidden = !GAME.lazySets || !GAME.sets.length;
+  if(bar.hidden){ if(SETPICK_OPEN) toggleSetPick(false); return; }
+  const meta = setMetaOf(S.openSet);
+  const sym = document.getElementById("setPickSym");
+  if(meta?.symbolUrl){ sym.src = meta.symbolUrl; sym.hidden = false; }
+  else sym.hidden = true;
+  document.getElementById("setPickName").textContent = meta?.name || S.openSet || "…";
+  document.getElementById("setPickSeries").textContent = meta?.series || "";
+  document.getElementById("pickSetCount").textContent = VIEW === "collection"
+    ? `${colOwnedCount(S.pool)}/${S.pool.length} in this set · ${colLoggedPrintings()} logged overall`
+    : `${S.pool.length} cards in this set · ${gameCardTotal().toLocaleString()} searchable`;
+  if(SETPICK_OPEN) renderSetPickList();
+}
+
+function renderSetPickList(){
+  // Expanded groups start as just the open set's series; 17 series expanded at
+  // once is the flat 174-row list this control exists to avoid.
+  if(SETPICK_GROUPS === null)
+    SETPICK_GROUPS = new Set([setMetaOf(S.openSet)?.series].filter(Boolean));
+  const q = SETPICK_Q.trim().toLowerCase();
+  const hits = GAME.sets.filter(s => !q ||
+    s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q) ||
+    s.series.toLowerCase().includes(q));
+  const owned = VIEW === "collection" ? colOwnedBySet() : null;
+  // Series order follows the manifest, which is sorted newest release first.
+  const groups = [];
+  for(const s of hits){
+    let g = groups.find(x => x.series === s.series);
+    if(!g) groups.push(g = {series:s.series, sets:[]});
+    g.sets.push(s);
+  }
+  document.getElementById("setPickList").innerHTML = groups.length ? groups.map(g => {
+    // A filtered list is already narrow; expand everything so the hits show.
+    const open = !!q || SETPICK_GROUPS.has(g.series);
+    const rows = !open ? "" : g.sets.map(s => {
+      const meta = owned
+        ? `${owned.get(s.code) || 0}/${s.cards}`
+        : `${s.cards} cards`;
+      const year = String(s.releaseDate || "").slice(0, 4);
+      return `<button class="sprow${s.code === S.openSet ? " on" : ""}"
+        onclick="openSet('${jsStr(s.code)}')">
+        ${s.symbolUrl ? `<img class="ssym" src="${esc(s.symbolUrl)}" alt=""
+            loading="lazy" referrerpolicy="no-referrer">` : `<i class="ssym"></i>`}
+        <span class="spn">${esc(s.name)}</span>
+        <span class="spmeta">${esc(year)} · ${esc(meta)}</span></button>`;
+    }).join("");
+    return `<div class="spgroup">
+      <button class="spghead" onclick="toggleSetGroup('${jsStr(g.series)}')">
+        <span class="twist">${open ? "▾" : "▸"}</span>${esc(g.series)}
+        <span class="spgn">${g.sets.length} set${g.sets.length === 1 ? "" : "s"}</span>
+      </button>${rows}</div>`;
+  }).join("") : `<p class="spempty">No set matches “${esc(SETPICK_Q)}”.</p>`;
+}
+
+window.toggleSetGroup = series => {
+  if(SETPICK_GROUPS === null) SETPICK_GROUPS = new Set();
+  if(SETPICK_GROUPS.has(series)) SETPICK_GROUPS.delete(series);
+  else SETPICK_GROUPS.add(series);
+  renderSetPickList();
 };
 
 try{
   const v = localStorage.getItem(LS_VARIANTS);
   if(v !== null) S.variants = v === "true";
 }catch{}
+/* Which game this browser was last on. Everything below reads through GAME, so
+   this has to land before any of it. */
+ACTIVE_GAME = readActiveGame();
+adoptGame();
+S.zones = emptyZones();
+S.setScope = GAME.lazySets ? [] : GAME.sets.map(s => s.code);
 // Set scope is reconciled against the sets that actually load, in adoptPool().
-{ const scope = readSetScope(); if(scope) S.setScope = scope; }
+if(!GAME.lazySets){ const scope = readSetScope(); if(scope) S.setScope = scope; }
 if(load()) note("Deck restored from this browser");
 // Signed-out collection is synchronous; a session arriving later replaces it
-// through onCloudSession with the merged server map.
-COL = readLocalCollection();
+// through onCloudSession with the merged server map. The blob is nested by
+// game; a pre-stage-9 flat one is lifted under riftbound on read.
+COLALL = readLocalCollection();
+adoptCollection();
 COL_READY = true;
 paintThemeButton();
+paintGameButton();
 applyHash();   // land on the view the URL names — bookmarks and refreshes
 render();      // paint name and chrome immediately; cards hydrate after the pool
 loadPool();
@@ -2946,18 +3875,23 @@ const flatten = ({data, error}) =>
 
 const DECK_COLS = "id,name,payload,updated_at";
 /* Which game's decks this build reads and writes. Read from the registry the
-   classic script owns, never written as a literal, so a second game changes one
-   constant and not five call sites. Migration 0005 added the column with a
-   DEFAULT, so rows written before it exist are already labelled 'riftbound'
-   and stay visible. */
-const GAME_ID = window.ACTIVE_GAME || "riftbound";
+   classic script owns — a FUNCTION, not a captured constant, because the game
+   switcher changes it at runtime and a cached value would have this module
+   listing Riftbound rows on a Pokémon screen. Migration 0005 added the column
+   with a DEFAULT, so rows written before it exist are already labelled
+   'riftbound' and stay visible. */
+const activeGame = () => window.ACTIVE_GAME || "riftbound";
 window.cloud = {
   list: async () => flatten(await db.from("decks")
-    .select(DECK_COLS).eq("game", GAME_ID).order("updated_at", {ascending:false})),
+    .select(DECK_COLS).eq("game", activeGame()).order("updated_at", {ascending:false})),
   get: async id => flatten(await db.from("decks")
     .select(DECK_COLS).eq("id", id).single()),
-  insert: async row => flatten(await db.from("decks")
-    .insert({...row, game: GAME_ID}).select("id,updated_at").single()),
+  /* A deck is bound to its game at creation and never moves: its payload holds
+     refs that only mean anything inside that game's pool. `game` is explicit
+     here only for the merge-on-signup path, which imports the local deck of
+     every game and therefore cannot rely on whichever one is on screen. */
+  insert: async (row, game) => flatten(await db.from("decks")
+    .insert({...row, game: game || activeGame()}).select("id,updated_at").single()),
   update: async (id, row) => flatten(await db.from("decks")
     .update(row).eq("id", id).select("id,updated_at").single()),
   remove: async id => flatten(await db.from("decks").delete().eq("id", id)),
@@ -3042,11 +3976,20 @@ window.cloud = {
       const back = again.data[0].collection;
       return {map: back && typeof back === "object" ? back : {}};
     }
-    // Merge by max per printing: summing would double-count the same
-    // physical cards, overwriting either side destroys data.
-    const merged = {...server};
-    for(const [k, q] of Object.entries(local))
-      merged[k] = Math.max(merged[k] || 0, q);
+    /* Merge by max per printing, WITHIN each game: summing would double-count
+       the same physical cards, and overwriting either side destroys data.
+       Both sides are lifted first, so a pre-stage-9 flat blob on either the
+       server or this device merges as the riftbound map rather than colliding
+       with a game key. liftCollection is the app's, not a copy — one
+       implementation of "what shape is this blob" is the whole point. */
+    const lift = window.liftCollection || (x => x);
+    const s = lift(server), l = lift(local);
+    const merged = {};
+    for(const game of new Set([...Object.keys(s), ...Object.keys(l)])){
+      merged[game] = {...(s[game] || {})};
+      for(const [k, q] of Object.entries(l[game] || {}))
+        merged[game][k] = Math.max(merged[game][k] || 0, q);
+    }
     const w = await window.cloud.saveCollection(merged);
     if(w.error){
       // The local blob stays put and retries on the next session arrival.
@@ -3075,18 +4018,23 @@ async function syncCloud(){
   lastUid = uid;
   if(!session){ window.onCloudSession?.(null, [], null); return; }
 
+  /* Merge-on-signup, per game. Signing in sweeps up the signed-out deck of
+     EVERY game, not just the one on screen: this handoff runs exactly once per
+     session (the lastUid guard), so a deck left behind here would sit in
+     localStorage unimported. Only the active game's import is opened on the
+     table; the others are in the account, in their own game's deck list. */
   let imported = null;
-  const local = window.localDeckForMerge?.();
-  if(local){
+  for(const local of (window.localDeckForMerge?.() || [])){
     const name = (local.name + " (imported)").slice(0, 120);
-    const r = await window.cloud.insert({name, payload: local.payload});
+    const r = await window.cloud.insert({name, payload: local.payload}, local.game);
     if(r.error){
-      // Leave the local deck untouched; it will retry on the next load.
-      console.warn("[cloud] importing the local deck failed:", r.error);
-    } else {
-      window.clearLocalDeck?.();
-      imported = {id:r.data.id, name, payload:local.payload, updated_at:r.data.updated_at};
+      // Leave that game's local deck untouched; it retries on the next load.
+      console.warn(`[cloud] importing the local ${local.game} deck failed:`, r.error);
+      continue;
     }
+    window.clearLocalDeck?.(local.game);
+    if(local.game === activeGame())
+      imported = {id:r.data.id, name, payload:local.payload, updated_at:r.data.updated_at};
   }
 
   // Collection: read, merge the signed-out map, ensure the row exists.

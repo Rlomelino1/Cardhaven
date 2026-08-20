@@ -84,6 +84,47 @@ exception when others then
     ('H6 ensureSettingsRow cannot overwrite an existing collection', false);
 end $$;
 
+-- H7 (0006): the one-time flat -> nested rewrite. The trigger counts TOP-LEVEL
+-- keys, so N flat refs becoming one "riftbound" key reads as a shrink and the
+-- flat pre-image is archived. That is intended: it is a free, correct snapshot
+-- of the last flat value, one row per account, and it means the migration to
+-- the nested shape is itself recoverable. What must NOT happen is a snapshot on
+-- every subsequent nested write, so the second update is asserted silent.
+do $$
+declare before_n integer; after_n integer; archived jsonb; then_n integer;
+begin
+  update public.user_settings
+     set collection = '{"ogn-001-298":1,"ogn-002-298":2,"ogn-003-298":3}'
+   where user_id = 'ffffffff-6666-4666-8666-ffffffffffff';
+  select count(*) into before_n from public.user_settings_history
+   where user_id = 'ffffffff-6666-4666-8666-ffffffffffff';
+
+  -- the lift: same data, nested under its game
+  update public.user_settings
+     set collection = '{"riftbound":{"ogn-001-298":1,"ogn-002-298":2,"ogn-003-298":3}}'
+   where user_id = 'ffffffff-6666-4666-8666-ffffffffffff';
+  select count(*) into after_n from public.user_settings_history
+   where user_id = 'ffffffff-6666-4666-8666-ffffffffffff';
+  select collection into archived from public.user_settings_history
+   where user_id = 'ffffffff-6666-4666-8666-ffffffffffff'
+   order by replaced_at desc, id desc limit 1;
+
+  -- an ordinary nested write afterwards: two games is not fewer than one
+  update public.user_settings
+     set collection = '{"riftbound":{"ogn-001-298":1,"ogn-002-298":2,"ogn-003-298":3},"pokemon":{"sv1-1":4}}'
+   where user_id = 'ffffffff-6666-4666-8666-ffffffffffff';
+  select count(*) into then_n from public.user_settings_history
+   where user_id = 'ffffffff-6666-4666-8666-ffffffffffff';
+
+  insert into results values ('H7 the flat->nested lift archives the flat value once',
+    after_n = before_n + 1 and archived ->> 'ogn-002-298' = '2');
+  insert into results values ('H7b nested writes afterwards add no history',
+    then_n = after_n);
+exception when others then
+  insert into results values ('H7 the flat->nested lift archives the flat value once', false);
+  insert into results values ('H7b nested writes afterwards add no history', false);
+end $$;
+
 select test, pass from results order by test;
 
 rollback;

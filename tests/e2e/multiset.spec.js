@@ -468,7 +468,9 @@ test.describe("the game switcher", () => {
     await openApp(page);
     await page.click("#gameBtn");
     const rows = page.locator("#gameMenu .gmrow.planned");
-    await expect(rows).toHaveCount(3);
+    // Two now: Pokemon graduated from a planned row to a registry entry in
+    // stage 9, which is exactly the move this test exists to notice.
+    await expect(rows).toHaveCount(2);
     await expect(rows.first().locator(".gmstate")).toHaveText("Planned");
     await expect(rows.first().locator(".gmsub")).toHaveText("Not yet on Card Haven");
     const r = await page.evaluate(() => ({
@@ -477,7 +479,7 @@ test.describe("the game switcher", () => {
       registryGames: Object.keys(GAMES),
     }));
     expect(r.interactive).toBe(0);
-    expect(r.registryGames).toEqual(["riftbound"]);
+    expect(r.registryGames).toEqual(["riftbound", "pokemon"]);
   });
 
   test("the collection context relabels the header and the menu", async ({ page }) => {

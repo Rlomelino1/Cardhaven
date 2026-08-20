@@ -39,12 +39,13 @@ test("hydrateDeck preserves an unresolved ref instead of dropping it", async ({ 
   expect(res.countedInZone).toBe(2); // still counts toward the deck, per design
 });
 
-test("sanitizeCollection clamps out-of-range and non-numeric quantities", async ({ page }) => {
+test("liftCollection clamps out-of-range and non-numeric quantities", async ({ page }) => {
   await openApp(page);
+  // A flat (pre-stage-9) blob lifts under riftbound and clamps to ITS cap of 3.
   const out = await page.evaluate(() =>
-    sanitizeCollection({ a: 0, b: 2, c: 7, d: "two", e: -1, f: 1, g: 3.9 }));
+    liftCollection({ a: 0, b: 2, c: 7, d: "two", e: -1, f: 1, g: 3.9 }));
   // 0/-1 dropped, "two" dropped, 7 clamped to 3, 2 and 1 kept, 3.9 floored to 3.
-  expect(out).toEqual({ b: 2, c: 3, f: 1, g: 3 });
+  expect(out).toEqual({ riftbound: { b: 2, c: 3, f: 1, g: 3 } });
 });
 
 test("jsStr escapes for the JS-string-in-attribute context (XSS guard)", async ({ page }) => {

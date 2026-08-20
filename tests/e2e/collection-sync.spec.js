@@ -58,29 +58,61 @@ test.describe("collection sync: never destroys the server copy", () => {
   });
 });
 
+/* The stored blob is nested by game since stage 9. Both sides of the merge are
+   lifted first, so a pre-stage-9 flat map on the server or on the device merges
+   as the riftbound map rather than colliding with a game key. */
 test.describe("collection sync: merge-on-signup still works", () => {
   test("a signed-out map merges into the server collection by max", async ({ page }) => {
     await openWithCloud(page);
     const { wrote } = await syncWith(page, {
-      read: { data: [{ collection: { a: 1, b: 2 } }], error: null },
-      local: { b: 3, c: 1 },
+      read: { data: [{ collection: { riftbound: { a: 1, b: 2 } } }], error: null },
+      local: { riftbound: { b: 3, c: 1 } },
     });
-    expect(JSON.parse(wrote)).toEqual({ a: 1, b: 3, c: 1 });
+    expect(JSON.parse(wrote)).toEqual({ riftbound: { a: 1, b: 3, c: 1 } });
   });
 
   test("a merge never shrinks the server copy", async ({ page }) => {
     await openWithCloud(page);
     const { wrote } = await syncWith(page, {
-      read: { data: [{ collection: { a: 3 } }], error: null },
-      local: { a: 1 },
+      read: { data: [{ collection: { riftbound: { a: 3 } } }], error: null },
+      local: { riftbound: { a: 1 } },
     });
-    expect(JSON.parse(wrote)).toEqual({ a: 3 });
+    expect(JSON.parse(wrote)).toEqual({ riftbound: { a: 3 } });
   });
 
   test("with no row yet, a local map is uploaded", async ({ page }) => {
     await openWithCloud(page);
-    const { wrote } = await syncWith(page, { read: { data: [], error: null }, local: { a: 2 } });
-    expect(JSON.parse(wrote)).toEqual({ a: 2 });
+    const { wrote } = await syncWith(page,
+      { read: { data: [], error: null }, local: { riftbound: { a: 2 } } });
+    expect(JSON.parse(wrote)).toEqual({ riftbound: { a: 2 } });
+  });
+
+  test("a legacy flat server blob lifts, merges, and comes back nested", async ({ page }) => {
+    // The wipe-safety case for stage 9: every existing row is flat, and the
+    // first sign-in after this ships must not read it as an unknown game or
+    // overwrite it. It becomes the riftbound map, keyed identically.
+    await openWithCloud(page);
+    const { wrote, returned } = await syncWith(page, {
+      read: { data: [{ collection: { "ogn-001-298": 2, "sfd-224*-221": 1 } }], error: null },
+      local: { riftbound: { "ogn-001-298": 3 }, pokemon: { "sv1-1": 4 } },
+    });
+    expect(JSON.parse(wrote)).toEqual({
+      riftbound: { "ogn-001-298": 3, "sfd-224*-221": 1 },
+      pokemon: { "sv1-1": 4 },
+    });
+    expect(returned.map.riftbound["sfd-224*-221"]).toBe(1);
+  });
+
+  test("games merge independently — one game cannot overwrite another", async ({ page }) => {
+    await openWithCloud(page);
+    const { wrote } = await syncWith(page, {
+      read: { data: [{ collection: { riftbound: { a: 3 }, pokemon: { "sv1-1": 1 } } }], error: null },
+      local: { pokemon: { "sv1-1": 4, "sv1-2": 2 } },
+    });
+    expect(JSON.parse(wrote)).toEqual({
+      riftbound: { a: 3 },
+      pokemon: { "sv1-1": 4, "sv1-2": 2 },
+    });
   });
 });
 
