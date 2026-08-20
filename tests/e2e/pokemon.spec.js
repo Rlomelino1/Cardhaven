@@ -300,22 +300,47 @@ test.describe("browsing and search", () => {
     expect(r.types).toEqual(["Pokémon", "Trainer", "Energy"]);
   });
 
-  test("Riftbound-only deck panels are hidden", async ({ page }) => {
+  test("Riftbound-only deck panels are actually invisible", async ({ page }) => {
+    // Asserted on VISIBILITY, not on the hidden attribute. The attribute was
+    // set correctly all along; a `display:flex` added to #curveBlock (to restore
+    // a flex gap) silently beat [hidden]'s display:none, and the energy curve
+    // went on rendering a 60-brick tower in column 0 for a game whose cards all
+    // have energy 0. An attribute assertion could not see that.
     await openPokemon(page);
+    await expect(page.locator("#legendBox")).toBeHidden();
+    await expect(page.locator("#curveBlock")).toBeHidden();
+    await expect(page.locator(".curve")).toBeHidden();
+    await expect(page.locator("#zoneTabs")).toBeHidden();   // one zone, no tabs
     const r = await page.evaluate(() => ({
-      legend: document.getElementById("legendBox").hidden,
-      curve: document.getElementById("curveBlock").hidden,
-      tabs: document.getElementById("zoneTabs").hidden,
       variantsChip: document.getElementById("typeRow").innerText.includes("Variants"),
       zones: Object.keys(ZONES),
       checks: document.getElementById("checks").innerText.replace(/\n/g, " "),
     }));
-    expect(r.legend).toBe(true);
-    expect(r.curve).toBe(true);
-    expect(r.tabs).toBe(true);            // one zone, no tab row
     expect(r.variantsChip).toBe(false);   // no Showcase concept this stage
     expect(r.zones).toEqual(["main"]);
     expect(r.checks).toContain("0/60");
+  });
+
+  test("Riftbound still shows the panels it owns", async ({ page }) => {
+    // The other half: hiding them per game must not hide them everywhere, which
+    // is what an over-broad CSS rule would do.
+    await openApp(page);
+    await expect(page.locator("#legendBox")).toBeVisible();
+    await expect(page.locator("#curveBlock")).toBeVisible();
+    await expect(page.locator(".curve")).toBeVisible();
+    await expect(page.locator("#zoneTabs")).toBeVisible();
+  });
+
+  test("a light card from cross-set search still labels itself", async ({ page }) => {
+    // Index entries carry no supertype, HP or types, so the caption line would
+    // otherwise be empty on a result set that is mostly light cards.
+    await openPokemon(page);
+    await page.fill("#q", "charizard");
+    const metas = await page.evaluate(() =>
+      [...document.querySelectorAll("#results .ttype")].map(e => e.textContent.trim()));
+    expect(metas.length).toBeGreaterThan(10);
+    expect(metas.every(Boolean)).toBe(true);
+    expect(metas.some(m => /\/\d+$/.test(m))).toBe(true);   // "SV3 4/197"
   });
 });
 

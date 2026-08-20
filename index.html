@@ -287,6 +287,10 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
    panel is a 15px-gap column, so the wrapper has to reproduce that gap or the
    heading closes up against the bars. */
 #curveBlock{display:flex; flex-direction:column; gap:15px}
+/* ...and the display above beats [hidden]s implicit display:none, so say it.
+   Without this the curve renders a 60-brick tower in column 0 for a game whose
+   cards all have energy 0. */
+#curveBlock[hidden]{display:none}
 .ztab{flex:1; background:none; border:none; border-radius:3px; padding:7px 2px;
   color:var(--mute); font-size:12px; cursor:pointer; white-space:nowrap}
 .ztab b{font-size:10px; margin-left:3px; font-weight:400}
@@ -365,6 +369,11 @@ body.view-collection #collectionView{display:block}
 .crbar i{display:block; height:100%}
 .crcount{font-family:ui-monospace,Menlo,monospace; font-size:10px; color:var(--mute);
   min-width:42px; text-align:right}
+/* Riftbound rarity names are one word; Pokemons run to "Special Illustration
+   Rare". One column instead of two, and a wider label, rather than three-line
+   labels in a two-column grid. Scoped to the game so Riftbound is untouched. */
+body.game-pokemon .crargrid{grid-template-columns:1fr}
+body.game-pokemon .crlabel{width:170px}
 .cmisscount{margin:0; display:flex; align-items:baseline; gap:8px; font-size:13px;
   color:var(--mute)}
 .cmisscount b{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
@@ -1122,9 +1131,15 @@ const pkNumLabel = c => {
   return c.number == null ? "" :
     `${String(c.set||"").toUpperCase()} ${c.number}${total ? "/" + total : ""}`;
 };
-const pkTileMeta = c => [
-  c.supertype, c.hp ? `${c.hp} HP` : null, c.types?.length ? c.types.join(" / ") : null
-].filter(Boolean).map(esc).join(" · ");
+/* A light card knows only what the index holds, so it has no supertype, HP or
+   types to show. Fall back to its collector number rather than leaving the
+   caption line blank — a cross-set search result is mostly light cards, and an
+   empty line there reads as missing data rather than as detail-on-demand. */
+const pkTileMeta = c => {
+  const parts = [c.supertype, c.hp ? `${c.hp} HP` : null,
+    c.types?.length ? c.types.join(" / ") : null].filter(Boolean);
+  return (parts.length ? parts : [pkNumLabel(c)]).filter(Boolean).map(esc).join(" · ");
+};
 const pkTileBadges = c =>
   (c.regulationMark ? `<span class="regmark" title="Regulation mark ${esc(c.regulationMark)}">${esc(c.regulationMark)}</span>` : "") +
   (c.set ? `<span class="setbadge">${esc(String(c.set).toUpperCase())}</span>` : "") +
