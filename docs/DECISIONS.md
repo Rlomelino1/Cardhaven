@@ -2,6 +2,59 @@
 
 One line each: what was chosen, what was rejected.
 
+## Stage 8 — multi-set support and the multi-game frame (2026-08-19)
+
+### The pool and the data
+
+- Generated `data/sfd-pool.json` with the existing `scripts/build-pool-v2.mjs --set sfd`: 288 printings, set code `SFD`, ids `sfd-NNN-221` (221 base cards), all 288 with art on `cmsassets.rgpub.io` and all 288 with a domain; spot-checked three image URLs over HTTPS (200, `image/webp`). Rejected hand-editing or a new fetcher — the committed script already emits exactly the shape `normalize()` expects.
+- Verified ref uniqueness across the merged pool before building anything on it: 640 printings, 640 distinct `riftboundId`s, none missing. The set prefix guarantees it, but it is proven rather than assumed and is now a test, because refs are identity for both decks and collections.
+- SFD's variant-suffix convention matches OGN's (`a` = alternate art, `*` = signature on the middle segment), so `copyGroupRef()` needed no per-set adaptation. One SFD card, `sfd-t03` ("Gold // Buff"), carries a two-segment id; `copyGroupRef` already falls back to the lowercased ref for anything it can't parse, so it groups only with itself — correct, and left alone.
+- SFD has no `Rune`-type cards (Origins holds all 12). Nothing needed to change: the type chips are a static list per the mockups, and rarities are derived from the data.
+
+### Cross-set card identity — the OGN × SFD name intersection
+
+- **Thirteen genuine cross-set reprints exist**, so the copy-limit requirement is exercised by real data, not only by a fixture: `Vayne - Hunter` (ogn-035 ↔ sfd-223), `Seal of Rage` (ogn-040 ↔ sfd-222), `Seal of Focus` (ogn-081 ↔ sfd-226), `Ahri - Inquisitive` (ogn-119 ↔ sfd-227), `Seal of Insight` (ogn-120 ↔ sfd-229), `Teemo - Strategist` (ogn-121 ↔ sfd-230), `Seal of Strength` (ogn-163 ↔ sfd-231), `Sett - Brawler` (ogn-164 ↔ sfd-232), `Seal of Discord` (ogn-204 ↔ sfd-234), `Yasuo - Windrider` (ogn-205 ↔ sfd-235), `Karma - Channeler` (ogn-235 ↔ sfd-237), `Darius - Executioner` (ogn-243 ↔ sfd-236), `Seal of Unity` (ogn-245 ↔ sfd-238). Every one is a Unit or a Gear — main-deck cards — and all thirteen match on type, energy, might, power, domains and rules text, which is the evidence that they are reprints and not name coincidences. `Vayne - Hunter` is the e2e fixture (2 + 2 flags, 2 + 1 does not).
+- **The bigger finding was within-set, not across it.** A set's *overnumbered* Showcase printings get their own collector number rather than a suffix on the base card's, so the stage-7 id strip never grouped them: `ogn-247` (Kai'Sa - Daughter of the Void) vs `ogn-299`/`ogn-299*`, and `sfd-049` (Aphelios - Exalted) vs `sfd-224`/`sfd-224*`. That is 29 more merges, five of them Units — a live main-deck bug in the shipped OGN build, found by looking at SFD. Chose to apply the name layer uniformly rather than only across sets; rejected an across-sets-only rule, which would have left the bug in place for the exact reason the brief warned about.
+- Derived each group's canonical name from its **base printing** (the member whose id has no variant suffix) and only then stripped the trailing display marker; rejected stripping suffixes off arbitrary variant names, which stage 7 forbids and which the data breaks — group `ogn-299` holds `(Overnumbered)` and `(Signature)` and no bare name at all. The brief's assumption that a base printing's name is already clean does not hold; the strip runs on exactly one definitive name per group, and the merge it produces is validated by test rather than trusted.
+- Guarded the "two different cards share a name" failure mode with a **data test over the real pool** rather than a `BLOCKED.md` note, because no such collision exists today: `pool integrity` asserts every canonical group is functionally one card (type, energy, might, power, domains) and fails the day a set breaks it. Compares gameplay fields only; rejected comparing `supertype` and `text`, which drift benignly between printings (Riftcodex drops `supertype` on some Showcase reprints and errata's legend text) and would have produced seven false alarms.
+- 640 printings → 562 id-groups → 520 cards. Both numbers are pinned in the test, so an accidental widening or narrowing of the grouping is caught.
+
+### Set scope (deck builder)
+
+- Scope filters the card browser only; the deck panel, legality, import and export ignore it entirely, and the notice it raises is informational, not a legality error. Rejected any reading of it as a format/rotation setting — every released set is tournament-legal alongside every other.
+- Deselecting the last selected set snaps back to "all sets"; rejected an explicit empty state, which is a dead end reachable only by a chip that is already off.
+- Persisted as `riftbound.setScope` (game-namespaced from day one) in localStorage; rejected syncing it to `user_settings` — it is a per-device display preference and a write per chip tap is exactly the kind of traffic the CU-hour budget can't spare.
+- Reconciled the persisted scope against the sets that actually load, in `adoptPool()`; rejected trusting the stored array, which would leave a browser scoped to a set that has been renamed or pulled.
+- The search-row count reads `N cards in scope` only while nothing is narrowing it, and `N cards` once a search term or chip is active. Matches the mockup exactly in the state it draws, without letting the phrase describe a number it isn't describing.
+- Set badge sits **bottom-left** on a card tile and the variant chip moved to bottom-right, rather than the mockup's top row; rejected the top row because the energy orb and the Signature marker already own the top corners in the shipped app — and the collection mockup draws that orb explicitly, so moving it would contradict the other mockup.
+- The out-of-scope notice counts the **currently open zone**, matching its own wording ("cards in this zone") and the mockup's numbers; rejected counting the whole deck, which the copy does not say.
+
+### Per-set collection
+
+- Built both scopes in one pass — per-set and the "All sets" aggregate — rather than shipping per-set first: every collection helper already took a list, so scoping was a one-line change per call site and the aggregate is the existing behaviour preserved.
+- Storage is unchanged: one jsonb blob keyed by full set-prefixed refs. Per-set views are a client-side filter over it. Rejected per-set rows or per-set localStorage keys, which would multiply the sync engine's states and drag `COL_READY`, the no-row resolution path and the 0004 history trigger into a change that buys nothing.
+- "Mark set owned" and "Clear" are scoped strictly to the active set's refs and mutate `COL` in a loop before a single `colMutate()`, so a 288-card sweep is one coalesced write, not 288. Clear's confirm text names the set and says the others are untouched; rejected reusing the global wording, which on a per-set button would read as a full wipe.
+- The collection's set selection is transient (part of `COLF`), unlike the deck browser's; it is a place you navigate to, not a preference you keep.
+- The panel title is the plain set name ("Spiritforged"), not the mockup's "Origins: Proving Grounds" — that reflects a set-family product hierarchy the registry deliberately does not model.
+- The "All sets" chip shows the total printings across all sets (115 in the mockup is exactly the sum of the per-set denominators); the game menu's collection line follows the mockup's words, "N sets · M printings logged", and reports printings actually owned.
+- Generalized the collector-number search normalizer from a hardcoded `^ogn` strip to any leading run of letters — it was the only place in the file that named a set code.
+
+### The game frame
+
+- The registry holds one entry; the three planned games are hardcoded display rows with no handler, no href and no focus stop. Rejected putting them in `GAMES` — the registry describes games the app can run, and a fake entry is reachable by every loop that walks it.
+- The dropdown's footer line and the active row's summary switch on the view, following each mockup's own wording ("Decks and collection stay per game." / "Each game keeps its own collection and decks."; "N sets · M cards" / "N sets · M printings logged").
+- `ACTIVE_GAME` is republished on `window` for the auth module: a `const` at classic-script top level does not land on `window`, and the module needs the game id for the `game` column. Rejected a second literal in the module, which is exactly the duplication the registry exists to prevent.
+- **Verified the data-only-set-addition property by grep**, not by assertion: after this stage the only occurrences of `ogn`/`sfd`/`origins`/`spiritforged` in `index.html` are the two registry entries and explanatory comments. No `if`, `switch`, map lookup or regex anywhere keys on a set code — set identity travels on each card's `set` field and on the set-prefixed ref, and the chip row, the rarity sections, the type chips and the search normalizer are all derived from the data. Adding Proving Grounds is one registry line plus one committed pool file.
+- A set that fails to load fails the **whole** load, named, with retry-all; rejected load-what-arrived-with-a-warning, which shows every card of the missing set as an unresolved deck entry and a hole in the collection — indistinguishable from data loss, which this project has already had once.
+- Fetch all sets in parallel on page load; rejected lazy-loading per selected set, which adds a state machine for a couple of hundred KB behind an ETag.
+
+### Schema
+
+- Migration 0005 adds `decks.game text not null default 'riftbound'` plus a format check and a `(user_id, game, updated_at desc)` index replacing the two-column one. Additive, defaulted, and reversible: rows written by a client that predates it are labelled automatically, and a pre-0005 client keeps working.
+- No RLS change. `game` filters, it does not authorise — narrowing a policy by game would make the Data API answer "no such deck" for a row the user owns. T12/T13 pin that isolation is exactly what it was.
+- `user_settings` stays unscoped. Its collection map is keyed by set-prefixed refs, so a second game's refs occupy their own key space inside the same object; splitting it would touch the wipe-recovery machinery for no benefit today. Revisit only if a real second game's ref format could actually collide with Riftbound's — and note that the collision would have to be in both ref shape *and* set code.
+- The SQL suite grew from 29 to 41 tests (C15, C15b, C16, C17, T12, T13 are new); still run locally only, unchanged from the hardening plan.
+
 ## Stage 6 — collection tracker with automatic sync (2026-08-16)
 
 - The collection syncs change-driven: every mutation resets a 2-second debounce, one write per burst, plus flush-on-hide and retry-with-backoff. This is **not** the polling/interval autosave the CU-hours rule bans — nothing ever fires without a user action behind it; an idle page makes zero requests.

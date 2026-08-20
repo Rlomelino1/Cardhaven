@@ -6,16 +6,18 @@ test.describe("boot and browse", () => {
     await openApp(page);
     await expect(page.locator("#onboard")).toBeHidden();
     await expect(page.locator("#browser")).toBeVisible();
-    await expect(page.locator("#resultCount")).toHaveText(/352 cards/);
+    // Stage 8: the browser opens on the merged pool, all sets in scope.
+    await expect(page.locator("#resultCount")).toHaveText(/640 cards in scope/);
     expect(await page.locator("#results .tile").count()).toBeGreaterThan(0);
-    // The pool has all 352 cards with art.
-    expect(await page.evaluate(() => S.pool.length)).toBe(352);
+    // 352 Origins + 288 Spiritforged printings, all with art.
+    expect(await page.evaluate(() => S.pool.length)).toBe(640);
+    expect(await page.evaluate(() => S.pool.filter(c => c.image).length)).toBe(640);
   });
 
   test("search narrows the grid", async ({ page }) => {
     await openApp(page);
     await page.fill("#q", "kai");
-    await expect(page.locator("#resultCount")).not.toHaveText(/352 cards/);
+    await expect(page.locator("#resultCount")).not.toHaveText(/640 cards/);
     const n = await page.evaluate(() => S.pool.filter(c => c.name.toLowerCase().includes("kai")).length);
     await expect(page.locator("#resultCount")).toHaveText(new RegExp(`${n} cards?`));
   });

@@ -48,10 +48,11 @@ index.html              the app — must stay at the repo root, Pages serves fro
 .env.example            the key names, no values
 CLAUDE.md               this file
 README.md               human-facing overview
-data/ogn-pool.json      352 Origins cards with image URLs
+data/ogn-pool.json      352 Origins (OGN) printings with image URLs
+data/sfd-pool.json      288 Spiritforged (SFD) printings; added stage 8
 vendor/neon/            the Neon SDK graph, vendored (served from this origin, not a CDN)
 scripts/                build-pool-v2.mjs (fetch a new set); vendor-neon.mjs (re-vendor the SDK)
-migrations/             0001–0003 SQL + tests/ (29 tests, all passing)
+migrations/             0001–0005 SQL + tests/ (41 tests, all passing)
 tests/                  Playwright e2e suite (dev/CI only) + a static server
 docs/                   DECISIONS.md, BLOCKED.md, auth-setup.md, deployment.md,
                         persistence-audit.md, hardening-plan.md
@@ -83,21 +84,44 @@ zero cost:
 
 Neon project ID: `falling-star-08784661` · region `us-east-2` · database `neondb`
 
-## Roadmap context — awareness only, no implementation
+## The multi-game frame — built in stage 8
 
 The product is **Card Haven**, live at `https://cardhavenapp.com`. Riftbound is the
-first (currently only) supported game inside it.
+first and, today, only supported game.
 
-- **Near term**: additional Riftbound sets beyond Origins (`data/ogn-pool.json` is
-  currently the only pool).
-- **Longer term**: other TCGs entirely, as separate games under the Card Haven
-  umbrella.
+Stage 8 built the frame. It is real, and it is small:
 
-**No implementation now.** No abstraction layers, no multi-game refactors, no schema
-generalization — not in this pass, and not in future passes unless a stage brief asks
-for it. This note exists so that when future stage work presents a choice between a
-Riftbound-hardcoded shape and an equally cheap game-neutral shape, the game-neutral
-one wins; when generalizing costs extra, don't.
+- **`GAMES` in `index.html`** is the registry: one entry per game, each holding an
+  `id`, a `label`, a two-letter `mark`, and a list of `sets` (`code`, `name`, `pool`
+  path). `ACTIVE_GAME` selects one; `GAME` is the resolved entry. Everything
+  game-specific reads from there.
+- **The header carries a game dropdown.** Riftbound is the only registry entry; the
+  three "planned" rows (Magic, Pokémon, One Piece) are hardcoded display data marked
+  inert — no handler, no href, nothing to click. Keep them out of the registry: the
+  registry describes games the app can actually run, and a fake entry there is
+  reachable by every loop that walks it.
+- **Two Riftbound sets ship**: Origins (`OGN`) and Spiritforged (`SFD`), fetched in
+  parallel and merged into one in-memory pool. A set that fails to load fails the
+  whole load, by name, with retry-all — a partial pool would read as a deck full of
+  unresolved cards and a collection full of holes.
+- **`decks.game`** (migration 0005) scopes deck rows. `user_settings` is deliberately
+  *not* scoped — see the migration header for why.
+- **localStorage**: the four pre-existing Riftbound keys (`riftbound-deckbuilder-v1`,
+  `rb.collection`, `rb.variants`, `rb.open-deck`) **are** the riftbound namespace and
+  must never be renamed — renaming orphans every existing browser's local state. New
+  game-specific keys carry the game id (`riftbound.setScope`). `rb.theme` is
+  app-level, not per game.
+
+**Adding a set is a data-only change**: one `GAMES[…].sets` entry plus one committed
+pool file under `data/`. Nothing in `index.html` switches on a set code — set identity
+travels on each card's own `set` field and on the set-prefixed ref. Keep it that way;
+if a change needs `if (set === "…")`, that's the signal the design drifted.
+
+**Still no implementation for a second game, and no further sets, unless a stage brief
+asks.** No `GameAdapter` interface, no plugin system, no schema generalization: the
+registry object and game-namespaced keys are the entire abstraction budget. When a
+choice presents a Riftbound-hardcoded shape and an equally cheap game-neutral one, the
+game-neutral one wins; when generalizing costs extra, don't.
 
 ## Config and secrets
 
@@ -165,6 +189,11 @@ convention (`neon env pull` writes the first two):
 a trigger pinning `user_id` and `created_at`, and jsonb payload size and shape
 constraints. `migrations/README.md` has the details; `docs/DECISIONS.md` has the reasoning.
 
+`0005` added `decks.game` (`text not null default 'riftbound'`) so a deck belongs to
+exactly one game — its payload holds refs that only mean anything inside that game's
+pool. `user_settings` stays unscoped on purpose; the reasoning is in the migration's
+header and in `docs/DECISIONS.md`.
+
 **Run migrations over `DATABASE_URL_UNPOOLED`.** The pooled endpoint runs PgBouncer in
 transaction mode and does not support `SET`, `search_path`, or session state — and
 `set_updated_at()` uses `set search_path = ''`. Migrations through the pooler fail in
@@ -204,6 +233,44 @@ data, and conflating them will break one of the two:
 Therefore: key everything on **collector number**, and derive a separate grouping for
 deck-limit purposes. Do not "fix" the copy-limit bug by normalizing or collapsing card
 names — that would break the collection feature before it's built.
+
+### The cross-set layer (stage 8) — two layers, not one
+
+Collector number alone stops being sufficient the moment a second set exists, because
+Riftbound defines identity for deck legality **by name**: the 3-copy limit is on named
+cards (TR 403.4) and a card is legal if a card of that name is in a legal set
+(TR 601.2.a). Reprints are the same card. So the grouping is two layers:
+
+1. **Within a set — `copyGroupRef()`**, unchanged from stage 7: strip the variant
+   suffix off the middle id segment (`ogn-039a-298` → `ogn-039`).
+2. **Across id-groups — `cardKey()`**: fold groups together by the **base printing's**
+   name, where the base printing is the group member whose id carries no variant
+   suffix, and the trailing `(Alternate Art)` / `(Signature)` / `(Overnumbered)` marker
+   is stripped off *that one name only*. Never strip suffixes off arbitrary variant
+   names to build a key — a group can hold `X (Overnumbered)` and `X (Signature)` and
+   no bare `X` at all, which is exactly the fragility stage 7 recorded.
+
+Measured on the real merged pool: 640 printings → 562 id-groups → **520 cards**. All
+42 merges are genuine, and they are not only cross-set:
+
+- 13 are **cross-set reprints** — Spiritforged reprints thirteen Origins cards as
+  overnumbered Showcase printings (`ogn-035` ↔ `sfd-223` Vayne - Hunter, the six
+  Seals, Ahri - Inquisitive, …).
+- 29 are **within-set** merges layer 1 alone misses, because a set's overnumbered
+  Showcase printings get their **own collector number** rather than a suffix on the
+  base card's (`ogn-247` vs `ogn-299`/`ogn-299*`; `sfd-049` vs `sfd-224`/`sfd-224*`).
+  Five of those are Units, so this was a live main-deck bug, not a theoretical one.
+
+Name grouping is only correct while two *different* cards never share a name. That is
+a property of the data, so it is a test, not an assumption: `pool integrity` in
+`tests/e2e/multiset.spec.js` asserts every group the key merges is functionally one
+card (type, energy, might, power, domains) and goes red the day that stops holding.
+Compare gameplay fields only — Riftcodex drops `supertype` on some Showcase reprints
+and errata's legend text, and neither means "different card".
+
+**The collection is untouched by all of this.** It still keys on the full ref, so an
+Origins printing and its Spiritforged reprint are two distinct collectibles — guarded
+by its own test.
 
 ## The Showcase 3-copy limit — fixed (stage 7)
 
@@ -293,6 +360,7 @@ configuring those screens once instead of twice.
 | 5 | Multiple named decks: list, rename, duplicate, delete | three decks, switchable |
 | 6 | Collection tracker + "what am I missing" view | works on phone |
 | 7 | Showcase / base-card 3-copy limit | 3 base + 1 Showcase gets flagged |
+| 8 | Multi-set (Origins + Spiritforged) + the multi-game frame | both sets browse, scope chips filter only the browser, a cross-set reprint shares one limit |
 
 **Stage 1 caveat**: card art currently loads from a `file://` page. On an HTTPS origin,
 a CDN sending restrictive CORS or hotlink-protection headers fails differently. Check
