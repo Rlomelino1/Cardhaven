@@ -205,12 +205,19 @@ test.describe("cross-set card identity", () => {
     });
 });
 
+/* The All sets chip is a toggle: pressing it while it is already on backs out of
+   all-mode. So say the intent — be in all-mode — rather than pressing a button
+   whose meaning depends on where you already are. */
+const allSets = page => page.evaluate(() => {
+  if (!S.setScopeAll) toggleSetScope("all");
+  return S.setScopeAll;
+});
+
 test.describe("deck builder set scope", () => {
-  const deselectSfd = page => page.evaluate(() => {
-    toggleSetScope("all");
-    toggleSetScope("SFD");
-    return S.setScope;
-  });
+  const deselectSfd = async page => {
+    await allSets(page);
+    return page.evaluate(() => { toggleSetScope("SFD"); return S.setScope; });
+  };
 
   test("chips scope the browser and the readouts", async ({ page }) => {
     await openApp(page);
@@ -296,10 +303,64 @@ test.describe("deck builder set scope", () => {
 
     // Asking for all sets does light it, and persists as the mode.
     await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
-    expect(await state()).toMatchObject({ lit: true, all: true, stored: "all" });
+    // Stored as the mode plus the scope to back out to.
+    expect(await state()).toMatchObject({
+      lit: true, all: true, stored: { all: true, prev: ["OGN", "SFD"] } });
     await openApp(page);
     expect(await state()).toMatchObject({ lit: true, all: true });
   });
+
+  test("pressing All sets again backs out to the scope you were on", async ({ page }) => {
+    const chip = page.locator("#setChips .setchip", { hasText: "All sets" });
+    const state = () => page.evaluate(() => ({
+      all: S.setScopeAll, scope: S.setScope,
+      prev: S.setScopePrev,
+      lit: document.querySelector("#setChips .setchip").classList.contains("on"),
+    }));
+    await openApp(page);
+    // Get onto a real hand-picked scope first.
+    await page.locator("#setChips .setchip", { hasText: "Origins" }).click();
+    expect(await state()).toMatchObject({ all: false, scope: ["SFD"] });
+
+    await chip.click();
+    expect(await state()).toMatchObject({
+      all: true, lit: true, scope: ["OGN", "SFD"], prev: ["SFD"] });
+    // ...and pressing it again returns you to exactly that scope.
+    await chip.click();
+    expect(await state()).toMatchObject({
+      all: false, lit: false, scope: ["SFD"], prev: null });
+
+    // The round trip survives a reload, because the scope to come back to is
+    // stored with the preference.
+    await chip.click();
+    await openApp(page);
+    expect(await state()).toMatchObject({ all: true, prev: ["SFD"] });
+    await chip.click();
+    expect(await state()).toMatchObject({ all: false, scope: ["SFD"] });
+  });
+
+  test("backing out with nothing to return to lands on the game's first set",
+    async ({ page }) => {
+      const chip = page.locator("#setChips .setchip", { hasText: "All sets" });
+      // A fresh browser starts in all-mode having never picked anything, so
+      // there is no previous scope — the first set beats an empty browser.
+      await openApp(page);
+      expect(await page.evaluate(() => ({
+        all: S.setScopeAll, prev: S.setScopePrev }))).toEqual({ all: true, prev: null });
+      await chip.click();
+      expect(await page.evaluate(() => S.setScope)).toEqual(["OGN"]);
+      expect(await page.evaluate(() => poolSets()[0].code)).toBe("OGN");
+    });
+
+  test("a remembered set that left the pool falls back to the first set",
+    async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem("riftbound.setScope",
+        JSON.stringify({ all: true, prev: ["GONE"] })));
+      await openApp(page);
+      expect(await page.evaluate(() => S.setScopeAll)).toBe(true);
+      await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
+      expect(await page.evaluate(() => S.setScope)).toEqual(["OGN"]);
+    });
 
   test("all-mode covers a set that ships later; a hand-picked scope does not",
     async ({ page }) => {
@@ -310,8 +371,9 @@ test.describe("deck builder set scope", () => {
         adoptPool();
         return S.setScope;
       });
-      // All-mode: the new set joins the scope rather than going missing.
-      await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
+      // A fresh browser is already in all-mode, so pressing the chip here would
+      // back OUT of it. Assert the starting state instead of clicking into it.
+      expect(await page.evaluate(() => S.setScopeAll)).toBe(true);
       expect(await withNewSet()).toEqual(["OGN", "SFD", "NEW"]);
 
       await openApp(page);
@@ -336,13 +398,15 @@ test.describe("deck builder set scope", () => {
   test("deselecting the last set snaps back to all sets rather than emptying", async ({ page }) => {
 
     await openApp(page);
+    await allSets(page);
     const scope = await page.evaluate(() => {
-      toggleSetScope("all");
       toggleSetScope("SFD");
       toggleSetScope("OGN");   // nothing would be left
       return S.setScope;
     });
     expect(scope).toEqual(["OGN", "SFD"]);
+    // Snapped back to every set, but NOT into all-mode — the app chose it.
+    expect(await page.evaluate(() => S.setScopeAll)).toBe(false);
   });
 });
 
@@ -365,7 +429,8 @@ test.describe("import / export across sets", () => {
         .toEqual([OGN_VAYNE, SFD_VAYNE].sort());
 
       // Narrow the browser to Origins, then import the file back.
-      await page.evaluate(() => { toggleSetScope("all"); toggleSetScope("SFD"); });
+      await allSets(page);
+      await page.evaluate(() => toggleSetScope("SFD"));
       await page.evaluate(() => { freshDeck(); render(); });
       await page.setInputFiles("#picker", {
         name: "two-sets.json", mimeType: "application/json", buffer: Buffer.from(text),

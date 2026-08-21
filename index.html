@@ -1499,6 +1499,9 @@ let S = {
   // chip lights on the first and not the second, and all-mode additionally
   // covers sets that ship later. See readSetScope().
   setScopeAll: true,
+  // The scope to return to when all-mode is switched back off, or null when
+  // there is none — in which case the chip backs out to the first set.
+  setScopePrev: null,
   // Lazy games: the set whose pool is loaded and on screen, shared by the
   // deckbuilder and the collection. Null until the manifest lands.
   openSet: null
@@ -2292,21 +2295,36 @@ document.getElementById("setPickQ").addEventListener("input", e => {
    including ones that ship later", so a set added after this preference was
    saved is in scope instead of silently missing from the browser.
 
-   Stored as the string "all" in that mode and as the array of codes otherwise.
-   A legacy blob is an array and keeps working as an enumerated pick. */
+   Pressing the chip again backs out of all-mode and returns you to the scope
+   you were on before it, so it behaves like the toggle it looks like. The scope
+   to come back to travels with the preference, so backing out works after a
+   reload too.
+
+   Three stored shapes, oldest first. All three are read; only the last two are
+   ever written:
+     ["OGN","SFD"]           a hand-picked scope — what every pre-existing
+                             browser holds, and still means the same thing
+     "all"                   all-mode with nothing to come back to
+     {all:true, prev:[...]}  all-mode, plus the scope the chip backs out to
+   Returns a normalised {all, sets, prev}, or null when there is no preference
+   saved for this game. */
 function readSetScope(){
   try{
     const raw = localStorage.getItem(setScopeKey());
     if(!raw) return null;
     const v = JSON.parse(raw);
-    if(v === "all") return "all";
-    return Array.isArray(v) && v.length ? v.map(String) : null;
+    const codes = a => Array.isArray(a) && a.length ? a.map(String) : null;
+    if(codes(v)) return {all:false, sets:codes(v), prev:null};
+    if(v === "all") return {all:true, sets:null, prev:null};
+    if(v && typeof v === "object" && v.all)
+      return {all:true, sets:null, prev:codes(v.prev)};
+    return null;
   }catch{ return null; }
 }
 const writeSetScope = () => {
   try{
-    localStorage.setItem(setScopeKey(),
-      JSON.stringify(S.setScopeAll ? "all" : S.setScope));
+    localStorage.setItem(setScopeKey(), JSON.stringify(
+      S.setScopeAll ? {all:true, prev:S.setScopePrev} : S.setScope));
   }catch{}
 };
 
@@ -2315,10 +2333,14 @@ const writeSetScope = () => {
    "no set filter" is what the app is actually doing. */
 function initSetScope(){
   S.setScopeAll = true;
+  S.setScopePrev = null;
   S.setScope = GAME.lazySets ? [] : GAME.sets.map(s => s.code);
   if(GAME.lazySets) return;
   const saved = readSetScope();
-  if(Array.isArray(saved)){ S.setScope = saved; S.setScopeAll = false; }
+  if(!saved) return;
+  S.setScopeAll = saved.all;
+  S.setScopePrev = saved.prev;
+  if(saved.sets) S.setScope = saved.sets;
 }
 
 const inScope = c => GAME.lazySets ? setCodeOf(c) === S.openSet
@@ -2327,11 +2349,28 @@ const scopedPool = () => S.pool.filter(inScope);
 
 window.toggleSetScope = code => {
   const codes = poolSets().map(s => s.code);
-  if(code === "all"){ S.setScopeAll = true; S.setScope = codes; }
+  if(code === "all"){
+    if(S.setScopeAll){
+      /* Pressing it again backs out, to the scope you were on before it. If
+         there is nothing to come back to — a fresh browser starts in all-mode,
+         and a remembered set can have been dropped from the pool since — fall
+         back to the game's first set rather than to an empty browser. */
+      const back = (S.setScopePrev || []).filter(c => codes.includes(c));
+      S.setScopeAll = false;
+      S.setScope = back.length ? back : codes.slice(0, 1);
+      S.setScopePrev = null;
+    } else {
+      S.setScopePrev = [...S.setScope];
+      S.setScopeAll = true;
+      S.setScope = codes;
+    }
+  }
   else {
     // Any individual pick leaves all-mode, even when the picks happen to cover
     // every set — that is the whole point: the chip tracks the act, not the sum.
+    // It is also a fresh choice, so there is no longer a scope to back out to.
     S.setScopeAll = false;
+    S.setScopePrev = null;
     const next = S.setScope.includes(code)
       ? S.setScope.filter(c => c !== code)
       : [...S.setScope, code];
