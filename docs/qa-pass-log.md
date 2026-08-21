@@ -315,6 +315,28 @@ logic a browser holding `["OGN","SFD"]` would have kept filtering a third set ou
 - Startup and the game switcher now share `initSetScope()` instead of repeating the same
   four lines, which is what let them differ in the first place.
 
+### R4 — Pressing "All sets" again backs out of it · `c5b756d`
+It looks like a toggle, so it now behaves like one. Pressing it while lit leaves all-mode
+and restores **exactly the scope you were on before pressing it** — the requested
+behaviour, and achievable, so the fallback version wasn't needed as the primary path. The
+scope to return to is stored with the preference, so the round trip survives a reload.
+
+When there genuinely is nothing to come back to, it falls back to the game's first set
+rather than to an empty browser. Two ways that happens: a fresh browser starts in all-mode
+having never picked anything, and a remembered set can have left the pool since it was
+saved. "First set" is `poolSets()[0]`, so it is Origins for Riftbound without Origins being
+named anywhere — no `if (set === …)`, per the standing rule.
+
+- An individual chip click clears the remembered scope: that is a fresh choice, so there is
+  no longer a "back" to go to.
+- Stored shape gains `{all:true, prev:[...]}`. The bare `"all"` from R3 and the legacy array
+  are both still read and still mean what they meant.
+- **Several existing tests used `toggleSetScope("all")` as "put me in all-mode"** — which is
+  precisely what pressing it no longer means. They now state that intent through one shared
+  helper rather than pressing a button whose effect depends on where you already are. Worth
+  noting as a pattern: a test that drives a control instead of asserting a state silently
+  changes meaning when the control does.
+
 ---
 
 ## DEFERRED

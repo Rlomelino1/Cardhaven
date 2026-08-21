@@ -489,3 +489,8 @@ in a real browser. Most of the modal already matched; these are the gaps that we
   Rejected the derived version: it cannot tell "I asked for all sets" from "I ticked them
   all", and it cannot mean "including sets that ship later" — which the mode does, so a
   newly released set is in scope for anyone who pressed the button.
+- Backing out of all-mode restores the previous scope, kept in `S.setScopePrev` and stored
+  alongside the mode so it survives a reload. Fallback when there is nothing to restore is
+  `poolSets()[0]` — the first set of whichever game is active, so no set code is named in
+  code. Rejected falling back to every set: that is indistinguishable from all-mode and
+  would make the toggle look broken.
