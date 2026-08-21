@@ -2175,6 +2175,7 @@ window.switchGame = async id => {
   POOL_READY = false;
   S.pool = []; POOL_BY_REF = new Map(); CARD_INDEX = new Map();
   PIDX = null; PIDX_BY_ID = new Map(); POOL_CACHE.clear();
+  bumpSetLoad();          // a set load still in flight belongs to the old game
   S.q = ""; S.domainFilter = []; S.typeFilter = []; S.rarityFilter = []; S.limit = 48;
   S.openSet = null;
   S.setScope = GAME.lazySets ? [] : GAME.sets.map(s => s.code);
@@ -3706,13 +3707,27 @@ function colOwnedBySet(){
   return by;
 }
 
+/* Which set-load is the current one. Two clicks in a row are two fetches in
+   flight, and without this the SLOWER one wins simply by resolving last — so
+   clicking a big set and then a small one left you on the big set, with the
+   picker label, the pool and the notice line all agreeing on the wrong answer.
+   Bumped by switchGame() too, so a Pokémon set that lands after a switch to
+   Riftbound cannot drop its cards into the other game's pool. */
+let SETLOAD_SEQ = 0;
+const bumpSetLoad = () => ++SETLOAD_SEQ;
+
 window.openSet = async code => {
   toggleSetPick(false);
   if(!GAME.lazySets || code === S.openSet) return;
   const label = setNameOf(code);
+  const seq = bumpSetLoad();
   note(`Loading ${label}…`);
   try{
     const list = await loadSetPool(code);
+    // Superseded: a later click already owns the screen. The fetch is not
+    // wasted — loadSetPool cached it — but adopting it now would put a set on
+    // screen that nobody asked for.
+    if(seq !== SETLOAD_SEQ) return;
     S.openSet = code;
     try{ localStorage.setItem(openSetKey(), code); }catch{}
     S.pool = list;
@@ -3720,6 +3735,7 @@ window.openSet = async code => {
     S.limit = 48;
     note(`${label} · ${list.length} cards`);
   }catch(err){
+    if(seq !== SETLOAD_SEQ) return;
     note(`Couldn't load ${label} (${err.message}).`);
   }
   render();

@@ -79,6 +79,36 @@ test.describe("boot and lazy loading", () => {
     expect(first).toBe(SMALL_SET);
   });
 
+  test("the last set clicked wins a mid-load switch", async ({ page }) => {
+    // Two clicks are two fetches in flight. Without a generation check the
+    // SLOWER one wins by resolving last, so clicking a big set and then a small
+    // one left you on the big set — pool, picker label and notice line all
+    // consistently wrong, which is the hard kind of wrong to notice.
+    await openPokemon(page);
+    await page.route("**/data/pokemon/sv3-pool.json", async route => {
+      await new Promise(r => setTimeout(r, 1500));
+      return route.continue();
+    });
+    await page.evaluate(s => { openSet("sv3"); setTimeout(() => openSet(s), 100); }, SMALL_SET);
+    await page.waitForFunction(s => S.openSet === s, SMALL_SET);
+    // Let the superseded fetch land; it must not steal the screen back.
+    await page.waitForTimeout(2500);
+    const r = await page.evaluate(s => ({
+      openSet: S.openSet,
+      poolIsSmallSet: S.pool.every(c => c.set === s),
+      label: document.getElementById("setPickName").textContent,
+      wanted: setNameOf(s),
+      stored: localStorage.getItem(openSetKey()),
+      cachedAnyway: POOL_CACHE.has("sv3"),
+    }), SMALL_SET);
+    expect(r.openSet).toBe(SMALL_SET);
+    expect(r.poolIsSmallSet).toBe(true);
+    expect(r.label).toBe(r.wanted);
+    expect(r.stored).toBe(SMALL_SET);
+    // The abandoned fetch is still cached, so nothing was wasted.
+    expect(r.cachedAnyway).toBe(true);
+  });
+
   test("the open set survives a reload", async ({ page }) => {
     await openPokemon(page);
     await page.evaluate(s => openSet(s), SMALL_SET);
