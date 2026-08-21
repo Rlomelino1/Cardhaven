@@ -1501,7 +1501,15 @@ let PIDX = null;                    // the index array, or null before it loads
 let PIDX_BY_ID = new Map();         // ref -> index entry
 const POOL_CACHE = new Map();       // set id -> normalized cards, once fetched
 const pkIndexEntry = ref => PIDX_BY_ID.get(String(ref)) || null;
-const pkSetTotal = id => GAME.sets.find(s => s.code === id)?.cards ?? 0;
+/* The denominator of a collector number is the set's OFFICIAL total, not how
+   many cards this repo happens to hold for it. The manifest carries both and
+   they differ for 6 of the 174 sets — SM Black Star Promos is 165 files against
+   a printed /75 — so a card read "SVP 001/165". Progress counts still use
+   `cards`; only the printed number wants `total`. */
+const pkSetTotal = id => {
+  const s = GAME.sets.find(x => x.code === id);
+  return s ? (s.total || s.cards || 0) : 0;
+};
 
 /* A card the index can describe but no loaded pool can. Enough to draw a tile,
    a deck row, and to answer the copy limit; `light` marks what it is missing so

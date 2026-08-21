@@ -468,6 +468,30 @@ test.describe("browsing and search", () => {
     expect(r.allHidden).toBe(true);
   });
 
+  test("a collector number's denominator is the set total, not the file count", async ({ page }) => {
+    // The manifest carries both, and the vendor script's own comment draws the
+    // line: `cards` is what the repo holds, `total` is what the set officially
+    // contains. Progress bars want the former; a printed collector number wants
+    // the latter. They differ for 6 of the 174 sets.
+    await openPokemon(page);
+    const r = await page.evaluate(() => {
+      const split = GAME.sets.filter(s => s.total && s.cards && s.total !== s.cards);
+      const one = GAME.sets.find(s => s.code === "svp");
+      return {
+        splitCount: split.length,
+        svp: { total: one.total, cards: one.cards },
+        label: GAME.numLabel({ set: "svp", number: "1" }),
+        sameSet: GAME.numLabel({ set: "base1", number: "58" }),
+      };
+    });
+    // Fixture check: if a re-vendor ever makes every set agree, this test stops
+    // meaning anything and should say so rather than pass silently.
+    expect(r.splitCount).toBeGreaterThan(0);
+    expect(r.svp.total).not.toBe(r.svp.cards);
+    expect(r.label).toBe(`SVP 1/${r.svp.total}`);
+    expect(r.sameSet).toBe("BASE1 58/102");
+  });
+
   test("a light card from cross-set search still labels itself", async ({ page }) => {
     // Index entries carry no supertype, HP or types, so the caption line would
     // otherwise be empty on a result set that is mostly light cards.
