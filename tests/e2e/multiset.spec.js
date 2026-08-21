@@ -395,18 +395,45 @@ test.describe("deck builder set scope", () => {
     expect(r).toEqual({ all: false, scope: ["OGN", "SFD"], lit: false });
   });
 
-  test("deselecting the last set snaps back to all sets rather than emptying", async ({ page }) => {
-
+  test("the last set standing cannot be deselected", async ({ page }) => {
+    /* Something has to stay in scope. This used to snap to EVERY set, which
+       turned one stray click into a scope nobody asked for; now the click does
+       nothing whatsoever — including not disturbing all-mode or the remembered
+       scope, which is why the guard runs before either is written. */
     await openApp(page);
     await allSets(page);
-    const scope = await page.evaluate(() => {
-      toggleSetScope("SFD");
-      toggleSetScope("OGN");   // nothing would be left
-      return S.setScope;
-    });
-    expect(scope).toEqual(["OGN", "SFD"]);
-    // Snapped back to every set, but NOT into all-mode — the app chose it.
-    expect(await page.evaluate(() => S.setScopeAll)).toBe(false);
+    await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    expect(await page.evaluate(() => S.setScope)).toEqual(["OGN"]);
+
+    // Click the only remaining set, three times.
+    const lone = page.locator("#setChips .setchip", { hasText: "Origins" });
+    for (let i = 0; i < 3; i++) await lone.click();
+    expect(await page.evaluate(() => ({
+      scope: S.setScope,
+      lit: document.querySelectorAll("#setChips .setchip.on").length,
+      stored: JSON.parse(localStorage.getItem(setScopeKey())),
+    }))).toEqual({ scope: ["OGN"], lit: 1, stored: ["OGN"] });
+    // It says why on hover, so a click that does nothing doesn't read as dead.
+    await expect(lone).toHaveAttribute("title", /at least one set/i);
+    // The other set can still be brought back...
+    await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    expect(await page.evaluate(() => S.setScope.length)).toBe(2);
+    // ...and with two selected, neither is pinned.
+    expect(await page.locator("#setChips .setchip[title]").count()).toBe(0);
+  });
+
+  test("dropping to one set keeps the mode flags honest", async ({ page }) => {
+    await openApp(page);
+    await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
+    expect(await page.evaluate(() => ({ all: S.setScopeAll, prev: S.setScopePrev })))
+      .toEqual({ all: true, prev: ["OGN"] });
+    // Leaving all-mode by clicking a set drops to the other one, and that is a
+    // fresh choice: no remembered scope left over.
+    await page.locator("#setChips .setchip", { hasText: "Origins" }).click();
+    expect(await page.evaluate(() => ({
+      all: S.setScopeAll, prev: S.setScopePrev, scope: S.setScope,
+    }))).toEqual({ all: false, prev: null, scope: ["SFD"] });
   });
 });
 

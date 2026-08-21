@@ -2366,18 +2366,21 @@ window.toggleSetScope = code => {
     }
   }
   else {
+    const next = S.setScope.includes(code)
+      ? S.setScope.filter(c => c !== code)
+      : [...S.setScope, code];
+    /* Something has to stay in scope, so clicking the only selected set does
+       nothing at all — it used to snap to every set, which turned one stray
+       click into a scope you never asked for. Nothing at all means nothing:
+       returning here leaves all-mode and the remembered scope untouched too,
+       which is why `next` is computed before either is written. */
+    if(!next.length) return;
     // Any individual pick leaves all-mode, even when the picks happen to cover
     // every set — that is the whole point: the chip tracks the act, not the sum.
     // It is also a fresh choice, so there is no longer a scope to back out to.
     S.setScopeAll = false;
     S.setScopePrev = null;
-    const next = S.setScope.includes(code)
-      ? S.setScope.filter(c => c !== code)
-      : [...S.setScope, code];
-    // Deselecting the last set would leave an empty browser and no way back
-    // except a chip that is already off; snap to every set instead. Not
-    // all-mode though: the app chose that, not the user.
-    S.setScope = next.length ? next : codes;
+    S.setScope = next;
   }
   writeSetScope();
   S.limit = 48;
@@ -2392,11 +2395,19 @@ function renderSetBar(){
   if(bar.hidden) return;
   // Lit only in all-mode. Every set ticked by hand looks like what it is: every
   // set ticked by hand.
+  // The last set standing cannot be turned off. Say so on hover rather than
+  // letting a click that does nothing read as a dead button.
+  const lone = S.setScope.length === 1;
   document.getElementById("setChips").innerHTML =
     `<button class="setchip${S.setScopeAll ? " on" : ""}" onclick="toggleSetScope('all')">All sets</button>` +
-    sets.map(s => `<button class="setchip${S.setScope.includes(s.code) ? " on" : ""}"
+    sets.map(s => {
+      const on = S.setScope.includes(s.code);
+      const pinned = on && lone;
+      return `<button class="setchip${on ? " on" : ""}"${pinned
+        ? ` title="At least one set stays in scope"` : ""}
       onclick="toggleSetScope('${jsStr(s.code)}')">${esc(s.name)}
-      <b>${setCardsOf(s.code).length}</b></button>`).join("");
+      <b>${setCardsOf(s.code).length}</b></button>`;
+    }).join("");
   const n = S.setScope.length, cards = scopedPool().length;
   document.getElementById("setScopeCount").textContent =
     `${n} set${n === 1 ? "" : "s"} · ${cards} cards in scope`;
