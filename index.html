@@ -1695,6 +1695,13 @@ const setCardsOf = code => S.pool.filter(c => setCodeOf(c) === code);
 function adoptPool(){
   POOL_BY_REF = new Map(S.pool.map(c => [refOf(c), c]));
   buildCardIndex();
+  /* The rarity chips are built from the pool's own rarities, so a filter the
+     incoming pool has no card for leaves an empty browser AND no lit chip to
+     turn off — indistinguishable from a set that failed to load. Reconcile it
+     the way the set scope is reconciled below. Riftbound can't hit this through
+     the UI (its pool is every set at once), so this is a no-op there. */
+  const rarities = new Set(S.pool.map(c => c.rarity).filter(Boolean));
+  S.rarityFilter = S.rarityFilter.filter(r => rarities.has(r));
   if(GAME.lazySets){ COLF.set = S.openSet; return; }
   const codes = poolSets().map(s => s.code);
   S.setScope = S.setScope.filter(c => codes.includes(c));

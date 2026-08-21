@@ -297,6 +297,29 @@ test.describe("browsing and search", () => {
     expect(r.allTrainers).toBe(true);
   });
 
+  test("a rarity filter the newly opened set has no card for is dropped", async ({ page }) => {
+    // Otherwise: an empty grid, "0 cards", and no lit chip anywhere to clear,
+    // because the rarity row only renders the OPEN set's rarities. It reads as
+    // a set that failed to load.
+    await openPokemon(page);
+    await page.evaluate(() => openSet("sv1"));
+    await page.waitForFunction(() => S.openSet === "sv1");
+    await page.evaluate(() => toggleFilter("rarityFilter", "Double Rare"));
+    expect(await page.evaluate(() => S.rarityFilter)).toEqual(["Double Rare"]);
+    expect(await page.locator("#results .tile").count()).toBeGreaterThan(0);
+    // Base has no Double Rare at all.
+    await page.evaluate(() => openSet("base1"));
+    await page.waitForFunction(() => S.openSet === "base1");
+    const r = await page.evaluate(() => ({
+      filter: S.rarityFilter,
+      tiles: document.querySelectorAll("#results .tile").length,
+      lit: document.querySelectorAll("#rarityRow .chip.on").length,
+    }));
+    expect(r.filter).toEqual([]);
+    expect(r.tiles).toBeGreaterThan(0);
+    expect(r.lit).toBe(0);
+  });
+
   test("the meta line and badges are Pokémon's, not Riftbound's", async ({ page }) => {
     await openPokemon(page);
     await page.evaluate(s => openSet(s), SMALL_SET);
