@@ -215,8 +215,11 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
 .spempty{padding:14px 10px; font-size:12.5px; color:var(--mute)}
 /* Regulation mark reuses the Signature slot: a single letter in a 16px square
    is exactly what both are. HP takes the bottom-right variant slot. */
+/* Ink pinned, not themed: the chip behind it is a fixed dark wash, so ink from
+   var(--text2) went near-black on near-black in Paper. Same rule as .setbadge
+   and .ctag, which say it in their own comments. */
 .regmark{position:absolute; top:6px; right:6px; width:16px; height:16px;
-  border-radius:2px; background:rgba(10,8,18,.85); color:var(--text2);
+  border-radius:2px; background:rgba(10,8,18,.85); color:#CFC9DE;
   border:1px solid rgba(234,231,244,.3);
   font-family:ui-monospace,Menlo,monospace; font-size:9px; line-height:15px;
   text-align:center; font-weight:700}
@@ -499,9 +502,11 @@ body.game-pokemon .crlabel{width:170px}
 .flagtag{font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.1em;
   text-transform:uppercase; color:var(--warn)}
 /* Bottom-RIGHT since stage 8: the set badge took bottom-left, and the top
-   corners are the energy orb and the Signature marker. */
+   corners are the energy orb and the Signature marker. Ink pinned for the same
+   reason as .regmark — var(--text) inverts with the theme, the chip under it
+   does not, and Showcase/alt-art badges went unreadable in Paper. */
 .variant{position:absolute; bottom:6px; right:6px; background:rgba(10,8,18,.85);
-  color:var(--text); border:1px solid rgba(234,231,244,.35); border-radius:2px;
+  color:#EAE7F4; border:1px solid rgba(234,231,244,.35); border-radius:2px;
   font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.08em;
   text-transform:uppercase; padding:2px 5px; line-height:1.1}
 .acts{display:flex; gap:4px; align-items:center; flex-wrap:nowrap; min-height:22px}

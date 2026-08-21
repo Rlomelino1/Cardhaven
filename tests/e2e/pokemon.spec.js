@@ -315,6 +315,26 @@ test.describe("browsing and search", () => {
     expect(r.types).toEqual(["Pokémon", "Trainer", "Energy"]);
   });
 
+  test("the regulation mark and HP badges stay legible in Paper", async ({ page }) => {
+    // Every Pokemon tile carries both, so themed ink on a fixed dark chip was
+    // two unreadable rectangles per card. See the Riftbound half of this in
+    // smoke.spec.js — the .variant rule is shared.
+    const relLum = rgb => {
+      const [r, g, b] = rgb.match(/[\d.]+/g).slice(0, 3).map(Number)
+        .map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    await openPokemon(page);
+    await expect(page.locator("#results .regmark").first()).toBeVisible();
+    const read = () => page.evaluate(() => ["regmark", "variant"].map(c =>
+      getComputedStyle(document.querySelector("#results ." + c)).color));
+    const midnight = await read();
+    await page.click("#themeBtn");
+    const paper = await read();
+    expect(paper).toEqual(midnight);
+    for (const c of paper) expect(relLum(c)).toBeGreaterThan(0.5);
+  });
+
   test("Riftbound-only deck panels are actually invisible", async ({ page }) => {
     // Asserted on VISIBILITY, not on the hidden attribute. The attribute was
     // set correctly all along; a `display:flex` added to #curveBlock (to restore
