@@ -85,14 +85,25 @@ test.describe("boot and lazy loading", () => {
     // one left you on the big set — pool, picker label and notice line all
     // consistently wrong, which is the hard kind of wrong to notice.
     await openPokemon(page);
+    // Hold sv3's pool open until we let it go, so "the slow one resolves last"
+    // is arranged rather than timed — a sleep here is flaky under a parallel run.
+    let release, seen;
+    const gate = new Promise(r => { release = r; });
+    const requested = new Promise(r => { seen = r; });
     await page.route("**/data/pokemon/sv3-pool.json", async route => {
-      await new Promise(r => setTimeout(r, 1500));
+      seen();
+      await gate;
       return route.continue();
     });
-    await page.evaluate(s => { openSet("sv3"); setTimeout(() => openSet(s), 100); }, SMALL_SET);
+    // Not awaited: openSet only settles when its fetch does, which is the point.
+    await page.evaluate(() => { openSet("sv3"); });
+    await requested;
+    await page.evaluate(s => openSet(s), SMALL_SET);
     await page.waitForFunction(s => S.openSet === s, SMALL_SET);
-    // Let the superseded fetch land; it must not steal the screen back.
-    await page.waitForTimeout(2500);
+    // Now let the superseded fetch land. It must not steal the screen back;
+    // POOL_CACHE gaining sv3 is proof it really did finish.
+    release();
+    await page.waitForFunction(() => POOL_CACHE.has("sv3"));
     const r = await page.evaluate(s => ({
       openSet: S.openSet,
       poolIsSmallSet: S.pool.every(c => c.set === s),

@@ -14,12 +14,15 @@ test.describe("boot and browse", () => {
     expect(await page.evaluate(() => S.pool.filter(c => c.image).length)).toBe(640);
   });
 
-  test("search narrows the grid", async ({ page }) => {
+  test("search narrows the grid, and the readout keeps the scope it narrowed", async ({ page }) => {
     await openApp(page);
     await page.fill("#q", "kai");
-    await expect(page.locator("#resultCount")).not.toHaveText(/640 cards/);
+    await expect(page.locator("#resultCount")).not.toHaveText(/640 cards in scope/);
     const n = await page.evaluate(() => S.pool.filter(c => c.name.toLowerCase().includes("kai")).length);
-    await expect(page.locator("#resultCount")).toHaveText(new RegExp(`${n} cards?`));
+    // "N of 640 in scope": the filtered count AND what it was filtered from. The
+    // label used to drop to a bare "N cards", which threw the scope away and
+    // changed shape on every keystroke.
+    await expect(page.locator("#resultCount")).toHaveText(new RegExp(`^${n} of 640 in scope$`, "i"));
   });
 
   test("a domain filter changes the result count", async ({ page }) => {

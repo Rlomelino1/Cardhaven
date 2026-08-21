@@ -3254,15 +3254,18 @@ function render(){
   // Never let the page size drift past the result count.
   S.limit = Math.max(48, Math.min(S.limit, Math.max(48, res.length)));
 
-  // Count of what search + every active filter currently shows. Idle — nothing
-  // typed, no chip on — it is exactly the in-scope pool, and the mockup labels
-  // it that way; once a filter narrows it, "in scope" would be describing the
-  // wrong number, so the suffix drops.
+  // Count of what search + every active filter currently shows, always against
+  // the scope it is counting inside — the readout used to drop "in scope" the
+  // moment a filter narrowed it, which left the label jumping between two
+  // shapes and threw away the number you were narrowing FROM. Keeping the
+  // words and adding the denominator says both without ever claiming the
+  // filtered count IS the scope.
   const narrowed = !!term || chipsOn || (GAME.variantsToggle && !S.variants);
+  const scopeTotal = scopedPool().length;   // NB: inScope is the module-level predicate
   document.getElementById("resultCount").textContent =
     crossSet ? `${res.length} card${res.length===1?"":"s"} · all ${poolSets().length} sets`
     : GAME.lazySets && term ? `${res.length} card${res.length===1?"":"s"} · this set only (filters on)`
-    : narrowed ? `${res.length} card${res.length===1?"":"s"}`
+    : narrowed ? `${res.length} of ${scopeTotal} in scope`
     : `${res.length} cards in scope`;
   document.getElementById("results").innerHTML = res.slice(0,S.limit).map(x=>{
     // Cross-set hits arrive as index entries; materialise only what renders.
