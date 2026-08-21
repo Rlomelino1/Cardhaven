@@ -621,6 +621,27 @@ test.describe("collection", () => {
     expect(r.loaded).not.toContain("base1");
   });
 
+  test("the copies readout spans every set, not just the open one", async ({ page }) => {
+    // It summed the loaded pool, which for a lazy game is ONE set — so copies
+    // logged in any other set silently dropped out of a number the header
+    // presents as a total, right above a panel that gets it right.
+    await openPokemon(page, { hash: "#collection",
+      collection: { pokemon: { "base1-58": 4, "base2-60": 3, "nope-999": 2 } } });
+    const r = await page.evaluate(() => ({
+      readout: document.getElementById("syncState").textContent,
+      copies: colLoggedCopies(),
+      printings: colLoggedPrintings(),
+      openSet: S.openSet,
+      loaded: [...POOL_CACHE.keys()],
+    }));
+    // Seven copies across two sets, neither of them the open one — and the ref
+    // the index cannot place is left out of the count, as everywhere else.
+    expect(r.copies).toBe(7);
+    expect(r.printings).toBe(2);
+    expect(r.readout).toContain("7 copies logged");
+    expect(r.loaded).not.toContain("base1");
+  });
+
   test("a Pokémon printing and a Riftbound one cannot collide", async ({ page }) => {
     // The refs live in separate game keys now, so even identical ref strings
     // would be two different collectibles. Belt for 0005's braces.

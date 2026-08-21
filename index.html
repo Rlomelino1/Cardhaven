@@ -2562,6 +2562,12 @@ const colCopies = list => list.reduce((n,c) => n + qtyOf(refOf(c)), 0);
 const colLoggedPrintings = () => GAME.lazySets
   ? Object.keys(COL).filter(k => PIDX_BY_ID.has(k)).length
   : colOwnedCount(S.pool);
+/* Copies logged across the whole game, by the same rule. The header readout
+   used to sum the loaded pool, which for a lazy game is ONE set — so every
+   other set's copies vanished from a number that reads as a total. */
+const colLoggedCopies = () => GAME.lazySets
+  ? Object.entries(COL).reduce((n, [k, q]) => PIDX_BY_ID.has(k) ? n + q : n, 0)
+  : colCopies(S.pool);
 /* Every printing the game has, loaded or not. */
 const gameCardTotal = () => GAME.lazySets ? (PIDX ? PIDX.length : 0) : S.pool.length;
 
@@ -2743,7 +2749,7 @@ function renderSyncState(){
   if(!el) return;
   el.hidden = VIEW !== "collection";
   if(el.hidden) return;
-  const copies = colCopies(S.pool);
+  const copies = colLoggedCopies();
   let txt, cls = "";
   if(MODE !== "cloud"){
     txt = `On this device only · ${copies} copies logged`;
