@@ -389,6 +389,32 @@ test.describe("browsing and search", () => {
     await expect(page.locator("#zoneTabs")).toBeVisible();
   });
 
+  test("Show all on a cross-set search really shows every hit", async ({ page }) => {
+    // The handler used to set the limit to S.pool.length, which WAS the result
+    // count back when the pool was the only thing searched. A cross-set search
+    // resolves off the index, so the two numbers parted ways: 3,133 hits, a
+    // 64-card set open, and the button rendered 64 tiles then offered itself
+    // again.
+    await openPokemon(page);
+    await page.evaluate(s => openSet(s), SMALL_SET);
+    await page.waitForFunction(s => S.openSet === s, SMALL_SET);
+    await page.fill("#q", "ex");
+    const hits = await page.evaluate(() => RESULT_COUNT);
+    expect(hits).toBeGreaterThan(await page.evaluate(() => S.pool.length));
+    await expect(page.locator("#showAll")).toHaveText(`Show all ${hits}`);
+    await page.click("#showAll");
+    const r = await page.evaluate(() => ({
+      tiles: document.querySelectorAll("#results .tile").length,
+      limit: S.limit,
+      moreHidden: document.getElementById("more").hidden,
+      allHidden: document.getElementById("showAll").hidden,
+    }));
+    expect(r.tiles).toBe(hits);
+    expect(r.limit).toBe(hits);
+    expect(r.moreHidden).toBe(true);    // nothing left to page to
+    expect(r.allHidden).toBe(true);
+  });
+
   test("a light card from cross-set search still labels itself", async ({ page }) => {
     // Index entries carry no supertype, HP or types, so the caption line would
     // otherwise be empty on a result set that is mostly light cards.

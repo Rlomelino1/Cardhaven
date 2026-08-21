@@ -1482,6 +1482,11 @@ let POOL_READY = false;
 let PENDING_LOCAL, PENDING_CLOUD;
 let BASELINE = null;       // snapshot() of the last saved state, for dirty checks
 let ZONE_TAB = "main";     // which zone the deck panel is showing; transient
+/* How many cards the last render actually matched. The pager's "Show all N"
+   has to raise the limit to N, and N is not S.pool.length: a lazy game's
+   cross-set search resolves off the index, so it routinely matches thousands
+   of cards while one 64-card set is in memory. */
+let RESULT_COUNT = 0;
 let MENU_OPEN = false;     // deck switcher dropdown
 
 /* ------------------- the lazy game's index and pool cache ----------------
@@ -3227,6 +3232,7 @@ function render(){
     return tileHtml(c, acts);
   }).join("");
  
+  RESULT_COUNT = res.length;
   const remaining = Math.max(0, res.length - S.limit);
   const expanded = S.limit > 48 && res.length > 48;
   const more = document.getElementById("more");
@@ -3549,7 +3555,7 @@ document.getElementById("more").addEventListener("click", () => {
   S.limit += 48; render();
 });
 document.getElementById("showAll").addEventListener("click", () => {
-  S.limit = S.pool.length; render();
+  S.limit = RESULT_COUNT; render();
 });
 document.getElementById("showLess").addEventListener("click", () => {
   S.limit = 48; render();
