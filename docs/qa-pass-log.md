@@ -296,6 +296,25 @@ should stay as it was.
 type row already shares its line with the result count, so merging there is a different
 layout question and it wasn't what was asked for.
 
+### R3 — "All sets" lights only when you ask for all sets · `2a5cfeb`
+Was derived state: `sets.every(s => S.setScope.includes(s.code))`, so ticking both sets by
+hand was indistinguishable from pressing All sets. It now tracks the act — any individual
+pick leaves all-mode even when the picks cover everything, and the deselect-the-last-set
+snap-back does not light it either, since the app chose that rather than the user.
+
+Making it a real mode buys something the enumeration cannot express: all-mode means "every
+set, **including ones that ship later**", so a set released after the preference was saved
+lands in scope instead of going quietly missing from the browser. Under the old derived
+logic a browser holding `["OGN","SFD"]` would have kept filtering a third set out forever
+— worth knowing, since adding a set is meant to be a data-only change.
+
+- Fresh browsers stay lit: nothing has been picked, and "no set filter" is what the app is
+  actually doing.
+- Persisted as the string `"all"` in that mode, the array of codes otherwise. A legacy blob
+  is an array and keeps working as a hand-picked scope — asserted.
+- Startup and the game switcher now share `initSetScope()` instead of repeating the same
+  four lines, which is what let them differ in the first place.
+
 ---
 
 ## DEFERRED

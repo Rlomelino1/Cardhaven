@@ -485,3 +485,7 @@ in a real browser. Most of the modal already matched; these are the gaps that we
 - The two type-filter axes share one `.row` via `display:contents` on each group, rather
   than being merged into a single container. The groups stay separate elements so each
   keeps rendering itself, and the chips still wrap as one run.
+- "All sets" is a stored mode, not state derived from the selection covering every set.
+  Rejected the derived version: it cannot tell "I asked for all sets" from "I ticked them
+  all", and it cannot mean "including sets that ship later" — which the mode does, so a
+  newly released set is in scope for anyone who pressed the button.
