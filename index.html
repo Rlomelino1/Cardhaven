@@ -478,6 +478,10 @@ body.game-pokemon .crlabel{width:170px}
 #q,#colQ{background:var(--panel); border:1px solid var(--edge); color:var(--text);
   border-radius:2px; padding:10px 12px; font-size:14px; width:100%}
 .row{display:flex; gap:5px; flex-wrap:wrap; align-items:center}
+/* A container that groups chips for the JS without becoming a layout box: its
+   chips are laid out by the .row above it, so two groups share one wrapping
+   line. Each group still renders itself into its own element. */
+.chipgroup{display:contents}
 .row > .lbl{font-family:ui-monospace,Menlo,monospace; font-size:9px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute); margin-right:3px}
 .chip{background:var(--panel); border:1px solid var(--edge); color:var(--mute);
@@ -875,8 +879,14 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
         <input id="q" placeholder="Search name, rules text, or artist">
         <span class="rescount" id="resultCount"></span>
       </div>
-      <div class="row" id="domainRow"></div>
-      <div class="row" id="typeRow"></div>
+      <!-- Both type axes share one wrapping line. They stay two containers so
+           each keeps filling itself independently; `display:contents` on the
+           groups puts their chips straight into the row's flex flow, so the two
+           sets wrap as one run instead of holding two half-empty lines. -->
+      <div class="row">
+        <span class="chipgroup" id="domainRow"></span>
+        <span class="chipgroup" id="typeRow"></span>
+      </div>
       <div class="row" id="rarityRow"></div>
     </div>
     <div class="shelf" id="results"></div>
