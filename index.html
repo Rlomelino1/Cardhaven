@@ -727,7 +727,19 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   .topright{margin-left:auto}
   .acct .pitch{display:none}
   .savestate{display:none}   /* the Save button itself still carries the state */
-  .deckmenu{left:auto; right:-40px}
+  /* All three dropdowns hang off a small wrapper that sits well into its row,
+     with a max-width in vw that knows nothing about that offset — so at 390px
+     the game menu ended 66px past the right edge (taking its Active/Switch
+     labels with it), the deck menu 19px past (clipping the delete ✕), and the
+     set picker 8px. The page has no horizontal scroll, so none of it was
+     reachable.
+     Fix: drop the wrapper out of the positioning chain on a phone, so each
+     panel measures against the full-width bar it belongs to and spans it. The
+     `top:calc(100% + 9px)` on each panel then means "below that bar", which is
+     what it should have meant here all along. Desktop is untouched. */
+  .gamewrap,.switchwrap,.setpickwrap{position:static}
+  .setbar{position:relative}
+  .gamemenu,.deckmenu,.setpick{left:0; right:0; width:auto; max-width:none}
   /* The set bar is a horizontal row of chips; on a phone it wraps to several
      lines, so the count moves under them instead of fighting for the end of
      line one. */

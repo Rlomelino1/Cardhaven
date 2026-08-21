@@ -785,3 +785,44 @@ test.describe("the collection's set picker stays current", () => {
     expect(after).toContain("1 logged overall");
   });
 });
+
+test.describe("phone width", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  const box = (page, sel) => page.evaluate(s => {
+    const r = document.querySelector(s).getBoundingClientRect();
+    return { left: Math.round(r.left), right: Math.round(r.right), vw: innerWidth };
+  }, sel);
+
+  /* Each dropdown hung off a small wrapper sitting well into its row, with a
+     max-width in vw that knew nothing about the offset. The game menu ended 66px
+     past the right edge at this width — its Active/Switch labels with it — and
+     the page has no horizontal scroll, so none of it was reachable. */
+  test("every dropdown stays inside the viewport, in both games", async ({ page }) => {
+    for (const open of [
+      { btn: "#gameBtn", panel: "#gameMenu" },
+      { btn: "#deckCaret", panel: "#deckMenu" },
+    ]) {
+      await openApp(page);
+      await page.click(open.btn);
+      const b = await box(page, open.panel);
+      expect(b.left, `${open.panel} left`).toBeGreaterThanOrEqual(0);
+      expect(b.right, `${open.panel} right`).toBeLessThanOrEqual(b.vw);
+    }
+    await openPokemon(page);
+    for (const open of [
+      { btn: "#gameBtn", panel: "#gameMenu" },
+      { btn: "#deckCaret", panel: "#deckMenu" },
+      { btn: "#setPickBtn", panel: "#setPickPanel" },
+    ]) {
+      await page.click(open.btn);
+      const b = await box(page, open.panel);
+      expect(b.left, `${open.panel} left`).toBeGreaterThanOrEqual(0);
+      expect(b.right, `${open.panel} right`).toBeLessThanOrEqual(b.vw);
+      await page.keyboard.press("Escape");
+    }
+    // And nothing pushed the page itself sideways.
+    expect(await page.evaluate(() =>
+      document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+});
