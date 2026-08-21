@@ -3,7 +3,7 @@
 A hands-on pass over the local build (`node tests/serve.mjs`, driven with Playwright at
 1440px and at 390/360px), playing three users: a new visitor, a Riftbound deck builder,
 and a Pokémon collector. Baseline before any change: **95 tests green**. After:
-**106 green**, 11 of them added here.
+**108 green**, 13 of them added here.
 
 **Auth:** every signed-in flow was exercised against a **mocked `window.cloud`** in the
 page, not a live Neon session — `localhost` is not a trusted origin for the Managed
@@ -30,8 +30,12 @@ each entry.
 
 ## FIXED
 
-Nine bugs, one commit each, most-severe first. Two of them (F2, F6) touch code Riftbound
-shares; each entry says why that is safe.
+Eleven bugs, one commit each, most-severe first. Three of them (F2, F6, F11) touch code
+Riftbound shares; each entry says why that is safe.
+
+F10 and F11 were **reported by Rafael from the running local build**, after the first ten
+were fixed. Both are noted as such because they say something about this pass's blind
+spots, not just about the code — see the note at the end of FIXED.
 
 ### F1 — Clicking a card name in a Pokémon deck list did nothing · `b27e4ad`
 *Breaks flow.* Every row of every Pokémon deck was a dead button.
@@ -190,6 +194,70 @@ the page never gains a horizontal scrollbar, so the overflow is simply unreachab
 - **Test:** `pokemon.spec.js` › "every dropdown stays inside the viewport, in both games"
   — plus an assertion that the document itself never scrolls sideways.
 
+### F10 — The switchable game-menu row rendered as a white OS button · `e5770b5`
+*Breaks flow — the one row you must click to change games was unreadable.* **Reported by
+Rafael, not found by me.**
+
+- **Did:** opened the game dropdown in Midnight (the default theme).
+- **Expected:** a row styled like its neighbours.
+- **Got:** a white slab with barely-visible text where "Pokémon TCG · Switch" should be.
+- **Cause:** the active row is a `<div>` and the switchable one a `<button>`. `.gmrow`
+  styles layout and sets ink to `var(--text)` but never resets `background` or `border`,
+  so the button painted the UA default — `rgb(240,240,240)` with a 2px black border —
+  under light Midnight ink. It also never got `cursor:pointer`; `.gmrow.planned` sets
+  `cursor:default`, which is what a bare button gives anyway, so nothing gave the gap
+  away. Measured: it is the **only** button in the file with this problem.
+- **Fix:** reset `background`/`border` on `.gmrow`; `cursor:pointer` on `button.gmrow`
+  only, since `.active` is a div and `.planned` is decoration.
+- **Test:** `smoke.spec.js` › "no control falls back to the browser's default button
+  chrome" — sweeps every on-screen button with both menus open and compares against a
+  probe button's computed background, so this whole class is closed rather than this one
+  rule. Verified to fail before the fix (5 hits) and pass after.
+- **My miss:** this row is visible in `d-gamemenu.png`, a screenshot I took and looked at
+  on the first pass. I read the white row as a `:focus-visible` ring from my own synthetic
+  click and moved on without measuring it. The text-dump assertions I was leaning on
+  (`allInnerTexts()`) read the row fine, because the text was *present* — just invisible.
+  Reading a computed style would have taken one line.
+
+### F11 — Expanding a series in the set picker closed the picker · `ce69f74`
+*Breaks flow — with 174 sets behind that control, close to unusable.* **Reported by
+Rafael, not found by me.**
+
+- **Did:** opened the set picker and clicked a collapsed series header.
+- **Expected:** the series expands, the panel stays open.
+- **Got:** the panel shut. The group *did* expand — measured, rows went 6 → 24 and the
+  expanded set accumulated — you simply never saw it, because it closed on the same click.
+  Reproduced twice.
+- **Cause:** a propagation bug, not a logic one. The header's handler re-renders the list,
+  destroying the clicked button, and it runs while the click is still bubbling. By the time
+  the document-level outside-click guard asks `e.target.closest(".setpickwrap")`, the
+  clicked node's ancestors are gone; `closest()` walks the detached chain, returns null,
+  and the guard reads a click on its own panel as a click outside it. Proved directly:
+  `closest()` returns true before the re-render and false after.
+- **Fix:** ask `e.composedPath()` instead — the propagation path is captured at dispatch,
+  so it still describes where the click came from after the DOM has moved on. Applied to
+  all three menu guards, since any row handler that re-renders its own container has the
+  same shape.
+- **Regression-checked by hand**, because a fix to a close-guard is exactly the kind that
+  breaks the closes you want: expanding stays open, collapsing stays open, typing in the
+  filter stays open, **picking a set still closes**, clicking outside still closes, Escape
+  still closes, and switching games still closes the game menu.
+- **Test:** `pokemon.spec.js` › "expanding a series keeps the panel open; picking a set
+  closes it" — real clicks, since the bug lives in event propagation and driving
+  `toggleSetGroup()` directly cannot see it. Verified to fail before the fix.
+- **My miss:** I drove the picker through `page.evaluate(() => openSet(...))` and
+  `toggleSetGroup(...)` — bypassing the DOM event entirely — and clicked only the *rows*,
+  never a *group header*. The existing stage-9 test has the same hole for the same reason.
+  A real click on every interactive element is not the same as a real click on one of
+  them.
+
+**What these two have in common:** both were plainly visible on screen and invisible to
+the way I was checking. My scenarios asserted state and text content, which were correct
+in both cases, and I substituted screenshots-glanced-at for pixels-measured. The two tests
+added above are deliberately broader than the two bugs — a sweep over every button, and a
+real click through the real event path — because the specific fix is worth less than
+closing the hole in the method.
+
 ---
 
 ## DEFERRED
@@ -238,6 +306,20 @@ real multi-set deck get the grey Colorless dot. Correct by construction, not wro
   file every visitor downloads, for decoration. That's a data-shape and page-weight call.
 - **Recommended:** leave it. If the grey grates, hide the dot for lazy games rather than
   pay index bytes for it.
+
+### D6 — Both header dropdowns can be open at once
+Open the game menu, then click the deck-switcher caret: both panels stay open and overlap
+in the header. Each toggle button calls `e.stopPropagation()`, so the click never reaches
+the document-level guard that would have closed the other one.
+
+- **Pre-existing**, verified identical with and without F11's fix (that fix changes how
+  "inside" is computed, not whether the guard runs at all).
+- **Why it needs you:** making the menus mutually exclusive is a small behaviour decision
+  about the header, not a defect being repaired, and it was out of scope for a pass fixing
+  two reported bugs.
+- **Recommended:** have `toggleGameMenu(true)` and `toggleDeckMenu(true)` each close the
+  other, plus `toggleSetPick(false)`. Three lines, and it makes the header's one-open-at-a-
+  time behaviour explicit instead of accidental.
 
 ### D5 — The original Base Set can't be found by searching "base set"
 The picker returns **Expedition Base Set** and **Base Set 2**; the original's vendored name

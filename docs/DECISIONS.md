@@ -472,3 +472,10 @@ in a real browser. Most of the modal already matched; these are the gaps that we
 - Rarity filters are reconciled in `adoptPool()` rather than reset in `openSet()`, so
   every route that replaces the pool (fetch, set switch, file import) is covered by one
   line.
+- Outside-click guards test `e.composedPath()`, not `e.target.closest()`. The path is
+  captured at dispatch, so it survives a handler that re-renders (and detaches) the
+  element that was clicked. Rejected `stopPropagation()` on the one offending handler:
+  that fixes one control and leaves the trap set for the next one.
+- `button.gmrow` carries the pointer cursor, not `.gmrow` — the active row is a div and
+  the planned rows are decoration, so a cursor on the shared class would promise a click
+  on two rows that have no handler.
