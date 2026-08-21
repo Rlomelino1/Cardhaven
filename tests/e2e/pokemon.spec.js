@@ -203,6 +203,21 @@ test.describe("deck rules", () => {
     expect(r.rows).toContain("Pikachu");
   });
 
+  test("a deck row opens the card modal", async ({ page }) => {
+    // The row's click handler read the Riftbound id field, which a Pokémon card
+    // has none of — so it handed a NAME to a resolver that wants a ref, and the
+    // modal simply never opened. Nothing in the console said a word about it.
+    await openPokemon(page);
+    await page.evaluate(ref => {
+      freshDeck();
+      S.zones.main = [{ ...findCard(ref), id: uid(), qty: 2 }];
+      render();
+    }, PIKACHU_BASE1);
+    await page.click("#zoneList .dname");
+    await expect(page.locator("#modal.open")).toBeVisible();
+    await expect(page.locator("#modalBox h3")).toHaveText("Pikachu");
+  });
+
   test("a deck round-trips through localStorage across a reload", async ({ page }) => {
     await openPokemon(page);
     await page.evaluate(refs => {

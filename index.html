@@ -3250,7 +3250,7 @@ function render(){
     ? `<ul class="dlist">` + zlist.map(c=>`<li>
         <i class="dot" style="background:${c.domains[0]?`var(--${c.domains[0]})`:"var(--Colorless)"}"></i>
         <button class="dname" title="${esc(c.name)}"
-          onclick="openCard('${jsStr(c.riftboundId||c.name)}')">${esc(c.name)}</button>
+          onclick="openCard('${jsStr(refOf(c))}')">${esc(c.name)}</button>
         ${c.set?`<span class="dset">${esc(String(c.set).toUpperCase())}</span>`:""}
         <span class="denergy">${c.energy||""}</span>
         <span class="qty">
