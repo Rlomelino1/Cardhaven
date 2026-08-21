@@ -408,6 +408,9 @@ body.game-pokemon .crlabel{width:170px}
 .coltab.on b{color:var(--ink)}
 .colchiprow{display:flex; gap:14px; align-items:center; justify-content:space-between;
   flex-wrap:wrap}
+/* Takes the room the count doesn't, so the chips wrap inside the row instead of
+   pushing the count onto a line of its own. */
+.colchips{flex:1; min-width:0}
 
 .colsec{margin-top:24px; padding-bottom:8px; border-bottom:1px solid var(--edge);
   justify-content:flex-start; gap:9px}   /* count sits beside the label */
@@ -953,9 +956,13 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
       <input id="colQ" placeholder="Search name, number, or artist">
       <div class="coltabs" id="colTabs"></div>
     </div>
-    <div class="row" id="colDomainRow"></div>
+    <!-- Both type axes on one wrapping line, as in the deck browser, with the
+         card count still held at the right end of the row. -->
     <div class="colchiprow">
-      <div class="row" id="colTypeRow"></div>
+      <div class="row colchips">
+        <span class="chipgroup" id="colDomainRow"></span>
+        <span class="chipgroup" id="colTypeRow"></span>
+      </div>
       <span class="rescount" id="colCount"></span>
     </div>
   </div>

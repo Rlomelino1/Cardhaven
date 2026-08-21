@@ -868,3 +868,52 @@ test.describe("phone width", () => {
       document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   });
 });
+
+test.describe("filter bar layout", () => {
+  /* Both type axes (energy types and supertypes) share one wrapping line rather
+     than holding a row each, in the deck browser AND the collection. They stay
+     separate containers so each still renders itself; display:contents is what
+     puts their chips into one flex row. Pokémon is the demanding case at 14
+     chips — Riftbound has 12 and inherits the same markup. */
+  const chipLines = (page, a, b) => page.evaluate(([a, b]) => {
+    const chips = [...document.querySelectorAll(`${a} .chip, ${b} .chip`)];
+    const tops = new Set(chips.map(c => Math.round(c.getBoundingClientRect().top)));
+    return { lines: tops.size, chips: chips.length };
+  }, [a, b]);
+
+  test("both type axes share one line in the deck browser", async ({ page }) => {
+    await openPokemon(page);
+    const r = await chipLines(page, "#domainRow", "#typeRow");
+    expect(r.chips).toBe(14);
+    expect(r.lines).toBe(1);
+  });
+
+  test("both type axes share one line in the collection, count still at the end",
+    async ({ page }) => {
+      await openPokemon(page, { hash: "#collection" });
+      const r = await chipLines(page, "#colDomainRow", "#colTypeRow");
+      expect(r.chips).toBe(14);
+      expect(r.lines).toBe(1);
+      // The card count keeps its place at the right end of that same row.
+      const count = await page.evaluate(() => {
+        const c = document.getElementById("colCount").getBoundingClientRect();
+        const row = document.querySelector(".colchips").getBoundingClientRect();
+        return { onRow: Math.round(c.top) < Math.round(row.bottom),
+                 rightOfChips: c.left >= row.right - 1,
+                 inside: Math.round(c.right) <= innerWidth };
+      });
+      expect(count).toEqual({ onRow: true, rightOfChips: true, inside: true });
+    });
+
+  test("the collection's chips still filter after the reflow", async ({ page }) => {
+    await openPokemon(page, { hash: "#collection" });
+    const all = await page.evaluate(() => colBase().length);
+    await page.locator("#colDomainRow .chip").first().click();
+    const byType = await page.evaluate(() => ({
+      n: colBase().length, domains: COLF.domains }));
+    expect(byType.domains).toEqual(["Grass"]);
+    expect(byType.n).toBeLessThan(all);
+    await page.locator("#colTypeRow .chip").first().click();
+    expect(await page.evaluate(() => COLF.types)).toEqual(["Pokémon"]);
+  });
+});
