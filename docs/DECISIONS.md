@@ -479,3 +479,9 @@ in a real browser. Most of the modal already matched; these are the gaps that we
 - `button.gmrow` carries the pointer cursor, not `.gmrow` — the active row is a div and
   the planned rows are decoration, so a cursor on the shared class would promise a click
   on two rows that have no handler.
+- The filtered result count reads "20 of 640 in scope" rather than a bare "20 cards".
+  Keeps the scope label stable and keeps both numbers, which answers the original reason
+  the suffix was dropped (a filtered count is not the scope).
+- The two type-filter axes share one `.row` via `display:contents` on each group, rather
+  than being merged into a single container. The groups stay separate elements so each
+  keeps rendering itself, and the chips still wrap as one run.

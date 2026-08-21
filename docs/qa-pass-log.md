@@ -260,6 +260,44 @@ closing the hole in the method.
 
 ---
 
+## REQUESTED CHANGES
+
+Not bugs — behaviour Rafael asked for after looking at the running build. Logged here
+because both overturn a reasoned stage-8 decision, and the reasoning is worth keeping
+next to the reversal.
+
+### R1 — The result count keeps its scope when a filter is on · `d3d76e1`
+Was: `640 cards in scope` idle, `20 cards` once anything narrowed it. The suffix dropped
+on purpose — a comment argued that with a filter on, "in scope" would be describing the
+wrong number. True, but it also meant the label changed shape on every keystroke and threw
+away the number you were narrowing *from*.
+
+Now `20 of 640 in scope`: the words stay and the denominator keeps it honest, so the
+original objection no longer applies. The two lazy-game branches are untouched — "all 174
+sets" and "this set only (filters on)" describe a different scope, not this one.
+
+Two existing assertions encoded the old copy (`/N cards?/`) and were updated. **Caught a
+real bug in my own first attempt:** I named the new local `inScope`, which shadowed the
+module-level `inScope(card)` predicate and put `render()` into a TDZ crash on any deck with
+cards in a zone. The suite caught it immediately; renamed to `scopeTotal`.
+
+### R2 — Both type-filter axes share one line · `ad55a80`
+The energy/domain chips and the supertype chips each held their own row, both half empty.
+They stay two containers so each still fills itself independently, with `display:contents`
+putting their chips into one flex row so the two sets wrap as a single run.
+
+Applied to **both games** — the markup is shared, and 13 chips on one line reads well in
+Riftbound too. It does move Riftbound pixels, which the stage-9 pixel-identity promise
+would otherwise forbid; an explicit layout request from the author outranks it, and layout
+is on `CLAUDE.md`'s minor-decision list. Easy to scope to `body.game-pokemon` if Riftbound
+should stay as it was.
+
+**Not changed:** the collection view's filter rows, which have the same two-row shape. Its
+type row already shares its line with the result count, so merging there is a different
+layout question and it wasn't what was asked for.
+
+---
+
 ## DEFERRED
 
 ### D1 — Every Pokémon tile caption is truncated mid-word
