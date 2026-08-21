@@ -292,9 +292,16 @@ would otherwise forbid; an explicit layout request from the author outranks it, 
 is on `CLAUDE.md`'s minor-decision list. Easy to scope to `body.game-pokemon` if Riftbound
 should stay as it was.
 
-**Not changed:** the collection view's filter rows, which have the same two-row shape. Its
-type row already shares its line with the result count, so merging there is a different
-layout question and it wasn't what was asked for.
+**The collection view followed in `3ec6ede`**, once asked for. Same reflow; the only extra
+piece is that its type row already shared a line with the card count, so the chip row takes
+the space the count does not (`.colchips { flex:1 }`) and the count keeps its place at the
+right end instead of being pushed onto a line of its own. I had left this out of R2 on the
+grounds that it wasn't what was asked for — which was the wrong call twice over: the two
+views are the same control, and leaving one half-done is the kind of inconsistency worth
+just fixing.
+
+Tests now pin the one-line layout for **both** views (R2's change had no test of its own),
+and that the collection's chips still filter after the reflow.
 
 ### R3 — "All sets" lights only when you ask for all sets · `2a5cfeb`
 Was derived state: `sets.every(s => S.setScope.includes(s.code))`, so ticking both sets by
