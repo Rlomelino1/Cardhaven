@@ -450,3 +450,25 @@ in a real browser. Most of the modal already matched; these are the gaps that we
   means the same thing in both, and the grey was already right.
 - Chase rarities for the "still missing" sentence are per game — "Epic or Showcase" for
   Riftbound, "Double Rare or better" for Pokémon — rather than a hardcoded pair.
+
+## QA pass, 2026-08-21 (see docs/qa-pass-log.md for the full log)
+
+- Badge ink on card tiles is pinned, not themed. The chip behind it is a fixed dark wash
+  over card art, so `var(--text)` went near-black on near-black in Paper. Chose to pin
+  `.variant` and `.regmark` like `.setbadge`/`.ctag` already were, rejecting a per-theme
+  override pair for two rules that never wanted to follow the theme.
+- `addCard()` merges into an existing deck row by **ref**, not by name. Rejected keeping
+  the name match with a Pokémon-only branch: no two Riftbound printings share an exact
+  name (now a test), so the ref match is the same behaviour there and the correct one for
+  a game that reprints names.
+- The collector-number denominator reads the manifest's `total`, progress counts keep
+  reading `cards`. Rejected making them agree — they answer different questions, which is
+  why the vendor script emits both.
+- A superseded set load is dropped by generation counter rather than aborted. The fetch
+  still fills `POOL_CACHE`, so the wasted-work version would have been the abort.
+- Phone dropdowns are fixed by taking the *wrapper* out of the positioning chain, so each
+  panel spans the bar it belongs to. Rejected per-control `right:` offsets — that is what
+  the stage-5 `right:-40px` deck-menu rule was, and it was 19px short.
+- Rarity filters are reconciled in `adoptPool()` rather than reset in `openSet()`, so
+  every route that replaces the pool (fetch, set switch, file import) is covered by one
+  line.
