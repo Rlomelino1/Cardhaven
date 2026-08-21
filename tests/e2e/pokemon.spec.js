@@ -212,6 +212,29 @@ test.describe("deck rules", () => {
     expect(r.energy).toBe(8);
   });
 
+  test("two printings of one card are two deck rows, under one copy limit", async ({ page }) => {
+    // addCard() merged on the card NAME, so clicking Jungle Pikachu after Base
+    // Pikachu bumped the Base row to 2 and the printing actually clicked never
+    // entered the deck. The panel draws one row per printing when the same deck
+    // arrives from storage, so the browser has to agree with it.
+    await openPokemon(page);
+    const r = await page.evaluate(async refs => {
+      freshDeck();
+      await Promise.all([loadSetPool("base1"), loadSetPool("base2")]);
+      addCard(refs[0], "main");
+      addCard(refs[1], "main");
+      render();
+      return {
+        rows: S.zones.main.map(c => `${refOf(c)}x${c.qty}`),
+        problems: document.getElementById("problems").innerText,
+      };
+    }, [PIKACHU_BASE1, PIKACHU_BASE2]);
+    expect(r.rows).toEqual([`${PIKACHU_BASE1}x1`, `${PIKACHU_BASE2}x1`]);
+    // Separate rows, still one 4-copy limit by name: a 5th is over.
+    const over = await problemsAfter(page, [[PIKACHU_BASE1, 4], [PIKACHU_BASE2, 1]]);
+    expect(over).toMatch(/Over 4 copies by card name: Pikachu \(5\)/);
+  });
+
   test("a deck spanning sets whose pools are not loaded still resolves", async ({ page }) => {
     // The reason the search index doubles as the resolution layer: only the
     // open set's pool is in memory, and a 60-card deck is not one set.

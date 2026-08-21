@@ -172,6 +172,27 @@ test.describe("cross-set card identity", () => {
       expect(bad.keys).toBe(520);
     });
 
+  test("no two Riftbound printings share an exact name", async ({ page }) => {
+    // addCard() merges a click into an existing deck row by REF. It used to
+    // merge by name, which was interchangeable here and wrong for a game that
+    // reprints one name across sets. This asserts the property that made the
+    // two interchangeable, so the day a Riftbound set ships two printings under
+    // one identical name, the reasoning behind that change gets revisited
+    // rather than quietly stopping being true.
+    await openApp(page);
+    const shared = await page.evaluate(() => {
+      const byName = new Map();
+      for (const c of S.pool) {
+        const k = c.name.toLowerCase();
+        if (!byName.has(k)) byName.set(k, []);
+        byName.get(k).push(refOf(c));
+      }
+      return [...byName].filter(([, refs]) => refs.length > 1)
+        .map(([n, refs]) => n + ": " + refs.join(","));
+    });
+    expect(shared).toEqual([]);
+  });
+
   test("the collection keeps a reprint and its original as distinct printings",
     async ({ page }) => {
       await openApp(page, { hash: "#collection" });

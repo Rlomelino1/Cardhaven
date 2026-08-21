@@ -3342,7 +3342,13 @@ window.addCard = (id, zone) => {
     touch(); render(); return;
   }
   const list = S.zones[zone];
-  const hit = list.find(c => nk(c.name) === nk(card.name));
+  /* Match on the REF, not the name. A Pokémon card name is reprinted set after
+     set, so a name match silently bumped the printing already in the deck
+     instead of adding the one that was clicked — and the deck panel draws one
+     row per printing anyway, which is what an import or a reload produces.
+     Provably a no-op for Riftbound: no two refs in its merged pool share a
+     name (asserted in tests/e2e/multiset.spec.js). */
+  const hit = list.find(c => refOf(c) === refOf(card));
   if(hit) hit.qty = Math.min(copyCap(card), hit.qty + 1);
   else list.push({...card, id: uid(), qty: 1});
   touch(); render();
