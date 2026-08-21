@@ -120,8 +120,17 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
 .gamemenu[hidden]{display:none}
 .gmhead{padding:8px 11px 7px; font-family:ui-monospace,Menlo,monospace; font-size:9px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
+/* The active row is a <div>, the switchable one a <button> — so background and
+   border have to be reset here, or the switchable row paints the browser's
+   default button chrome (rgb(240,240,240) plus a 2px black border) underneath
+   ink from var(--text). In Midnight that is light text on a white OS button,
+   sitting in the middle of a styled panel. Every other button rule in this file
+   resets these two; this rule was the one that missed. */
 .gmrow{display:flex; align-items:center; gap:10px; width:100%; padding:9px 11px;
-  border-radius:2px; text-align:left; color:var(--text)}
+  border-radius:2px; text-align:left; color:var(--text);
+  background:none; border:none}
+/* Only the switchable row is clickable; .active is a div and .planned says so. */
+button.gmrow{cursor:pointer}
 .gmrow.active{background:var(--hover-wash)}
 /* Planned games are decoration: no handler, no focus stop, no pointer. */
 .gmrow.planned{opacity:.45; cursor:default}

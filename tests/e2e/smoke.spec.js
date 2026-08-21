@@ -208,6 +208,32 @@ test.describe("themes", () => {
   const ink = (page, sel) =>
     page.evaluate(s => getComputedStyle(document.querySelector(s)).color, sel);
 
+  test("no control falls back to the browser's default button chrome", async ({ page }) => {
+    /* .gmrow styled its layout and set its ink to var(--text), but never reset
+       background or border — and the switchable game row is a <button> while the
+       active one is a <div>. So that row painted the UA default: rgb(240,240,240)
+       with a 2px black border, carrying light Midnight ink. It was the only rule
+       in the file with the gap; this keeps it the only one that can't come back. */
+    await openApp(page);
+    // Open the menus directly: clicking one closes the other by design.
+    await page.evaluate(() => { toggleGameMenu(true); toggleDeckMenu(true); });
+    const r = await page.evaluate(() => {
+      const probe = document.createElement("button");
+      document.body.appendChild(probe);
+      const uaBg = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      const bad = [];
+      for (const b of document.querySelectorAll("button")) {
+        if (!b.getBoundingClientRect().width) continue;      // not on screen
+        if (getComputedStyle(b).backgroundColor === uaBg)
+          bad.push(`${b.className || b.id}: ${b.textContent.trim().slice(0, 24)}`);
+      }
+      return { uaBg, bad, seen: document.querySelectorAll("button").length };
+    });
+    expect(r.bad).toEqual([]);
+    expect(r.seen).toBeGreaterThan(20);   // the sweep actually swept something
+  });
+
   test("tile badges stay legible in the Paper theme", async ({ page }) => {
     await openApp(page);
     // Showcase printings are the ones carrying a .variant badge.
