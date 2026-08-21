@@ -524,6 +524,37 @@ test.describe("the set picker", () => {
     expect(r.firstGroup.toLowerCase()).toContain(r.openSeries.toLowerCase());
   });
 
+  test("expanding a series keeps the panel open; picking a set closes it", async ({ page }) => {
+    /* The group header's handler re-renders the list, which detaches the very
+       button that was clicked — so the document-level outside-click guard's
+       e.target.closest() walked a dead chain, returned null, read the click as
+       "outside" and shut the panel. The group DID expand; you just never saw it,
+       because it closed on the same click. Real clicks only: the bug lives in
+       event propagation, so driving toggleSetGroup() directly cannot see it. */
+    await openPokemon(page);
+    await page.click("#setPickBtn");
+    const before = await page.evaluate(() =>
+      document.querySelectorAll("#setPickList .sprow").length);
+    await page.locator("#setPickList .spghead", { hasText: "Sword & Shield" }).click();
+    const expanded = await page.evaluate(() => ({
+      open: SETPICK_OPEN,
+      hidden: document.getElementById("setPickPanel").hidden,
+      rows: document.querySelectorAll("#setPickList .sprow").length,
+    }));
+    expect(expanded.open).toBe(true);
+    expect(expanded.hidden).toBe(false);
+    expect(expanded.rows).toBe(before + 25);
+    // Collapsing it again also stays open.
+    await page.locator("#setPickList .spghead", { hasText: "Sword & Shield" }).click();
+    expect(await page.evaluate(() => SETPICK_OPEN)).toBe(true);
+    expect(await page.evaluate(() =>
+      document.querySelectorAll("#setPickList .sprow").length)).toBe(before);
+    // ...but choosing a set still closes it, which is the point of the control.
+    await page.locator("#setPickList .sprow").first().click();
+    await page.waitForFunction(() => SETPICK_OPEN === false);
+    expect(await page.locator("#setPickPanel").isHidden()).toBe(true);
+  });
+
   test("a group expands and collapses, and the filter matches name or series", async ({ page }) => {
     await openPokemon(page);
     await page.click("#setPickBtn");

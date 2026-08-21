@@ -2237,9 +2237,21 @@ document.getElementById("gameBtn").addEventListener("click", e => {
   e.stopPropagation();
   toggleGameMenu();
 });
+/* Did this click start inside `sel`? e.target.closest() is the obvious way to
+   ask and it is wrong here: a handler that re-renders its own container runs
+   BEFORE this one (the event is still bubbling), so by the time we ask, the
+   clicked node has been thrown away and closest() walks a detached chain and
+   returns null — which reads as "clicked outside" and closes the panel. That is
+   exactly what expanding a series in the set picker did: the group expanded and
+   the panel shut on the same click, so you never saw it.
+   composedPath() is the propagation path captured when the event was dispatched,
+   so it still describes where the click came from after the DOM has moved on. */
+const clickedInside = (e, sel) =>
+  e.composedPath().some(n => n.nodeType === 1 && n.matches(sel));
+
 document.addEventListener("click", e => {
-  if(GAME_MENU_OPEN && !e.target.closest(".gamewrap")) toggleGameMenu(false);
-  if(SETPICK_OPEN && !e.target.closest(".setpickwrap")) toggleSetPick(false);
+  if(GAME_MENU_OPEN && !clickedInside(e, ".gamewrap")) toggleGameMenu(false);
+  if(SETPICK_OPEN && !clickedInside(e, ".setpickwrap")) toggleSetPick(false);
 });
 document.getElementById("setPickBtn").addEventListener("click", e => {
   e.stopPropagation();
@@ -3619,9 +3631,11 @@ document.getElementById("deckCaret").addEventListener("click", e => {
   e.stopPropagation();
   toggleDeckMenu();
 });
-// Click anywhere outside the switcher closes it.
+// Click anywhere outside the switcher closes it. Same path-based test as the
+// game menu and the set picker: a row handler that re-renders the menu would
+// otherwise look like a click from outside it.
 document.addEventListener("click", e => {
-  if(MENU_OPEN && !e.target.closest(".switchwrap")) toggleDeckMenu(false);
+  if(MENU_OPEN && !clickedInside(e, ".switchwrap")) toggleDeckMenu(false);
 });
  
 /* ------------------------------- startup -------------------------------- */
