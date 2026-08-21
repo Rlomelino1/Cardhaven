@@ -1495,6 +1495,10 @@ let S = {
   // released set is tournament-legal alongside every other. Device-local.
   // Eager games only — a lazy game has one open set instead; see S.openSet.
   setScope: [],
+  // Did the user ASK for every set, or merely tick them all? The "All sets"
+  // chip lights on the first and not the second, and all-mode additionally
+  // covers sets that ship later. See readSetScope().
+  setScopeAll: true,
   // Lazy games: the set whose pool is loaded and on screen, shared by the
   // deckbuilder and the collection. Null until the manifest lands.
   openSet: null
@@ -1748,8 +1752,13 @@ function adoptPool(){
   S.rarityFilter = S.rarityFilter.filter(r => rarities.has(r));
   if(GAME.lazySets){ COLF.set = S.openSet; return; }
   const codes = poolSets().map(s => s.code);
-  S.setScope = S.setScope.filter(c => codes.includes(c));
-  if(!S.setScope.length) S.setScope = codes;
+  // All-mode means every set that arrived, so a set released after this
+  // preference was saved is in scope rather than quietly absent.
+  if(S.setScopeAll) S.setScope = codes;
+  else {
+    S.setScope = S.setScope.filter(c => codes.includes(c));
+    if(!S.setScope.length) S.setScope = codes;
+  }
   if(COLF.set !== "all" && !codes.includes(COLF.set)) COLF.set = "all";
 }
 
@@ -2217,8 +2226,7 @@ window.switchGame = async id => {
   bumpSetLoad();          // a set load still in flight belongs to the old game
   S.q = ""; S.domainFilter = []; S.typeFilter = []; S.rarityFilter = []; S.limit = 48;
   S.openSet = null;
-  S.setScope = GAME.lazySets ? [] : GAME.sets.map(s => s.code);
-  if(!GAME.lazySets){ const sc = readSetScope(); if(sc) S.setScope = sc; }
+  initSetScope();
   COLF.q = ""; COLF.tab = "all"; COLF.domains = []; COLF.types = []; COLF.set = "all";
   document.getElementById("q").value = "";
   document.getElementById("colQ").value = "";
@@ -2275,18 +2283,43 @@ document.getElementById("setPickQ").addEventListener("input", e => {
 /* ------------------------------ set scope -------------------------------- */
 /* Deck browser only. Multi-select, all selected by default, persisted per game
    on this device — it is a display preference, not deck content, so it never
-   touches user_settings and never marks a deck dirty. */
+   touches user_settings and never marks a deck dirty.
+
+   "All sets" is its own MODE, not a state derived from the selection covering
+   everything. Ticking every set by hand is not the same act as asking for all
+   sets, so the chip reports what you chose rather than what your choices add up
+   to. The mode also means something the enumeration cannot: it says "every set,
+   including ones that ship later", so a set added after this preference was
+   saved is in scope instead of silently missing from the browser.
+
+   Stored as the string "all" in that mode and as the array of codes otherwise.
+   A legacy blob is an array and keeps working as an enumerated pick. */
 function readSetScope(){
   try{
     const raw = localStorage.getItem(setScopeKey());
     if(!raw) return null;
     const v = JSON.parse(raw);
+    if(v === "all") return "all";
     return Array.isArray(v) && v.length ? v.map(String) : null;
   }catch{ return null; }
 }
 const writeSetScope = () => {
-  try{ localStorage.setItem(setScopeKey(), JSON.stringify(S.setScope)); }catch{}
+  try{
+    localStorage.setItem(setScopeKey(),
+      JSON.stringify(S.setScopeAll ? "all" : S.setScope));
+  }catch{}
 };
+
+/* Per-game scope reset, shared by startup and the game switcher so the two
+   cannot drift. A fresh browser is in all-mode: nothing has been picked, and
+   "no set filter" is what the app is actually doing. */
+function initSetScope(){
+  S.setScopeAll = true;
+  S.setScope = GAME.lazySets ? [] : GAME.sets.map(s => s.code);
+  if(GAME.lazySets) return;
+  const saved = readSetScope();
+  if(Array.isArray(saved)){ S.setScope = saved; S.setScopeAll = false; }
+}
 
 const inScope = c => GAME.lazySets ? setCodeOf(c) === S.openSet
                                   : S.setScope.includes(setCodeOf(c));
@@ -2294,13 +2327,17 @@ const scopedPool = () => S.pool.filter(inScope);
 
 window.toggleSetScope = code => {
   const codes = poolSets().map(s => s.code);
-  if(code === "all") S.setScope = codes;
+  if(code === "all"){ S.setScopeAll = true; S.setScope = codes; }
   else {
+    // Any individual pick leaves all-mode, even when the picks happen to cover
+    // every set — that is the whole point: the chip tracks the act, not the sum.
+    S.setScopeAll = false;
     const next = S.setScope.includes(code)
       ? S.setScope.filter(c => c !== code)
       : [...S.setScope, code];
     // Deselecting the last set would leave an empty browser and no way back
-    // except a chip that is already off; snap to "all" instead.
+    // except a chip that is already off; snap to every set instead. Not
+    // all-mode though: the app chose that, not the user.
     S.setScope = next.length ? next : codes;
   }
   writeSetScope();
@@ -2314,9 +2351,10 @@ function renderSetBar(){
   const sets = poolSets();
   bar.hidden = GAME.lazySets || VIEW !== "deck" || !sets.length;
   if(bar.hidden) return;
-  const all = sets.every(s => S.setScope.includes(s.code));
+  // Lit only in all-mode. Every set ticked by hand looks like what it is: every
+  // set ticked by hand.
   document.getElementById("setChips").innerHTML =
-    `<button class="setchip${all ? " on" : ""}" onclick="toggleSetScope('all')">All sets</button>` +
+    `<button class="setchip${S.setScopeAll ? " on" : ""}" onclick="toggleSetScope('all')">All sets</button>` +
     sets.map(s => `<button class="setchip${S.setScope.includes(s.code) ? " on" : ""}"
       onclick="toggleSetScope('${jsStr(s.code)}')">${esc(s.name)}
       <b>${setCardsOf(s.code).length}</b></button>`).join("");
@@ -3882,9 +3920,8 @@ try{
 ACTIVE_GAME = readActiveGame();
 adoptGame();
 S.zones = emptyZones();
-S.setScope = GAME.lazySets ? [] : GAME.sets.map(s => s.code);
 // Set scope is reconciled against the sets that actually load, in adoptPool().
-if(!GAME.lazySets){ const scope = readSetScope(); if(scope) S.setScope = scope; }
+initSetScope();
 if(load()) note("Deck restored from this browser");
 // Signed-out collection is synchronous; a session arriving later replaces it
 // through onCloudSession with the merged server map. The blob is nested by

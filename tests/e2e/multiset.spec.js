@@ -270,7 +270,71 @@ test.describe("deck builder set scope", () => {
     await expect(page.locator("#resultCount")).toHaveText(/352 cards in scope/);
   });
 
+  test("the All sets chip reports the act, not the sum of the picks", async ({ page }) => {
+    /* Ticking every set by hand is not the same act as asking for all sets, so
+       the chip lights only in all-mode. It also means more than the enumeration
+       does: all-mode covers sets that ship later, an enumerated pick does not. */
+    const state = () => page.evaluate(() => ({
+      lit: document.querySelector("#setChips .setchip").classList.contains("on"),
+      all: S.setScopeAll,
+      scope: S.setScope,
+      stored: JSON.parse(localStorage.getItem(setScopeKey()) || "null"),
+    }));
+    await openApp(page);
+    // Fresh: nothing has been picked, so the app really is showing every set.
+    expect(await state()).toMatchObject({ lit: true, all: true });
+
+    await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    expect(await state()).toMatchObject({ lit: false, all: false, scope: ["OGN"] });
+
+    // Back to every set, by hand. The chip must NOT light.
+    await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    expect(await state()).toMatchObject({
+      lit: false, all: false, scope: ["OGN", "SFD"], stored: ["OGN", "SFD"] });
+    await openApp(page);   // and it survives a reload as a hand-picked scope
+    expect(await state()).toMatchObject({ lit: false, all: false });
+
+    // Asking for all sets does light it, and persists as the mode.
+    await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
+    expect(await state()).toMatchObject({ lit: true, all: true, stored: "all" });
+    await openApp(page);
+    expect(await state()).toMatchObject({ lit: true, all: true });
+  });
+
+  test("all-mode covers a set that ships later; a hand-picked scope does not",
+    async ({ page }) => {
+      await openApp(page);
+      const withNewSet = () => page.evaluate(() => {
+        S.pool.push({ ...S.pool[0], set: "NEW", setName: "Newest Set",
+                      riftboundId: "new-001-100" });
+        adoptPool();
+        return S.setScope;
+      });
+      // All-mode: the new set joins the scope rather than going missing.
+      await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
+      expect(await withNewSet()).toEqual(["OGN", "SFD", "NEW"]);
+
+      await openApp(page);
+      // Hand-picked: the scope is what was picked, and stays that way.
+      await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+      await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+      expect(await withNewSet()).toEqual(["OGN", "SFD"]);
+    });
+
+  test("a legacy stored array still reads as a hand-picked scope", async ({ page }) => {
+    // Every browser that has ever set a scope holds an array, never "all".
+    await page.addInitScript(() =>
+      localStorage.setItem("riftbound.setScope", JSON.stringify(["OGN", "SFD"])));
+    await openApp(page);
+    const r = await page.evaluate(() => ({
+      all: S.setScopeAll, scope: S.setScope,
+      lit: document.querySelector("#setChips .setchip").classList.contains("on"),
+    }));
+    expect(r).toEqual({ all: false, scope: ["OGN", "SFD"], lit: false });
+  });
+
   test("deselecting the last set snaps back to all sets rather than emptying", async ({ page }) => {
+
     await openApp(page);
     const scope = await page.evaluate(() => {
       toggleSetScope("all");
