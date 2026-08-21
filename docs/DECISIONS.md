@@ -494,3 +494,6 @@ in a real browser. Most of the modal already matched; these are the gaps that we
   `poolSets()[0]` — the first set of whichever game is active, so no set code is named in
   code. Rejected falling back to every set: that is indistinguishable from all-mode and
   would make the toggle look broken.
+- Deselecting the last in-scope set is a no-op, not a snap back to every set. The guard
+  sits before the all-mode and remembered-scope writes, so a dead click changes nothing at
+  all rather than quietly clearing the scope the All sets chip backs out to.

@@ -337,6 +337,26 @@ named anywhere — no `if (set === …)`, per the standing rule.
   noting as a pattern: a test that drives a control instead of asserting a state silently
   changes meaning when the control does.
 
+### R5 — The last selected set cannot be deselected · `721ca08`
+Clicking the only set in scope used to snap the browser to **every** set, so one stray click
+on the chip you were already filtered to handed you a scope you never asked for. It now does
+nothing at all.
+
+"Nothing at all" is literal: the guard returns before all-mode and the remembered scope are
+written, so a no-op click leaves those untouched as well — worth stating because the obvious
+placement of that check is *after* those two assignments, where a dead click would still
+silently clear the memory R4 added.
+
+The lone chip carries a `title` explaining why, since a click that does nothing otherwise
+reads as a dead button — the same complaint as the set picker in F11.
+
+`adoptPool()`'s empty-scope floor stays. It catches a different situation: a saved scope
+naming only sets that no longer exist, which still needs somewhere to land.
+
+The old "deselecting the last set snaps back to all sets rather than emptying" test asserted
+precisely the behaviour being replaced, so it became "the last set standing cannot be
+deselected".
+
 ---
 
 ## DEFERRED
