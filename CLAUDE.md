@@ -55,10 +55,12 @@ data/pokemon/           174 slim per-set pools + sets.json + search-index.json; 
 vendor/neon/            the Neon SDK graph, vendored (served from this origin, not a CDN)
 scripts/                build-pool-v2.mjs (Riftbound set); build-pokemon-pools.mjs
                         (every English Pokémon set); vendor-neon.mjs (re-vendor the SDK)
-migrations/             0001–0006 SQL + tests/ (48 tests, all passing)
-tests/                  Playwright e2e suite (dev/CI only) + a static server
-docs/                   DECISIONS.md, BLOCKED.md, auth-setup.md, deployment.md,
-                        persistence-audit.md, hardening-plan.md
+migrations/             0001–0007 SQL + tests/ (48 SQL tests, all passing)
+tests/                  Playwright e2e suite, 175 tests in 7 files (dev/CI only),
+                        + a static server. `main` will not accept a red `e2e`.
+docs/                   DECISIONS.md, BLOCKED.md, qa-pass-log.md, auth-setup.md,
+                        deployment.md, persistence-audit.md, hardening-plan.md,
+                        mockups/
 ```
 
 **`index.html` and `.nojekyll` cannot move.** Pages is a branch deploy from `main` at
@@ -100,16 +102,27 @@ There is no unified external API and no attempt to find one.
 - **`GAMES` in `index.html`** is the registry: one entry per game holding its `id`,
   `label`, two-letter `mark`, its sets (or its set *manifest*), its `zones`, its filter
   axes, its `rules`, its localStorage key names, and its adapter hooks — `normalize`,
-  `refOf`, `cardKeyRef`, `cardLabelRef`, `setCode`, `numLabel`, `tileMeta`,
-  `tileBadges`, `modalMeta`, `colTag`, `searchMatch`, `validate`. `ACTIVE_GAME` selects
+  `refOf`, `cardKeyRef`, `cardLabelRef`, `setCode`, `deckCode`, `numLabel`, `tileMeta`,
+  `tileBadges`, `modalMeta`, `colTag`, `searchMatch`, `validate`, plus the stage 10
+  additions `blockAdd`, `deckStats`, `deckSections`, `rowBadges`, `deckRowCounts`,
+  `deckText`, `parseDeckText` and the `artPlaceholder` value. `ACTIVE_GAME` selects
   one; `GAME` is the resolved entry; `adoptGame()` is the single place a switch takes
   effect, re-pointing the mutable aliases (`ZONES`, `DOMAINS`, `TYPES`, `RARITY_ORDER`,
   `DOMAIN_INK`, `RARITY_DOT`) so call sites never ask which game is running.
 - **Adapters are declared above the registry.** The `GAMES` literal evaluates its hook
   references at load time, so an arrow const defined after it is a TDZ crash on boot.
 - **Riftbound's hooks are its stage 8 expressions moved, not rewritten.** That is why it
-  is pixel-identical across nine element-scoped screenshot comparisons. Keep it that
-  way: if a change to shared code would move a Riftbound pixel, it belongs in a hook.
+  was pixel-identical at the end of stage 9, across nine element-scoped screenshot
+  comparisons. Keep working that way: if a change to shared code would move a Riftbound
+  pixel, it belongs in a hook.
+
+  **The claim is now "unchanged except on purpose", not "identical".** Three deliberate
+  exceptions, all after stage 9, all argued in the commit that made them:
+  the Paper-theme ink on `.variant` (it was unreadable — dark ink on a fixed dark chip);
+  the two filter-chip axes sharing one row in both views (asked for directly); and the
+  deck-row template gaining optional slots, which emit nothing for Riftbound. Do not
+  "restore" any of these on the strength of the pixel-identity rule — check the log
+  first. `docs/qa-pass-log.md` records each with its reasoning.
 - **Two fields carry a Riftbound name for a game-neutral job**, and are deliberately
   *not* renamed: `domains` is the coloured filter axis (Riftbound domains, Pokémon
   energy types) and `type` is the primary type axis (Riftbound card type, Pokémon
@@ -161,11 +174,28 @@ real set on demand to fill in HP, types and formats. Consequences to respect:
 | copy limit | 3 | 4 |
 | counted by | **printing group** — collector number, then folded across id-groups by the base printing's name | **card name**, across every printing in every set |
 | exempt | — | **Basic Energy**, entirely |
+| one per deck | — | **ACE SPEC** and **Radiant**, each counted across ALL such cards, not per name |
+| must contain | a Legend | **at least one Basic Pokémon** — a deck cannot start without one |
 | collection cap / playset | 3 | 4 |
 
 Pokémon has no Legend, no domains, and no per-card energy cost, so the Legend box, the
 energy curve and the zone tab row **hide** rather than render empty frames. Format
 legality (`legalities`) is **stored and never enforced** — out of scope.
+
+**Where a rule is enforced and where it only advises** — stage 10 settled this, so don't
+re-decide it per rule:
+
+- **Add time blocks**, through the one `addBlock()` gate that BOTH add paths run: the
+  browse tile's button and the deck row's `+` stepper. Those two disagreed once — the
+  stepper ran no gates at all — which let a 60-card deck reach 63 and a single ACE SPEC
+  reach three. A new add-time rule goes in that gate or it will be half-enforced.
+  A blocked add carries its reason on the disabled control; only a subtype refusal also
+  writes to the notice line, because the deck-size case is already on screen three times
+  over (header, pill, disabled controls).
+- **Validation still only advises.** A deck that *arrives* over size or over cap — an
+  import, an old blob — is reported, never rejected, and `−` always works. The gate stops
+  the app *building* an illegal deck, not opening one. `deckSizeExact` is null for
+  Riftbound (its main deck is 40 *or more*), so the size gate is inert there.
 
 ### Storage
 
@@ -188,6 +218,50 @@ legality (`legalities`) is **stored and never enforced** — out of scope.
   `pokemon.open-deck:{uid}`, `pokemon.openSet`). `rb.theme` and `ch.game` are app-level,
   not per game. `rb.collection` is shared by every game and holds the nested blob.
 
+### The Pokémon deck panel (stage 10) — and where its data comes from
+
+Built to `docs/mockups/deckInfoPoke.png`. All of it renders from one hook,
+`GAME.deckStats`, into one container, so Riftbound (which declares none) cannot be
+reached by any of it: legality pills, a segmented supertype bar, a mulligan gauge,
+Trainer subtype chips, a type-alignment strip, and a sectioned card list with evolution
+grouping.
+
+- **Mulligan is exact.** `C(n−b,7)/C(n,7)` in BigInt — not for the result (`C(60,7)` is
+  386,206,920 and fits a double) but for the intermediates a naive factorial overflows.
+  Against the deck's *actual* size, not always 60. Reference points: 15 Basics → 11.8%,
+  12 → 19.1%, 10 → 25.9%. The mockup's 11.5% is placeholder art; the formula wins.
+- **Type alignment matches on ATTACK COSTS, not the Pokémon's own card type.** This is the
+  settled decision and the reason the vendor script keeps `costs`: card-type matching
+  false-flags a Colorless-cost attacker like Mew ex as needing energy it never asks for.
+  Colorless generates no requirement. Any **Special Energy** in the deck suppresses the
+  warning outright rather than modelling what each one provides. It is a soft hint and
+  never blocks anything.
+- **Evolution grouping is by NAME**, because `evolvesFrom` is a name reference upstream —
+  the same name-over-printing axis the copy limit uses. Two printings of one pre-evolution
+  attach the line to the first of them. An evolution whose pre-evolution is absent gets a
+  muted mark, not an error: running one is legal and sometimes deliberate.
+- **Copy as text emits the Limitless / PTCGL sectioned format**, and Import reads it back.
+  The file picker falls back to `GAME.parseDeckText` when a file is not JSON. Resolution
+  is on `(set code, collector number)`, never the name — names carry parentheses, digits
+  and apostrophes. Nine of the 20,432 code/number pairs are shared by two printings
+  (Celebrations' Classic Collection, plus one set that printed a number twice); first
+  wins, and both are the same card by name and number. Logged in `docs/BLOCKED.md`.
+
+**Where the panel's card detail comes from — read this before "optimising" it.** The panel
+needs `supertype`, `subtypes`, `costs` and `evolvesFrom` for *every card in the deck*, and
+the search index carries none of them. Putting them in the index was measured at **+24% on
+a 2 MB file every visitor downloads**, including someone who never opens a deck. So the
+deck's **own set pools** are fetched on demand and cached instead — the same
+detail-on-demand move `openCard()` already makes for a light card — via
+`deckPoolsPending()` and `hydrateDeckDetail()`, with `PK_BY_REF` making every set fetched
+this session resolvable by ref.
+
+The price is a real pending state: `DECK_DETAIL_PENDING` is non-zero until the deck's sets
+land, and while it is, the panel draws only what it can stand behind and the
+subtype-scoped legality checks stay **silent**. That silence is deliberate — a deck of
+Basics must not be told it has no Basic Pokémon because its Pokémon have not arrived yet.
+A quietly wrong number is worse than a visible "not ready".
+
 ### What is still out of scope
 
 - **Variant tracking is explicitly deferred.** Reverse holo, holo, and 1st edition are
@@ -195,10 +269,16 @@ legality (`legalities`) is **stored and never enforced** — out of scope.
   Pokémon schema preserves variant information, so a future stage that wants it starts
   with a re-vendor plus a collection-shape change. This was a decision, not an oversight
   — pick it up deliberately.
-- **No card pricing, no non-English data, no third game.** No plugin system, no schema
-  generalization beyond the registry and its hooks: that hook list is the entire
-  abstraction budget. When a choice presents a game-hardcoded shape and an equally cheap
-  game-neutral one, the game-neutral one wins; when generalizing costs extra, don't.
+- **No card pricing, no non-English data, no third game.** No plugin system and no schema
+  generalization beyond the registry and its hooks. The hook list is the abstraction
+  budget: it grew by eight in stage 10, and every one of those paid for itself by taking
+  a game-specific branch out of shared code — which is the only reason to add another.
+  When a choice presents a game-hardcoded shape and an equally cheap game-neutral one,
+  the game-neutral one wins; when generalizing costs extra, don't.
+- **Attack text, abilities, weaknesses and retreat costs stay unvendored.** Attack
+  *costs* are vendored as of stage 10, for the type-alignment strip, as one deduped array
+  per card rather than attack objects. Anything wanting damage numbers or effect text is
+  a re-vendor and a size conversation, not a client change.
 
 **Adding a set is a data-only change.** For Riftbound: one `GAMES.riftbound.sets` entry
 plus one committed pool file. For Pokémon it is not even that — the vendored manifest *is*
@@ -229,10 +309,39 @@ upstream moves hosts. Both hosts are in the page's CSP `img-src`;
 `raw.githubusercontent.com` is **not**, and must not be — it is read at vendoring time and
 never by the page, which `tests/e2e/pokemon.spec.js` asserts.
 
+**The host lies about missing art, and the page has to notice.**
+`images.pokemontcg.io` answers a card it has no image for with **HTTP 404 *and* a
+decodable PNG of the card back**. An `<img>` decodes it and fires `load`, not `error`, so
+an `onerror` fallback never runs and the back renders as though it were the card, with
+real name, HP and types beside it. The tell is the size: the placeholder is **640×892**,
+which is neither a real small (245×342, or 240×330 on the oldest sets) nor a real hires
+(734×1024). `GAME.artPlaceholder` declares those dimensions per game — Riot's CDN 404s
+properly, so Riftbound declares none and never even emits the handler — and `imgLoaded()`
+swaps in the app's own fallback art. Checked on load, so it costs no request, catches
+cards that break upstream later, and heals itself when real art appears. **52 of the
+20,444 images are affected today** (measured, not sampled): all 12 cards of each of the
+McDonald's Collections 2014/2015/2017/2018, plus four singles (`svp` Oddish, `hsp`
+Tropical Tidal Wave, `ex5` Groudon, `ecard2` Aipom). Nothing needs that list — detection
+is by dimension, not by a blocklist.
+
 The slim Pokémon card schema keeps `supertype`/`subtypes` verbatim (they drive the Energy
-exemption and the filter chips) and keeps `number` as a **string** — Pokémon collector
-numbers include `GG69`, `TG12`, `SV107`. Absent fields are omitted rather than written as
-`null`: at 20,444 cards the nulls alone are hundreds of KB.
+exemption, the filter chips and the ACE SPEC / Radiant rules) and keeps `number` as a
+**string** — Pokémon collector numbers include `GG69`, `TG12`, `SV107`. Since stage 10 it
+also keeps `evolvesFrom` (a **name**, as upstream has it, which is the axis the deck panel
+groups on) and `costs`, the deduped union of every attack cost symbol on the card, with
+the `Free` token dropped. Absent fields are omitted rather than written as `null`: at
+20,444 cards the nulls alone are hundreds of KB.
+
+`sets.json` also carries **`ptcgoCode`** — "SVI" where our set id is "sv1" — for 149 of
+the 174 sets; the rest never had one and fall back to the uppercased id. Deck rows and the
+decklist export both use it, and without it a copied list names its sets in a way Pokémon
+TCG Live does not recognise.
+
+Vendored size, measured after stage 10 (the numbers to compare against before adding a
+field): pool files **7.39 MB**, search index **2.07 MB**, manifest 52 KB, **9.51 MB total,
+379 bytes per card**. Keeping `evolvesFrom` and `costs` cost +9.3% on the pools. The
+`--index` flag rebuilds the manifest and index from the pools on disk without refetching
+174 card files.
 
 ## Config and secrets
 
@@ -311,6 +420,32 @@ bytes of jsonb** while being only 255,908 bytes of JSON *text* — jsonb keeps a
 table per object, so sizing this from text length under-reads by nearly half. Read the
 migration header before touching it. `user_settings` is still not *row*-scoped by game
 and does not need to be; the nesting lives inside the blob.
+
+`0007` fixed a live outage worth understanding, because the mistake is easy to repeat.
+Every collection write had been returning **HTTP 403** for five days:
+
+```
+42501: permission denied for table user_settings_history
+PL/pgSQL function public.snapshot_shrinking_collection() line 7
+```
+
+Two faults, one lesson each:
+
+- **A trigger that writes where the caller may not must be `SECURITY DEFINER`.** 0004's
+  shrink-snapshot trigger was SECURITY INVOKER, so its INSERT ran as `authenticated` — the
+  one role 0004 deliberately strips of every privilege on that table. The net could only
+  ever abort the write it was guarding. It had simply never fired in anger before.
+- **A stored-shape change can silently invalidate an older migration's assumptions.**
+  0004 measured shrinkage in *top-level keys*, which were card refs in stage 6. Stage 9
+  nested the blob by game, so top-level keys became **games** — making the first nested
+  write over a flat blob read as `5 cards → 2 games` (firing every time, which is what
+  made fault one reachable) while a game losing every card with its key intact would not
+  have fired at all. It now counts cards through `public.collection_card_count()`, which
+  handles both shapes. **When you change the shape of a stored blob, grep the migrations
+  for anything that reads its structure.**
+
+Neither the e2e suite nor `migrations/tests/` caught it: the trigger is never exercised as
+`authenticated`. If you touch that area, add that case — see `docs/qa-pass-log.md`.
 
 **Run migrations over `DATABASE_URL_UNPOOLED`.** The pooled endpoint runs PgBouncer in
 transaction mode and does not support `SET`, `search_path`, or session state — and
@@ -453,6 +588,37 @@ sideboard at all.
 - **Pokémon variant tracking (reverse holo, holo, 1st edition) is deferred, not
   rejected.** One row per printing today. Picking it up means a re-vendor and a
   collection-shape change, so it should be a stage of its own.
+- **The type-alignment strip matches attack costs, not card types**, and Special Energy
+  suppresses its warning rather than being modelled. Settled in stage 10 with the reason
+  written down; don't "improve" it into card-type matching.
+- **The deck panel's card detail is fetched per set on demand, not carried in the search
+  index.** Measured: +24% on a file every visitor downloads. Don't move it into the index
+  without re-measuring.
+- **Outside-click guards test `e.composedPath()`, never `e.target.closest()`.** A handler
+  that re-renders its own container detaches the clicked node mid-bubble, so `closest()`
+  walks a dead chain and reads a click *inside* a panel as a click outside it. That bug
+  closed the set picker on every attempt to expand a series.
+
+# Lessons the QA pass paid for — don't re-learn them
+
+Eleven bugs were found by using the app, and **not one of them said anything in the
+console**. What actually finds this class of thing:
+
+- **Assert relationships, not pixels.** A test that pinned "14 chips on one line" passed
+  on Windows and failed on CI's Linux font metrics. Assertions that survived were the
+  structural ones — same row element, inside the viewport, one line *at a pinned width*.
+- **A control that silently does nothing reads as broken.** Three separate reports came
+  down to that: a dead deck-row name, a `+` that refused without saying so, a chip that
+  couldn't be deselected. Either disable it with a reason in the title, or say why. The
+  one case where a *message* is right is a refusal nothing else on screen explains.
+- **Drive real clicks through real event paths.** Tests that called `toggleSetGroup()`
+  directly could not see the propagation bug that made the set picker unusable.
+- **Text assertions pass while the screen is wrong.** The game menu's switchable row
+  rendered as a white OS button (a `<button>` with no `background` reset) and every text
+  assertion was happy. Read a computed style when the claim is visual.
+- **A test that drives a control to reach a state changes meaning when the control does.**
+  Four tests used `toggleSetScope("all")` as "be in all-mode"; the moment that chip became
+  a toggle they were asserting something else. Say the intent.
 
 # Constraints that will bite
 
@@ -498,6 +664,12 @@ configuring those screens once instead of twice.
 | 7 | Showcase / base-card 3-copy limit | 3 base + 1 Showcase gets flagged |
 | 8 | Multi-set (Origins + Spiritforged) + the multi-game frame | both sets browse, scope chips filter only the browser, a cross-set reprint shares one limit |
 | 9 | Pokémon TCG — all 174 English sets, per-game rules, per-game collection | the game switcher round-trips, a 60-card deck validates only at 60, a 5th copy by name across two printings is flagged, collection caps at 4 there and 3 in Riftbound, a legacy flat collection lifts, Riftbound is pixel-identical |
+| 10 | The Pokémon deck panel — stats, the two single-card rules, a sectioned list, PTCGL decklist round-trip | the mulligan matches the exact formula, a Colorless-only attacker raises no energy warning, a second ACE SPEC is refused at add time, an evolution indents under its pre-evolution, and a copied decklist pastes back byte-identical |
+
+**Both stages are shipped and live.** Stage 9 reached production on 2026-08-22 (PR #13),
+alongside the QA pass that followed it — everything found by dogfooding is written up in
+`docs/qa-pass-log.md` with repro steps, and it is the first place to look before
+"fixing" something that looks odd but was decided.
 
 **Stage 1 caveat**: card art currently loads from a `file://` page. On an HTTPS origin,
 a CDN sending restrictive CORS or hotlink-protection headers fails differently. Check
