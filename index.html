@@ -3949,6 +3949,14 @@ function render(){
      draws at all. */
   const deckRow = (c, opt = {}) => {
     const code = GAME.deckCode(c);
+    /* Why + would refuse, if it would. A game with a fixed deck size also
+       reports its copy limit here, so no + in a Pokémon deck is ever a button
+       that looks live and does nothing. Riftbound's gates refuse nothing, so
+       its rows are untouched — including at the 3-copy limit, where + has
+       always been a no-op. */
+    const blockedNow = (GAME.rules.deckSizeExact && c.qty >= copyCap(c))
+      ? `${c.name} is at its ${copyCap(c)}-copy limit.`
+      : addBlock(c, zk);
     return `<li${opt.depth ? ` class="evo evo${Math.min(opt.depth,2)}"` : ""}>
         <i class="dot" style="background:${c.domains[0]?`var(--${c.domains[0]})`:"var(--Colorless)"}"></i>
         <button class="dname" title="${esc(c.name)}"
@@ -3960,7 +3968,10 @@ function render(){
         <span class="qty">
           <button class="step" onclick="bump('${zk}','${c.id}',-1)">–</button>
           <b>${c.qty}</b>
-          <button class="step" onclick="bump('${zk}','${c.id}',1)">+</button>
+          <button class="step" onclick="bump('${zk}','${c.id}',1)"${
+            /* Refused adds get a dead-looking button otherwise. Riftbound's
+               gates never refuse, so it never gets the attribute. */
+            blockedNow ? ` disabled title="${esc(blockedNow)}"` : ""}>+</button>
         </span></li>`;
   };
   const lostRows = zun.map(u=>`<li>
@@ -4080,6 +4091,31 @@ window.toggleVariants = () => {
 window.clearLegend = () => { S.legend = null; touch(); render(); };
 window.dropUnresolved = () => { S.unresolved = []; touch(); render(); };
 
+/* Every reason one more card cannot go into `zone`, or null to allow it. The
+   ONE gate both add paths run through: the browser's "+ Deck" button and the
+   deck row's + stepper. They used to disagree — the stepper checked only the
+   per-card copy cap, so a 60-card deck grew to 63 by topping a row up to four,
+   and a single ACE SPEC became three. Same bug, one place to fix it.
+
+   Two rules, both declared as data:
+     deckSizeExact  a deck of exactly N cannot become N+1. Riftbound declares
+                    none (its main deck is 40 OR MORE), so this is inert there.
+     blockAdd       the game's own refusals — Pokémon's one-per-deck subtypes.
+
+   Advisory validation is unchanged and still reports a deck that arrived over
+   size from an import or an old blob: this stops the app BUILDING one, it does
+   not stop anyone opening one. */
+function addBlock(card, zone){
+  const target = GAME.rules.deckSizeExact;
+  if(target && zone !== "legend"){
+    const n = zoneCount("main");
+    if(n >= target)
+      return `That would be ${n + 1} cards — a deck is exactly ${target}. `
+           + `Remove something first.`;
+  }
+  return GAME.blockAdd?.(card, zone) || null;
+}
+
 window.addCard = (id, zone) => {
   const card = findCard(id); if(!card) return;
   if(zone === "legend"){
@@ -4088,9 +4124,7 @@ window.addCard = (id, zone) => {
     S.unresolved = S.unresolved.filter(u => u.zone !== "legend");
     touch(); render(); return;
   }
-  // A game may refuse an add outright — Pokémon caps ACE SPEC and Radiant at
-   // one per deck across all such cards. Riftbound declares no such rule.
-  const blocked = GAME.blockAdd?.(card, zone);
+  const blocked = addBlock(card, zone);
   if(blocked){ note(blocked); return; }
   const list = S.zones[zone];
   /* Match on the REF, not the name. A Pokémon card name is reprinted set after
@@ -4114,6 +4148,11 @@ window.setChampion = id => {
 window.bump = (zone, id, d) => {
   const list = S.zones[zone];
   const c = list.find(x => x.id === id); if(!c) return;
+  // Raising a row is an add, and goes through the same gate as one.
+  if(d > 0){
+    const blocked = addBlock(c, zone);
+    if(blocked){ note(blocked); return; }
+  }
   c.qty = Math.min(copyCap(c), c.qty + d);
   S.zones[zone] = list.filter(x => x.qty > 0);
   touch(); render();

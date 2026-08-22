@@ -604,3 +604,127 @@ test.describe("detail arrives on demand", () => {
       document.getElementById("problems").innerText)).not.toMatch(/No Basic Pokémon/);
   });
 });
+
+test.describe("a deck of exactly 60 cannot grow", () => {
+  /* Reported from the running app: a 60-card deck went to 63 by topping a row
+     up to four copies. The cause was broader than the report — the 60-card rule
+     was not enforced at add time AT ALL, and the row's + stepper never ran the
+     add-time gates, so it also walked past the one-ACE-SPEC rule. One gate now,
+     both paths through it. */
+  test("the + stepper cannot push a full deck over 60", async ({ page }) => {
+    await openPokemon(page);
+    await build(page, [[MIRAIDON, 4], [L_ENERGY, 55], [SCATTER, 1]]);
+    expect(await page.evaluate(() => zoneCount("main"))).toBe(60);
+    const r = await page.evaluate(() => {
+      const row = S.zones.main.find((c) => c.name === "Scatterbug");
+      for (let i = 0; i < 3; i++) bump("main", row.id, 1);
+      return { total: zoneCount("main"),
+               qty: S.zones.main.find((c) => c.name === "Scatterbug").qty,
+               notice: document.getElementById("notice").textContent };
+    });
+    // Scatterbug is at 1 of an allowed 4, and still cannot be raised.
+    expect(r).toMatchObject({ total: 60, qty: 1 });
+    expect(r.notice).toMatch(/a deck is exactly 60/);
+  });
+
+  test("a brand-new card cannot be added to a full deck either", async ({ page }) => {
+    await openPokemon(page);
+    await build(page, [[MIRAIDON, 4], [L_ENERGY, 56]]);
+    const r = await page.evaluate((ref) => {
+      const before = zoneCount("main");
+      addCard(ref, "main");
+      return { before, after: zoneCount("main"),
+               notice: document.getElementById("notice").textContent };
+    }, ULTRA);
+    expect(r).toMatchObject({ before: 60, after: 60 });
+    expect(r.notice).toMatch(/That would be 61 cards/);
+  });
+
+  test("the + stepper respects the one-per-deck subtypes", async ({ page }) => {
+    await openPokemon(page);
+    await build(page, [[ACE_A, 1]]);
+    await page.evaluate(() => {
+      const row = S.zones.main[0];
+      bump("main", row.id, 1);
+      bump("main", row.id, 1);
+    });
+    expect(await page.evaluate(() => pkSubtypeCount("ACE SPEC"))).toBe(1);
+    expect(await page.evaluate(() =>
+      document.getElementById("notice").textContent)).toMatch(/Only 1 ACE SPEC/);
+  });
+
+  test("under 60 the stepper still works, and removing frees room again",
+    async ({ page }) => {
+      await openPokemon(page);
+      await build(page, [[MIRAIDON, 1], [L_ENERGY, 10]]);
+      await page.evaluate(() => {
+        const row = S.zones.main.find((c) => c.name === "Miraidon ex");
+        bump("main", row.id, 1);
+      });
+      expect(await page.evaluate(() => zoneCount("main"))).toBe(12);
+      // Fill to 60, get refused, remove one, and the same add now lands.
+      const r = await page.evaluate((ref) => {
+        const energy = S.zones.main.find((c) => c.energyType);
+        energy.qty = 58;                       // 2 Miraidon + 58 energy = 60
+        render();
+        addCard(ref, "main");
+        const blocked = zoneCount("main");
+        bump("main", energy.id, -1);
+        addCard(ref, "main");
+        return { blocked, after: zoneCount("main") };
+      }, ULTRA);
+      expect(r).toEqual({ blocked: 60, after: 60 });
+    });
+
+  test("a + that would be refused is disabled, with a reason", async ({ page }) => {
+    await openPokemon(page);
+    await build(page, [[MIRAIDON, 4], [L_ENERGY, 56]]);
+    const r = await page.evaluate(() =>
+      [...document.querySelectorAll("#zoneList li")].map((li) => {
+        const plus = li.querySelectorAll(".step")[1];
+        return { name: li.querySelector(".dname")?.textContent,
+                 disabled: plus.disabled, title: plus.title };
+      }));
+    // Full deck: every + refuses, and says why rather than looking live.
+    expect(r.every((x) => x.disabled)).toBe(true);
+    expect(r.map((x) => x.title).join(" ")).toMatch(/exactly 60|copy limit/);
+  });
+
+  test("an over-size deck from an import is still reported, and can be cut down",
+    async ({ page }) => {
+      await openPokemon(page);
+      // Nothing stops a deck ARRIVING over 60 — only the app building one.
+      await build(page, [[MIRAIDON, 4], [L_ENERGY, 60]]);
+      expect(await page.evaluate(() => ({
+        total: zoneCount("main"),
+        problems: document.getElementById("problems").innerText,
+      }))).toMatchObject({ total: 64 });
+      expect(await page.evaluate(() =>
+        document.getElementById("problems").innerText)).toMatch(/4 cards over 60/);
+      // And − still works, so there is a way back.
+      await page.evaluate(() => {
+        const energy = S.zones.main.find((c) => c.energyType);
+        for (let i = 0; i < 4; i++) bump("main", energy.id, -1);
+      });
+      expect(await page.evaluate(() => zoneCount("main"))).toBe(60);
+    });
+
+  test("Riftbound is untouched: no add-time size gate, no disabled steppers",
+    async ({ page }) => {
+      await openApp(page);
+      const r = await page.evaluate(() => {
+        freshDeck();
+        // Its main deck is 40 OR MORE, so there is no size to gate on.
+        for (let i = 0; i < 12; i++) addCard("ogn-001-298", "main");
+        for (let i = 0; i < 12; i++) addCard("ogn-002-298", "main");
+        return {
+          exact: GAME.rules.deckSizeExact,
+          main: zoneCount("main"),
+          disabled: document.querySelectorAll("#zoneList .step[disabled]").length,
+          titled: document.querySelectorAll("#zoneList .step[title]").length,
+        };
+      });
+      // 3 + 3 by the copy limit, nothing gated by size, nothing disabled.
+      expect(r).toEqual({ exact: null, main: 6, disabled: 0, titled: 0 });
+    });
+});
