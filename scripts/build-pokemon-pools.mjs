@@ -125,6 +125,12 @@ const toSet = (s) => ({
   id: String(s.id),
   name: String(s.name),
   series: String(s.series ?? "Other"),
+  /* The code printed on the card and the one Pokémon TCG Live expects in a
+     decklist — "SVI" where our set id is "sv1". Present for 149 of the 174
+     sets; the rest have never had one, and the client falls back to the id.
+     ~2.8 KB across the whole manifest, and without it an export pastes into
+     PTCGL as a set code it does not recognise. */
+  ptcgoCode: str(s.ptcgoCode),
   releaseDate: String(s.releaseDate ?? ""),
   total: Number(s.total ?? s.printedTotal ?? 0),
   symbolUrl: str(s.images?.symbol),
