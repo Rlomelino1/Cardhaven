@@ -1121,7 +1121,7 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   </div>
 </div>
 
-<input type="file" id="picker" accept="application/json,.json" hidden>
+<input type="file" id="picker" accept="application/json,.json,text/plain,.txt" hidden>
  
 <script>
 /* ------------------------------- constants ------------------------------ */
@@ -1662,6 +1662,78 @@ function pkRowBadges(c){
       esc(cap.subtype === "ACE SPEC" ? "ACE" : cap.subtype)}</span>`).join("");
 }
 
+/* ------------------- decklist text, in the standard format ----------------
+   The Limitless / Pokémon TCG Live sectioned list, so a copied deck pastes
+   straight into PTCGL and a list copied out of it pastes straight back here. */
+function pkDeckText(){
+  const secs = pkDeckSections(S.zones.main);
+  const out = [];
+  for(const label of ["Pokémon", "Trainer", "Energy", "Other"]){
+    const sec = secs.find(x => x.label === label);
+    if(!sec) continue;
+    out.push(`${label}: ${sec.rows.reduce((n, r) => n + r.card.qty, 0)}`);
+    // Flat and alphabetical on the way out: the indentation is a reading aid on
+    // screen, and PTCGL wants one card per line.
+    for(const r of [...sec.rows].sort((a, b) => a.card.name.localeCompare(b.card.name)))
+      out.push(`${r.card.qty} ${r.card.name} ${pkDeckCode(r.card)}`);
+    out.push("");
+  }
+  for(const u of S.unresolved.filter(u => u.zone === "main"))
+    out.push(`${u.qty} ${u.ref}`);
+  return out.join("\n").trim() + "\n";
+}
+
+/* (PTCGL set code, collector number) -> card ref. Built once from the index, so
+   it can name a card in any of the 174 sets without loading one.
+
+   Nine of the 20,432 (code, number) pairs in the corpus are shared by two
+   printings — Celebrations' Classic Collection reprints under the parent set's
+   code, plus one set that printed the same number twice. First entry wins,
+   deterministically; the loser is the same card by name and number, so a deck
+   round-trips as the same deck even there. */
+let PK_BY_CODE = null;
+function pkRefFor(code, num){
+  if(!PIDX) return null;
+  if(!PK_BY_CODE){
+    PK_BY_CODE = new Map();
+    const codeOf = new Map(GAME.sets.map(x =>
+      [x.code, (x.ptcgoCode || String(x.code).toUpperCase()).toUpperCase()]));
+    for(const e of PIDX){
+      const k = `${codeOf.get(e.s) || ""} ${String(e.num).toUpperCase()}`;
+      if(!PK_BY_CODE.has(k)) PK_BY_CODE.set(k, e.id);
+    }
+  }
+  return PK_BY_CODE.get(`${String(code).toUpperCase()} ${String(num).toUpperCase()}`) || null;
+}
+
+/* Reads the format pkDeckText writes, and the one PTCGL exports. Section
+   headers, blank lines, PTCGL's own "Total Cards: 60" footer and anything else
+   that is not a card line are skipped rather than rejected — a decklist pasted
+   from a tournament report carries all sorts of chrome.
+
+   A card line is "<qty> <name> <SETCODE> <number>". Resolution is on code and
+   number, never the name: names carry parentheses, digits and apostrophes
+   ("Professor's Research (Professor Sada)"), and the code/number pair is what
+   actually identifies a printing. A line naming a printing this pool cannot
+   explain is kept as an unresolved entry, visibly, exactly as an unknown ref
+   from a JSON import is. */
+function pkParseDeckText(text){
+  const main = [];
+  let seen = 0;
+  for(const raw of String(text).split(/\r?\n/)){
+    const line = raw.trim();
+    if(!line || /^total cards\s*:/i.test(line)) continue;
+    const m = line.match(/^(\d+)\s+(.+?)\s+([A-Za-z][A-Za-z0-9-]*)\s+([A-Za-z0-9]+)$/);
+    if(!m) continue;
+    seen++;
+    const [, qty, name, code, num] = m;
+    const ref = pkRefFor(code, num);
+    main.push({ref: ref || `${name} ${code} ${num}`, qty: Number(qty)});
+  }
+  if(!seen) throw new Error("no card lines in that list");
+  return {schema:1, zones:{main}};
+}
+
 function pkDeckStats(){
   const pending = DECK_DETAIL_PENDING
     ? `<p class="dspending">Reading card detail for ${DECK_DETAIL_PENDING} set${DECK_DETAIL_PENDING === 1 ? "" : "s"}&hellip;</p>`
@@ -1801,6 +1873,7 @@ const GAMES = {
     modalMeta: rbModalMeta,
     colTag: rbColTag,
     searchMatch: rbSearchMatch,
+    deckText: rbDeckText,
     validate: rbValidate,
   },
 
@@ -1860,6 +1933,8 @@ const GAMES = {
     searchMatch: pkSearchMatch,
     deckSections: pkDeckSections,
     rowBadges: pkRowBadges,
+    deckText: pkDeckText,
+    parseDeckText: pkParseDeckText,
     validate: pkValidate,
     blockAdd: pkBlockAdd,
     deckStats: pkDeckStats,
@@ -4151,7 +4226,24 @@ document.getElementById("picker").addEventListener("change", e => {
   const r = new FileReader();
   r.onload = () => {
     try{
-      const raw = JSON.parse(r.result);
+      /* Not JSON? A game that publishes a decklist text format gets to read it,
+         so what Copy as text writes can be imported straight back. Riftbound
+         declares no parser, so a bad JSON file still fails as a bad JSON file. */
+      let raw;
+      try{ raw = JSON.parse(r.result); }
+      catch(notJson){
+        if(!GAME.parseDeckText) throw notJson;
+        if(!POOL_READY) throw new Error("load the card pool before importing a deck");
+        S.deckName = String(f.name || "Imported deck").replace(/\.[^.]+$/, "");
+        S.deckId = null; S.savedAt = null; BASELINE = null;
+        hydrateDeck(GAME.parseDeckText(String(r.result)));
+        touch(); render();
+        const lost = S.unresolved.length;
+        note(`Imported ${zoneCount("main")} cards`
+          + (lost ? ` · ${lost} line${lost === 1 ? "" : "s"} not in the card pool` : ""));
+        e.target.value = "";
+        return;
+      }
       const list = Array.isArray(raw) ? raw : (raw.pool || raw.cards || []);
       const deckPart = raw.deck || (raw.zones ? raw : null);
       if(Array.isArray(list) && list.length){
@@ -4209,7 +4301,10 @@ function exportDeck(){
   a.click(); URL.revokeObjectURL(url);
 }
  
-function copyText(){
+/* Riftbound's list, unchanged — its own zones under its own headings. Moved
+   behind a hook so a game whose community has a standard exchange format can
+   emit that instead of this one. */
+function rbDeckText(){
   const lines = ["// " + S.deckName];
   if(S.legend) lines.push("Legend: " + S.legend.name);
   if(S.champion) lines.push("Champion: " + S.champion);
@@ -4219,7 +4314,10 @@ function copyText(){
     [...S.zones[k]].sort((a,b)=>a.energy-b.energy||a.name.localeCompare(b.name))
       .forEach(c => lines.push(`${c.qty} ${c.name}`));
   }
-  navigator.clipboard.writeText(lines.join("\n"))
+  return lines.join("\n");
+}
+function copyText(){
+  navigator.clipboard.writeText(GAME.deckText())
     .then(()=>note("Decklist copied."))
     .catch(()=>note("Clipboard blocked — use Export instead."));
 }
