@@ -818,3 +818,141 @@ test.describe("a deck of exactly 60 cannot grow", () => {
       expect(r).toEqual({ exact: null, main: 6, disabled: 0, titled: 0 });
     });
 });
+
+/* ------------------------------------------------------------------------
+   images.pokemontcg.io answers a MISSING card with HTTP 404 *and* a decodable
+   PNG of the card back. An <img> decodes it and fires load, not error, so the
+   onerror fallback never runs and the back renders as though it were the card
+   (McDonald's Collection 2014/15/17/18 are entirely like this upstream).
+
+   The tell is the size: 640x892 at both the small and the hires URL, which is
+   neither a real small (245x342, 240x330 on the oldest sets) nor a real hires
+   (734x1024).
+   ------------------------------------------------------------------------ */
+import zlib from "node:zlib";
+
+/* A real, valid 8-bit greyscale PNG of the given size — the placeholder's
+   shape, so the browser genuinely decodes it and genuinely fires load. */
+function png(width, height) {
+  const crcTable = [];
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    crcTable[n] = c >>> 0;
+  }
+  const crc = (buf) => {
+    let c = 0xffffffff;
+    for (const b of buf) c = crcTable[(c ^ b) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
+    const c = Buffer.alloc(4);
+    c.writeUInt32BE(crc(body));
+    return Buffer.concat([len, body, c]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8;            // bit depth
+  ihdr[9] = 0;            // greyscale
+  const raw = Buffer.alloc(height * (width + 1));   // filter byte + row, all zero
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", ihdr),
+    chunk("IDAT", zlib.deflateSync(raw)),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
+test.describe("a 404 that decodes as a card back", () => {
+  test("the placeholder is swapped for our own fallback art", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("ch.game", "pokemon"));
+    /* Serve EVERY card image the way the host serves a missing one: 404 plus a
+       decodable card back. Both hosts — the set that opens by default is a Mega
+       Evolution set, whose art is on scrydex, not pokemontcg.io. */
+    await page.route(/images\.(pokemontcg\.io|scrydex\.com)/, (route) =>
+      route.fulfill({ status: 404, contentType: "image/png", body: png(640, 892) }));
+    await openApp(page);
+    await page.waitForFunction(() => PIDX !== null);
+    await page.waitForFunction(() =>
+      document.querySelectorAll("#results .tile").length > 0);
+    /* Tiles are loading="lazy", so only the ones on screen ever fire load —
+       assert on what actually loaded rather than on the whole grid. */
+    await page.waitForFunction(() =>
+      document.querySelectorAll("#results .frame svg").length > 0, null,
+      { timeout: 10000 });
+    const r = await page.evaluate(() => ({
+      tiles: document.querySelectorAll("#results .tile").length,
+      fallbacks: document.querySelectorAll("#results .frame svg").length,
+      // Any image that has decoded and is still standing at the placeholder's
+      // size would be a card back on screen.
+      backsLeft: [...document.querySelectorAll("#results .frame img")]
+        .filter((i) => i.naturalWidth === 640 && i.naturalHeight === 892).length,
+    }));
+    expect(r.tiles).toBeGreaterThan(0);
+    expect(r.fallbacks).toBeGreaterThan(0);
+    expect(r.backsLeft).toBe(0);                // not one card back left standing
+  });
+
+  test("a correctly sized image is left alone", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("ch.game", "pokemon"));
+    // A real small's dimensions: not the placeholder, so hands off.
+    await page.route(/images\.(pokemontcg\.io|scrydex\.com)/, (route) =>
+      route.fulfill({ status: 200, contentType: "image/png", body: png(245, 342) }));
+    await openApp(page);
+    await page.waitForFunction(() => PIDX !== null);
+    await page.waitForFunction(() =>
+      document.querySelectorAll("#results .tile").length > 0);
+    await page.waitForTimeout(600);
+    const r = await page.evaluate(() => ({
+      imgs: document.querySelectorAll("#results .frame img").length,
+      fallbacks: document.querySelectorAll("#results .frame svg").length,
+      // Proof the stub actually served these, so this cannot pass by accident.
+      served: [...document.querySelectorAll("#results .frame img")]
+        .filter((i) => i.naturalWidth === 245).length,
+    }));
+    expect(r.imgs).toBeGreaterThan(0);
+    expect(r.served).toBeGreaterThan(0);
+    expect(r.fallbacks).toBe(0);
+  });
+
+  test("the decision is the dimensions, and it is per game", async ({ page }) => {
+    await openApp(page);
+    // Riftbound declares no placeholder, so nothing is ever swapped...
+    expect(await page.evaluate(() => !!GAME.artPlaceholder)).toBe(false);
+    expect(await page.evaluate(() => {
+      const el = document.createElement("img");
+      Object.defineProperty(el, "naturalWidth", { value: 640 });
+      Object.defineProperty(el, "naturalHeight", { value: 892 });
+      el.id = "probe";
+      document.body.appendChild(el);
+      imgLoaded(el, "anything");
+      const still = document.getElementById("probe");
+      const tag = (still || document.body.lastElementChild).tagName.toLowerCase();
+      document.body.lastElementChild.remove();
+      return tag;
+    })).toBe("img");
+    // ...and it does not even emit the handler.
+    expect(await page.evaluate(() =>
+      [...document.querySelectorAll("#results .frame img")]
+        .filter((i) => i.getAttribute("onload")).length)).toBe(0);
+  });
+
+  test("Pokémon emits the handler on every card image", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("ch.game", "pokemon"));
+    await openApp(page);
+    await page.waitForFunction(() => PIDX !== null);
+    await page.waitForFunction(() =>
+      document.querySelectorAll("#results .frame img").length > 0);
+    const r = await page.evaluate(() => {
+      const imgs = [...document.querySelectorAll("#results .frame img")];
+      return { total: imgs.length,
+               wired: imgs.filter((i) => /imgLoaded/.test(i.getAttribute("onload") || "")).length };
+    });
+    expect(r.total).toBeGreaterThan(0);
+    expect(r.wired).toBe(r.total);
+  });
+});

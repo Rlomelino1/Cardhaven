@@ -1899,6 +1899,10 @@ const GAMES = {
     setsManifest: "./data/pokemon/sets.json",
     searchIndex:  "./data/pokemon/search-index.json",
     poolFor: id => `./data/pokemon/${encodeURIComponent(id)}-pool.json`,
+    /* This host serves a decodable card-back PNG with its 404s; these are its
+       dimensions. See imgLoaded(). Riftbound's host 404s properly and declares
+       nothing here. */
+    artPlaceholder: {w:640, h:892},
     zones: PK_ZONES,
     axis: PK_ENERGY_TYPES, axisLabel: "types", axisInk: PK_TYPE_INK,
     types: PK_SUPERTYPES,
@@ -3499,7 +3503,7 @@ function colTileHtml(c){
   const art = c.image
     ? `<img src="${esc(thumb(c.image))}" alt="" loading="lazy" decoding="async"
          referrerpolicy="no-referrer"
-         onerror="imgFail(this,'${jsStr(c.name)}')">`
+         onerror="imgFail(this,'${jsStr(c.name)}')"${GAME.artPlaceholder ? ` onload="imgLoaded(this,'${jsStr(c.name)}')"` : ""}>`
     : fallbackSvg(c);
   const own = !COL_READY ? "" :
     missing ? `<span class="cown miss">Missing</span>`
@@ -3727,6 +3731,27 @@ window.imgFail = function(img, name){
   const card = S.pool.find(c=>c.name===name) || {name, domains:[]};
   img.outerHTML = fallbackSvg(card);
 };
+
+/* ...and sometimes they "succeed" wrongly. images.pokemontcg.io answers a
+   missing card with HTTP 404 AND a decodable PNG of the CARD BACK, so <img>
+   fires load rather than error and the back renders as though it were the card.
+   onerror never sees it.
+
+   The dimensions are the tell: the placeholder is 640x892 at both the small and
+   the hires URL, which is neither a real small (245x342, or 240x330 on the
+   oldest sets) nor a real hires (734x1024). Declared per game, because it is a
+   property of that game's image host — Riot's CDN 404s properly, so Riftbound
+   never runs this and never even emits the handler.
+
+   Checked on load, so it costs no extra request, covers cards that break
+   upstream later, and heals itself the day the real art is uploaded. A false
+   positive would cost us our own fallback art in place of a real card; a false
+   negative shows a card back. That trade is the right way round. */
+window.imgLoaded = function(img, name){
+  const p = GAME.artPlaceholder;
+  if(!p || img.naturalWidth !== p.w || img.naturalHeight !== p.h) return;
+  imgFail(img, name);
+};
  
 /* Riot serves card art through Sanity's image CDN, which honours w/fm/q params.
    Tiles render at ~112px, so a 240px webp is 15 KB against the original's
@@ -3745,7 +3770,7 @@ function tileHtml(c, acts){
   const art = c.image
     ? `<img src="${esc(thumb(c.image))}" alt="${esc(c.name)}" loading="lazy" decoding="async"
          referrerpolicy="no-referrer"
-         onerror="imgFail(this,'${jsStr(c.name)}')">`
+         onerror="imgFail(this,'${jsStr(c.name)}')"${GAME.artPlaceholder ? ` onload="imgLoaded(this,'${jsStr(c.name)}')"` : ""}>`
     : fallbackSvg(c);
   const tag = GAME.colTag(c);
   return `<figure class="tile${offDomain(c)?" flagged":""}">
@@ -4257,7 +4282,7 @@ function paintCard(c){
   const full = c.imageLarge || c.image;
   const art = full
     ? `<img src="${esc(full)}" alt="${esc(c.name)}" referrerpolicy="no-referrer"
-         onerror="imgFail(this,'${jsStr(c.name)}')">`
+         onerror="imgFail(this,'${jsStr(c.name)}')"${GAME.artPlaceholder ? ` onload="imgLoaded(this,'${jsStr(c.name)}')"` : ""}>`
     : fallbackSvg(c);
   const ref = jsStr(refOf(c));
   document.getElementById("modalBox").innerHTML = `${art}
