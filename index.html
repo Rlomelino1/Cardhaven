@@ -395,6 +395,34 @@ button.gmrow{cursor:pointer}
 .denergy{font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--mute);
   min-width:13px; text-align:right}
 .dempty{color:var(--mute); font-size:13px; text-align:center; padding:30px 0; margin:0}
+/* sectioned deck list (a game that declares deckSections) */
+.dssec{display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+  margin:14px 0 2px; padding:0 0 6px 9px; border-bottom:1px solid var(--edge);
+  border-left:3px solid var(--sc,var(--edge));
+  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--mute); font-weight:400}
+.dssec:first-child{margin-top:0}
+.dssec span{font-size:12px; letter-spacing:.03em; color:var(--text)}
+.dsdeck{min-height:0}
+/* An evolution sits under the card it evolves from, with the connector the
+   mockup draws. Two levels is the whole ladder: Basic -> Stage 1 -> Stage 2. */
+.dlist li.evo{position:relative}
+.dlist li.evo1{padding-left:19px}
+.dlist li.evo2{padding-left:36px}
+.dlist li.evo::before{content:""; position:absolute; left:7px; top:-3px; bottom:50%;
+  width:1px; background:var(--edge)}
+.dlist li.evo2::before{left:24px}
+.dlist li.evo::after{content:""; position:absolute; left:7px; top:50%; width:7px;
+  height:1px; background:var(--edge)}
+.dlist li.evo2::after{left:24px}
+/* ACE SPEC / Radiant, the one-per-deck cards, called out where they sit. */
+.dbadge{font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--brass); border:1px solid var(--brass);
+  border-radius:2px; padding:1px 4px; flex:none; line-height:1.3}
+/* Running an evolution without its pre-evolution is legal, so this is a hint,
+   not a warning: no colour, no pill, just a mark that says look here. */
+.dorphan{font-family:ui-monospace,Menlo,monospace; font-size:10px; color:var(--mute);
+  flex:none; cursor:help}
 
 /* ------------------------------ ask dialog ------------------------------- */
 #askModal{position:fixed; inset:0; background:rgba(8,6,14,.6); display:none;
@@ -1269,6 +1297,9 @@ const pkRefOf = c => c.pokemonId || c.name;
    with itself. */
 const pkCardKeyRef = ref => { const e = pkIndexEntry(ref); return e ? nk(e.n) : String(ref).toLowerCase(); };
 const pkCardLabelRef = (ref, fallback) => pkIndexEntry(ref)?.n || fallback;
+/* What a deck row stamps: the PTCGL set code and the collector number, which is
+   how a Pokémon decklist identifies a printing everywhere else. */
+const pkDeckCode = c => [pkPtcgo(c.set), c.number].filter(Boolean).join(" ");
 const pkNumLabel = c => {
   const total = pkSetTotal(String(c.set || ""));
   return c.number == null ? "" :
@@ -1569,6 +1600,68 @@ function pkAlignmentStrip(){
     </div>${flag}</div>`;
 }
 
+/* ------------------------- the sectioned deck list ------------------------
+   Three sections in play order, alphabetical inside each, except that an
+   evolution is drawn beneath the card it evolves from.
+
+   Grouping is by NAME, because `evolvesFrom` is a name reference upstream —
+   the same name-over-printing axis the 4-copy limit uses. Two printings of one
+   pre-evolution therefore attach their evolutions to the first of them rather
+   than duplicating the whole line under each.
+
+   An evolution whose pre-evolution is absent is a soft hint, not an error:
+   running one deliberately is legal and sometimes the point. */
+function pkDeckSections(cards){
+  const byName = (a, b) => a.name.localeCompare(b.name);
+  const of = st => cards.filter(c => c.supertype === st).slice().sort(byName);
+  const pokemon = of("Pokémon");
+  const present = new Set(pokemon.map(c => nk(c.name)));
+  const isChild = c => !!c.evolvesFrom && present.has(nk(c.evolvesFrom));
+
+  const kids = new Map();          // nk(pre-evolution) -> its evolutions
+  for(const c of pokemon){
+    if(!isChild(c)) continue;
+    const k = nk(c.evolvesFrom);
+    if(!kids.has(k)) kids.set(k, []);
+    kids.get(k).push(c);
+  }
+  const rows = [], placed = new Set();
+  const walk = (c, depth) => {
+    if(placed.has(c)) return;      // a duplicated pre-evolution must not re-draw its line
+    placed.add(c);
+    rows.push({card:c, depth,
+      orphan: !!c.evolvesFrom && !present.has(nk(c.evolvesFrom))});
+    for(const kid of (kids.get(nk(c.name)) || []).sort(byName)) walk(kid, depth + 1);
+  };
+  for(const c of pokemon) if(!isChild(c)) walk(c, 0);
+  // A chain whose every member evolves from another member of it (no root in
+  // the deck) would otherwise vanish; draw whatever is left at the top level.
+  for(const c of pokemon) walk(c, 0);
+
+  const flat = st => of(st).map(c => ({card:c, depth:0, orphan:false}));
+  const out = [
+    {label:"Pokémon", fill:"var(--teal)",  rows},
+    {label:"Trainer", fill:"var(--brass)", rows:flat("Trainer")},
+    {label:"Energy",  fill:"var(--Water)", rows:flat("Energy")},
+  ];
+  // Anything the three sections do not claim — a card whose set failed to load
+  // has no supertype yet, and must still be visible and removable.
+  const claimed = new Set(out.flatMap(s => s.rows.map(r => r.card)));
+  const rest = cards.filter(c => !claimed.has(c));
+  if(rest.length) out.push({label:"Other", fill:"var(--mute)",
+    rows:rest.slice().sort(byName).map(c => ({card:c, depth:0, orphan:false}))});
+  return out.filter(s => s.rows.length);
+}
+
+/* Inline badges on a Pokémon deck row. */
+function pkRowBadges(c){
+  const caps = (GAME.rules.subtypeCaps || [])
+    .filter(cap => (c.subtypes || []).includes(cap.subtype));
+  return caps.map(cap =>
+    `<span class="dbadge" title="${esc(cap.label)} — one per deck">${
+      esc(cap.subtype === "ACE SPEC" ? "ACE" : cap.subtype)}</span>`).join("");
+}
+
 function pkDeckStats(){
   const pending = DECK_DETAIL_PENDING
     ? `<p class="dspending">Reading card detail for ${DECK_DETAIL_PENDING} set${DECK_DETAIL_PENDING === 1 ? "" : "s"}&hellip;</p>`
@@ -1701,6 +1794,7 @@ const GAMES = {
     cardKeyRef: rbCardKeyRef,
     cardLabelRef: rbCardLabelRef,
     setCode: c => String(c.set || "").toUpperCase(),
+    deckCode: c => String(c.set || "").toUpperCase(),
     numLabel: rbNumLabel,
     tileMeta: rbTileMeta,
     tileBadges: rbTileBadges,
@@ -1757,12 +1851,15 @@ const GAMES = {
     cardKeyRef: pkCardKeyRef,
     cardLabelRef: pkCardLabelRef,
     setCode: c => String(c.set || ""),
+    deckCode: pkDeckCode,
     numLabel: pkNumLabel,
     tileMeta: pkTileMeta,
     tileBadges: pkTileBadges,
     modalMeta: pkModalMeta,
     colTag: pkColTag,
     searchMatch: pkSearchMatch,
+    deckSections: pkDeckSections,
+    rowBadges: pkRowBadges,
     validate: pkValidate,
     blockAdd: pkBlockAdd,
     deckStats: pkDeckStats,
@@ -1891,6 +1988,12 @@ const pkIndexEntry = ref => PIDX_BY_ID.get(String(ref)) || null;
    they differ for 6 of the 174 sets — SM Black Star Promos is 165 files against
    a printed /75 — so a card read "SVP 001/165". Progress counts still use
    `cards`; only the printed number wants `total`. */
+/* The code Pokémon TCG Live prints and expects — "SVI" where our set id is
+   "sv1". 25 of the 174 sets never had one; those fall back to the id. */
+const pkPtcgo = id => {
+  const s = GAME.sets.find(x => x.code === id);
+  return (s && s.ptcgoCode) || String(id || "").toUpperCase();
+};
 const pkSetTotal = id => {
   const s = GAME.sets.find(x => x.code === id);
   return s ? (s.total || s.cards || 0) : 0;
@@ -3764,26 +3867,45 @@ function render(){
     `<button class="ztab${ZONE_TAB===k?" on":""}" onclick="setZoneTab('${k}')">${z.short}<b>${zoneCount(k)}</b></button>`).join("");
 
   const zk = ZONE_TAB;
-  const zlist = [...S.zones[zk]].sort((a,b)=>a.energy-b.energy||a.name.localeCompare(b.name));
   const zun = S.unresolved.filter(u=>u.zone===zk);
-  document.getElementById("zoneList").innerHTML = (zlist.length || zun.length)
-    ? `<ul class="dlist">` + zlist.map(c=>`<li>
+  /* One row template, both games. Every extra is empty for a game that declares
+     no badges and no sections, so the Riftbound row is the row it has always
+     been — the energy cell included, which only a game with an energy cost
+     draws at all. */
+  const deckRow = (c, opt = {}) => {
+    const code = GAME.deckCode(c);
+    return `<li${opt.depth ? ` class="evo evo${Math.min(opt.depth,2)}"` : ""}>
         <i class="dot" style="background:${c.domains[0]?`var(--${c.domains[0]})`:"var(--Colorless)"}"></i>
         <button class="dname" title="${esc(c.name)}"
           onclick="openCard('${jsStr(refOf(c))}')">${esc(c.name)}</button>
-        ${c.set?`<span class="dset">${esc(String(c.set).toUpperCase())}</span>`:""}
-        <span class="denergy">${c.energy||""}</span>
+        ${opt.orphan ? `<span class="dorphan" title="Evolves from ${esc(c.evolvesFrom)}, which is not in this deck">&#8593;</span>` : ""}
+        ${GAME.rowBadges ? GAME.rowBadges(c) : ""}
+        ${code?`<span class="dset">${esc(code)}</span>`:""}
+        ${GAME.energyCurve?`<span class="denergy">${c.energy||""}</span>`:""}
         <span class="qty">
           <button class="step" onclick="bump('${zk}','${c.id}',-1)">–</button>
           <b>${c.qty}</b>
           <button class="step" onclick="bump('${zk}','${c.id}',1)">+</button>
-        </span></li>`).join("")
-      + zun.map(u=>`<li>
+        </span></li>`;
+  };
+  const lostRows = zun.map(u=>`<li>
         <i class="dot" style="background:var(--Colorless)"></i>
         <span class="dname" style="color:var(--warn); cursor:default">${esc(u.ref)}</span>
-        <span class="qty"><b>${u.qty}</b></span></li>`).join("")
-      + `</ul>`
-    : `<p class="dempty">Nothing here yet.</p>`;
+        <span class="qty"><b>${u.qty}</b></span></li>`).join("");
+  /* Sectioned when the game asks for it AND the detail it groups on has
+     arrived; a flat list until then, rather than a wrong set of sections. */
+  const sections = (GAME.deckSections && !DECK_DETAIL_PENDING)
+    ? GAME.deckSections(S.zones[zk]) : null;
+  const zlist = [...S.zones[zk]].sort((a,b)=>a.energy-b.energy||a.name.localeCompare(b.name));
+  document.getElementById("zoneList").innerHTML =
+    !(zlist.length || zun.length) ? `<p class="dempty">Nothing here yet.</p>`
+    : sections
+      ? sections.map(sec =>
+          `<h3 class="dssec" style="--sc:${sec.fill}">${esc(sec.label)}
+            <span>${sec.rows.reduce((n,r)=>n+r.card.qty,0)}</span></h3>
+           <ul class="dlist dsdeck">${sec.rows.map(r => deckRow(r.card, r)).join("")}</ul>`
+        ).join("") + (lostRows ? `<ul class="dlist">${lostRows}</ul>` : "")
+      : `<ul class="dlist">` + zlist.map(c => deckRow(c)).join("") + lostRows + `</ul>`;
 
   renderSetBar();
   if(MENU_OPEN) renderDeckMenu();
