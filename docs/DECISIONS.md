@@ -497,3 +497,35 @@ in a real browser. Most of the modal already matched; these are the gaps that we
 - Deselecting the last in-scope set is a no-op, not a snap back to every set. The guard
   sits before the all-mode and remembered-scope writes, so a dead click changes nothing at
   all rather than quietly clearing the scope the All sets chip backs out to.
+
+## Stage 10 — the Pokémon deck panel, 2026-08-22
+
+- **Panel detail comes from the deck's own set pools, fetched on demand, not from the
+  search index.** Measured both: putting supertype/subtypes/costs/evolvesFrom into the
+  index costs +24% on a 2.07 MB file every visitor downloads on first Pokémon activation,
+  including someone who never opens a deck. On-demand loading reuses `loadSetPool` and
+  `POOL_CACHE` and the same move `openCard()` already makes for a light card. The price is
+  a visible pending state until a deck's sets land; a quietly wrong count is worse.
+- **Attack costs are vendored as one deduped flat `costs` array per card**, not as attack
+  objects. The panel only ever asks "which types does this card need". `Free` is dropped —
+  a zero-cost attack requires nothing, and the token would draw a dot for it.
+- **ACE SPEC and Radiant live in `rules.subtypeCaps`**, so the rule is data and Riftbound
+  declares an empty list. Rejected a hardcoded pair of checks in `pkValidate`: the inline
+  row badges read the same list, so a third such subtype is one entry, not three edits.
+- **The mulligan gauge reads as risk on a 0–30% scale** (shorter is safer), with bands at
+  13% and 22%. Thresholds were explicitly a minor decision; these land either side of the
+  Basic counts people actually run (15 → 11.8%, 12 → 19.1%, 10 → 25.9%).
+- **`C(n,k)` in BigInt.** Not for the result — `C(60,7)` fits a double — but for the
+  intermediates, which a naive factorial overflows first. The readout's whole value is
+  that it is exact.
+- **The deck row template is shared, with every extra empty for a game that declares no
+  sections or badges**, and the energy cell drawn only by a game that has an energy cost.
+  That tightens the Pokémon row to the mockup without moving the Riftbound one.
+- **`ptcgoCode` is vendored** (~2.8 KB, 149 of 174 sets). Without it a copied decklist
+  names its sets in a way PTCGL does not recognise, which is the entire point of emitting
+  the standard format. The 25 sets without one fall back to the uppercased id.
+- **Decklist text import hangs off the existing file picker**, trying the game's parser
+  when the file is not JSON. Rejected a paste-a-decklist dialog: one more surface for the
+  same job, and the picker already reads text.
+- Resolution on import is by **(set code, collector number), never the name** — names carry
+  parentheses, digits and apostrophes.

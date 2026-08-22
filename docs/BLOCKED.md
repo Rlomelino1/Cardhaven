@@ -153,3 +153,33 @@ One residual risk, recorded rather than designed around: `neon_auth` is Neon's s
 If a future Managed Better Auth change recreates that table, an inbound foreign key
 could block it or be dropped. Nothing except the cascade depends on the constraint —
 ownership is enforced by trigger and isolation by RLS, both of which hold without it.
+
+## Stage 10 — Pokémon deck panel (2026-08-22)
+
+Nothing blocked the stage. Three things found along the way that are worth knowing, none
+of which needed a decision to proceed:
+
+### Nine ambiguous (set code, collector number) pairs on decklist import
+Import resolves a line like `4 Miraidon ex SVI 81` on the PTCGL code plus the collector
+number. That pair is unique for **20,432 of 20,441** printings. The nine exceptions:
+
+- eight are Celebrations' Classic Collection (`cel25c`) reprinting under the parent set's
+  `CEL` code with the same printed numbers — ids like `cel25c-2_A` against `cel25-2`;
+- one is `BLK 60`, a set that printed the same number on two cards.
+
+First entry wins, deterministically. In every case both candidates are the same card by
+name and number, so a deck still round-trips as the same deck — but a collection-grade
+distinction between those specific printings would not survive an export/import cycle.
+**If that ever matters**, the fix is to emit the card id as a trailing comment on the line
+and prefer it when present; PTCGL ignores trailing text.
+
+### The mockup's filename does not match the handoff
+The handoff names `Pokemon_Deck_Panel-selection.png`; what is in the repo is
+`docs/mockups/deckInfoPoke.png`, which is unmistakably the same artefact (it matches every
+section of the spec). Built from PTCGL set codes — `SVI`, `MEW`, `SSP`, `BRS` — which is
+what prompted vendoring `ptcgoCode`.
+
+### The mockup's mulligan figure is not the formula's
+The mockup shows 11.5% beside 15 Basics; the formula gives **11.8%**. Expected — the
+handoff said every number in the mockup is placeholder art and the formula wins. Recorded
+only so nobody "fixes" the working formula to match the picture later.
