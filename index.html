@@ -328,6 +328,18 @@ button.gmrow{cursor:pointer}
 .dspill.bad{border-color:var(--warn); color:var(--warn-ink); background:var(--warn-wash)}
 .dspill .mark{font-size:10px; line-height:1}
 
+/* mulligan gauge */
+.dsmullhead{display:flex; justify-content:space-between; align-items:baseline;
+  gap:12px; margin:0 0 6px; font-family:ui-monospace,Menlo,monospace; font-size:9px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
+.dsmullhead b{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:15px; font-weight:600; letter-spacing:0; margin-left:7px; color:var(--text)}
+.dsgauge{height:5px; background:var(--edge); border-radius:3px; overflow:hidden}
+.dsgauge i{display:block; height:100%; border-radius:3px}
+.dsmull b.good{color:var(--teal)}
+.dsmull b.warn{color:var(--brass)}
+.dsmull b.bad{color:var(--warn)}
+
 /* supertype breakdown */
 .dsbar{display:flex; height:27px; border-radius:3px; overflow:hidden;
   border:1px solid var(--edge); background:var(--ink)}
@@ -1368,6 +1380,60 @@ const PK_SUPERTYPES_BAR = [
 ];
 
 const pkMainQty = list => list.reduce((n, c) => n + c.qty, 0);
+
+/* C(n,k), exactly. BigInt not for the result — C(60,7) is 386,206,920 and fits
+   a double easily — but for the intermediate products, which a naive factorial
+   overflows well before it gets there. The whole point of this readout is that
+   it is the real number, so it is computed as one.
+   The running division is exact at every step: after multiplying by (n-i), the
+   product is always divisible by (i+1). */
+function pkChoose(n, k){
+  if(k < 0 || n < 0 || k > n) return 0n;
+  k = Math.min(k, n - k);
+  let out = 1n;
+  for(let i = 0n; i < BigInt(k); i++) out = out * (BigInt(n) - i) / (i + 1n);
+  return out;
+}
+
+/* The chance of an opening hand of 7 with no Basic Pokémon in it — i.e. of
+   having to mulligan. Every combination of 7 drawn from the non-Basics, over
+   every combination of 7 from the deck.
+
+   Computed against the deck's ACTUAL size, not always 60, so the number means
+   something while the deck is still being built. Meaningless below 7 cards, and
+   with no Basics at all the answer is "always" — which the Basic Pokémon pill
+   already says far more usefully than "100.0%" would. Both show as —. */
+function pkMulligan(){
+  const n = zoneCount("main");
+  const b = pkMainQty(S.zones.main.filter(c => c.basicPokemon));
+  if(n < 7 || b === 0) return {b, n, pct:null};
+  const all = pkChoose(n, 7);
+  if(all === 0n) return {b, n, pct:null};
+  // Four decimal places of a percent before rounding to the one we show.
+  return {b, n, pct: Number(pkChoose(n - b, 7) * 1000000n / all) / 10000};
+}
+
+/* Thresholds are a judgement call, not a rule: green below 13%, amber to 22%,
+   red past it. Reference points — 15 Basics in 60 is 11.8%, 12 is 19.1%, 10 is
+   25.9% — so the bands land either side of the counts people actually run.
+   The bar reads as risk on a 0-30% scale, so shorter is safer. */
+const PK_MULL_BANDS = [
+  {max:13, cls:"good", fill:"var(--teal)"},
+  {max:22, cls:"warn", fill:"var(--brass)"},
+  {max:Infinity, cls:"bad", fill:"var(--warn)"},
+];
+function pkMulliganGauge(){
+  const {b, pct} = pkMulligan();
+  const band = pct === null ? null : PK_MULL_BANDS.find(x => pct < x.max);
+  const width = pct === null ? 0 : Math.max(2, Math.min(100, pct / 30 * 100));
+  return `<div class="dsmull">
+    <p class="dsmullhead">
+      <span>Basics <b>${b}</b></span>
+      <span>Mulligan <b class="${band ? band.cls : ""}">${pct === null ? "&mdash;" : pct.toFixed(1) + "%"}</b></span>
+    </p>
+    <div class="dsgauge"><i style="width:${width}%;background:${band ? band.fill : "var(--edge)"}"></i></div>
+  </div>`;
+}
 const pkOfSupertype = st => S.zones.main.filter(c => c.supertype === st);
 
 /* PASS/FAIL pills. Only the card count is knowable while detail is pending —
@@ -1409,7 +1475,8 @@ function pkDeckStats(){
   const pending = DECK_DETAIL_PENDING
     ? `<p class="dspending">Reading card detail for ${DECK_DETAIL_PENDING} set${DECK_DETAIL_PENDING === 1 ? "" : "s"}&hellip;</p>`
     : "";
-  return pkPills() + pending + (DECK_DETAIL_PENDING ? "" : pkSupertypeBar());
+  if(DECK_DETAIL_PENDING) return pkPills() + pending;
+  return pkPills() + pkSupertypeBar() + pkMulliganGauge();
 }
 
 /* Copies in the main deck carrying `subtype`, across every card that does. */
