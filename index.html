@@ -309,6 +309,40 @@ button.gmrow{cursor:pointer}
 .ztab.on{background:var(--text); color:var(--ink); font-weight:600}
 .ztab.on b{color:var(--ink)}
 
+/* --------------------- Pokemon deck stats (stage 10) ---------------------- */
+/* Same palette, spacing and monospaced idiom as the Riftbound panel beside it.
+   Everything here is inside #deckStats, which only a game declaring deckStats
+   ever renders — so none of it can reach Riftbound. */
+#deckStats{display:flex; flex-direction:column; gap:13px}
+#deckStats[hidden]{display:none}
+.dspending{margin:0; font-family:ui-monospace,Menlo,monospace; font-size:9px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--mute)}
+
+/* legality pills */
+.dspills{display:flex; gap:6px; flex-wrap:wrap}
+.dspill{display:inline-flex; align-items:center; gap:7px; background:var(--ink);
+  border:1px solid var(--edge); border-radius:3px; padding:7px 10px;
+  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--text2); white-space:nowrap}
+.dspill.ok{border-color:var(--teal); color:var(--ok-ink)}
+.dspill.bad{border-color:var(--warn); color:var(--warn-ink); background:var(--warn-wash)}
+.dspill .mark{font-size:10px; line-height:1}
+
+/* supertype breakdown */
+.dsbar{display:flex; height:27px; border-radius:3px; overflow:hidden;
+  border:1px solid var(--edge); background:var(--ink)}
+.dsbar i{display:flex; align-items:center; justify-content:center; min-width:0;
+  overflow:hidden; font-family:ui-monospace,Menlo,monospace; font-size:11.5px;
+  font-weight:700; font-style:normal; padding:0 6px}
+.dsempty{padding:9px 11px; border:1px dashed var(--edge); border-radius:3px;
+  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--mute); text-align:center}
+.dslegend{display:flex; gap:15px; flex-wrap:wrap; margin:-4px 0 0}
+.dslegend span{display:inline-flex; align-items:center; gap:6px;
+  font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--mute)}
+.dslegend i{width:9px; height:9px; border-radius:2px; flex:none}
+
 .dlist{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;
   min-height:110px}
 .dlist li{display:flex; align-items:center; gap:9px; padding:6px 2px}
@@ -905,6 +939,9 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   <div class="legendbox" id="legendBox"></div>
   <ul class="checks" id="checks"></ul>
   <div class="ztabs" id="zoneTabs"></div>
+  <!-- A game either has a deck stats panel or it does not, and Riftbound does
+       not. One container, one hook: GAME.deckStats renders the whole block. -->
+  <div id="deckStats" hidden></div>
   <!-- Riftbound-only panels. A Pokémon deck has no Legend, no domains, and no
        per-card energy cost to plot, so both hide rather than render an empty
        frame; the deck list and the checks are the whole panel there. -->
@@ -1318,6 +1355,63 @@ function rbValidate(){
    Advisory only: an incomplete deck is still savable, exactly as a Riftbound
    deck under 40 is. Format legality (Standard / Expanded) is stored on the
    card and deliberately not enforced. */
+/* ======================= the Pokemon deck stats panel ====================
+   Rendered as one HTML block by GAME.deckStats. Every number here is computed
+   from the deck's own cards, which means it needs the detail that only a set's
+   pool carries — so while any of the deck's sets are still arriving the block
+   says so and draws only what is already true. A number that is quietly wrong
+   is worse than one that is visibly not ready yet. */
+const PK_SUPERTYPES_BAR = [
+  {key:"Pokémon", label:"Pokémon", fill:"var(--teal)",  ink:"#0E1A19"},
+  {key:"Trainer", label:"Trainer", fill:"var(--brass)", ink:"#1A1405"},
+  {key:"Energy",  label:"Energy",  fill:"var(--Water)", ink:"#FFFFFF"},
+];
+
+const pkMainQty = list => list.reduce((n, c) => n + c.qty, 0);
+const pkOfSupertype = st => S.zones.main.filter(c => c.supertype === st);
+
+/* PASS/FAIL pills. Only the card count is knowable while detail is pending —
+   the rest read subtypes, so they wait rather than flash a false FAIL. */
+function pkPills(){
+  const n = zoneCount("main");
+  const target = GAME.rules.deckSizeExact;
+  const pill = (ok, text) =>
+    `<span class="dspill ${ok ? "ok" : "bad"}"><span class="mark">${ok ? "&#10003;" : "&#10007;"}</span>${text}</span>`;
+  const out = [pill(n === target, `${target} cards`)];
+  if(!DECK_DETAIL_PENDING){
+    out.push(pill(S.zones.main.some(c => c.basicPokemon), "Basic Pokémon"));
+    // Only shown once the deck actually holds one — an absent ACE SPEC is not
+    // a thing to pass or fail.
+    for(const cap of GAME.rules.subtypeCaps || []){
+      const held = pkSubtypeCount(cap.subtype);
+      if(held) out.push(pill(held <= cap.max, `${esc(cap.label)} ${held}/${cap.max}`));
+    }
+  }
+  return `<div class="dspills">${out.join("")}</div>`;
+}
+
+/* One segmented bar, Pokémon / Trainer / Energy, proportional to counts. A
+   zero-count segment collapses rather than rendering a sliver with no room for
+   its number. */
+function pkSupertypeBar(){
+  const rows = PK_SUPERTYPES_BAR.map(s => ({...s, n: pkMainQty(pkOfSupertype(s.key))}));
+  const total = rows.reduce((n, r) => n + r.n, 0);
+  const bar = total
+    ? `<div class="dsbar">` + rows.filter(r => r.n).map(r =>
+        `<i style="flex:${r.n};background:${r.fill};color:${r.ink}"
+            title="${r.n} ${esc(r.label)}">${r.n}</i>`).join("") + `</div>`
+    : `<p class="dsempty">No cards yet</p>`;
+  return bar + `<p class="dslegend">` + rows.map(r =>
+    `<span><i style="background:${r.fill}"></i>${esc(r.label)}</span>`).join("") + `</p>`;
+}
+
+function pkDeckStats(){
+  const pending = DECK_DETAIL_PENDING
+    ? `<p class="dspending">Reading card detail for ${DECK_DETAIL_PENDING} set${DECK_DETAIL_PENDING === 1 ? "" : "s"}&hellip;</p>`
+    : "";
+  return pkPills() + pending + (DECK_DETAIL_PENDING ? "" : pkSupertypeBar());
+}
+
 /* Copies in the main deck carrying `subtype`, across every card that does. */
 const pkSubtypeCount = st => S.zones.main
   .filter(c => (c.subtypes || []).includes(st))
@@ -1505,6 +1599,7 @@ const GAMES = {
     searchMatch: pkSearchMatch,
     validate: pkValidate,
     blockAdd: pkBlockAdd,
+    deckStats: pkDeckStats,
   },
 };
 const GAME_IDS = Object.keys(GAMES);
@@ -3326,6 +3421,9 @@ function render(){
   const lb = document.getElementById("legendBox");
   lb.hidden = !GAME.legend;
   document.getElementById("curveBlock").hidden = !GAME.energyCurve;
+  const stats = document.getElementById("deckStats");
+  stats.hidden = !GAME.deckStats;
+  if(GAME.deckStats) stats.innerHTML = GAME.deckStats();
   document.getElementById("zoneTabs").hidden = Object.keys(ZONES).length < 2;
 
   // legend box
