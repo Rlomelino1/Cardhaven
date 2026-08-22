@@ -4,15 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<!-- Defence-in-depth CSP. A <meta> CSP can't set frame-ancestors, and script-src
-     must keep 'unsafe-inline' because the app's own scripts and onclick handlers
-     are inline — so this does NOT constrain injected script. What it DOES do is
-     contain a hypothetical XSS: script-src is 'self' only (the SDK is vendored,
-     no CDN), connect-src pins network to the two Neon hosts (no exfiltration
-     elsewhere), img-src to Riot's CDN, and base-uri/object-src/form-action shut
-     the usual escalation paths. Validated non-breaking against the live app
-     before shipping. Endpoints must match the NEON config below. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<!-- The CSP that actually contains an XSS. It used to keep 'unsafe-inline' on
+     script-src, because the app's own scripts and its onclick handlers were
+     inline — which meant the policy could not constrain injected script at all,
+     and one missed esc() was an XSS. Both halves of that are gone: no handler is
+     inline any more (see the delegated ACTIONS map), and each remaining inline
+     script is named by its sha256. So an injected script element does not run,
+     and neither does an injected onerror.
+
+     THE HASHES ARE LOAD-BEARING. Edit any inline script and they must be
+     recomputed, or the page is blank — not degraded, blank. Three things stop a
+     stale hash reaching anyone: .gitattributes pins this file to LF so the bytes
+     are identical on Windows, CI and Pages; `node scripts/csp-hashes.mjs
+     --write` recomputes them; and tests/e2e/csp.spec.js fails when they drift,
+     which `main` will not merge past.
+
+     'self' stays on script-src for the vendored SDK's module imports. A <meta>
+     CSP still can't set frame-ancestors. connect-src pins the network to the two
+     Neon hosts, img-src to the three card-art hosts, and
+     base-uri/object-src/form-action shut the usual escalation paths. Endpoints
+     must match the NEON config below. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-K+Mag1YI69itJNEnvf8CwyuPfUeph+/iRJwe8v7w2j8=' 'sha256-14MdWpYLc1FGYKi00bgAMWUVlSFyKd0YfnnSRUjsfsk=' 'sha256-P5ay3voDqDj+tfDrPI2fQSpBrqyL0ggU0a++tlL0fTI=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <!-- Three card-art hosts, one per source. Riot's CDN serves Riftbound.
      Pokémon art comes from images.pokemontcg.io for 170 of the 174 English
      sets and from images.scrydex.com for the four Mega Evolution sets — cards,
