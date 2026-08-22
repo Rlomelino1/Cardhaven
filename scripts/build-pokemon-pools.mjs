@@ -62,14 +62,26 @@ const getJson = async (url) => {
 };
 
 /* -------------------------------- mapping -------------------------------- */
-/* Everything the app never reads is dropped: attacks, abilities, weaknesses,
-   retreat cost, flavour text, pokedex numbers, evolution chains, level, and
-   the whole `tcgplayer`/`cardmarket` pricing tree. Kept:
+/* Everything the app never reads is dropped: abilities, weaknesses, retreat
+   cost, flavour text, pokedex numbers, level, and the whole
+   `tcgplayer`/`cardmarket` pricing tree. Attacks are reduced to the one thing
+   the deck panel asks of them — which energy types they cost — rather than
+   vendored whole. Kept:
      - supertype/subtypes  verbatim — they drive the Energy copy-limit
-                           exemption and the supertype filter chips
+                           exemption, the supertype filter chips, and the
+                           ACE SPEC / Radiant single-card deck rules
      - number              a STRING; Pokémon collector numbers include GG69,
                            TG12, SV107, and "1" must not become 1
      - legalities          stored, never enforced (out of scope this stage)
+     - evolvesFrom         a NAME, not an id — evolution is a name reference
+                           upstream, which is also the axis the deck panel
+                           groups on
+     - costs               the deduped union of every attack cost symbol on the
+                           card. The panel only ever asks "which types does
+                           this attacker need", so per-attack structure is
+                           needless; one flat array answers it. "Free" is
+                           dropped: a zero-cost attack requires nothing, and
+                           keeping the token would draw a dot for it.
    Absent fields are omitted rather than written as null: at 20k cards the
    nulls alone would be hundreds of KB, and the client already reads every
    optional field with `?? null`. */
@@ -89,6 +101,14 @@ const toCard = (c) => {
   put("regulationMark", str(c.regulationMark));
   if (c.legalities && typeof c.legalities === "object" && Object.keys(c.legalities).length)
     out.legalities = c.legalities;
+  put("evolvesFrom", str(c.evolvesFrom));
+  if (Array.isArray(c.attacks)) {
+    const costs = new Set();
+    for (const a of c.attacks)
+      if (Array.isArray(a.cost))
+        for (const t of a.cost) if (t && t !== "Free") costs.add(String(t));
+    if (costs.size) out.costs = [...costs];
+  }
   put("imageSmall", str(c.images?.small));
   put("imageLarge", str(c.images?.large));
   return out;
