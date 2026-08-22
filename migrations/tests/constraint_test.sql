@@ -268,6 +268,100 @@ exception when others then
   insert into results values ('C17 filtering by game sees only this user''s riftbound decks', false);
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- 0006: the collection blob is nested by game, and the cap is 512 KB
+-- ---------------------------------------------------------------------------
+
+-- These get their own account. C10 above deletes the one the earlier tests
+-- share, and pin_ownership() takes user_id from app_user_id(), so a fresh row
+-- needs a fresh user and a fresh stub.
+insert into neon_auth."user" (id, name, email, "emailVerified", "createdAt", "updatedAt")
+values ('99999999-7777-4777-8777-999999999999','Test G','g@example.invalid',true,now(),now());
+create or replace function public.app_user_id() returns uuid
+  language sql stable as $fn$ select '99999999-7777-4777-8777-999999999999'::uuid $fn$;
+insert into public.user_settings (collection) values ('{}');
+
+-- C18: the nested shape stores and reads back as sent. Both games in one blob.
+do $$
+declare got jsonb;
+begin
+  insert into public.user_settings (collection) values
+    ('{"riftbound":{"ogn-039-298":3},"pokemon":{"sv1-1":4,"sv1-2":1}}')
+    on conflict (user_id) do update set collection = excluded.collection;
+  select collection into got from public.user_settings
+   where user_id = '99999999-7777-4777-8777-999999999999';
+  insert into results values ('C18 nested-by-game collection is accepted',
+    got -> 'pokemon' ->> 'sv1-1' = '4' and got -> 'riftbound' ->> 'ogn-039-298' = '3');
+exception when others then
+  insert into results values ('C18 nested-by-game collection is accepted', false);
+end $$;
+
+-- C19: the pre-stage-9 FLAT shape must still be accepted. Every row in
+-- production is flat today; the client lifts it on read and writes back nested
+-- on the next sync, so a constraint that demanded nesting would reject the
+-- data that already exists.
+do $$
+declare got jsonb;
+begin
+  update public.user_settings set collection = '{"ogn-001-298":2,"sfd-224*-221":1}'
+   where user_id = '99999999-7777-4777-8777-999999999999';
+  select collection into got from public.user_settings
+   where user_id = '99999999-7777-4777-8777-999999999999';
+  insert into results values ('C19 legacy flat collection is still accepted',
+    got ->> 'ogn-001-298' = '2');
+exception when others then
+  insert into results values ('C19 legacy flat collection is still accepted', false);
+end $$;
+
+-- C20: a realistic completionist Pokemon collection fits. 20,444 printings,
+-- one quantity each, nested under its game. Keys are built at the real average
+-- id length (7-8 chars, e.g. sv1-1 / swsh12pt5gg-GG01) because jsonb size is
+-- dominated by the per-key offset table, and a synthetic key set that is a few
+-- characters longer measures a different constraint than the one shipping.
+-- The measured real number is 480,812 bytes; 0006's cap is 1 MB.
+do $$
+declare big jsonb; sz integer;
+begin
+  select jsonb_build_object('pokemon', jsonb_object_agg('sv' || g || '-' || g, 4))
+    into big from generate_series(1, 20444) g;
+  sz := pg_column_size(big);
+  update public.user_settings set collection = big
+   where user_id = '99999999-7777-4777-8777-999999999999';
+  insert into results values ('C20 a complete 20.4k-printing collection fits under the cap',
+    sz <= 1048576);
+exception when others then
+  insert into results values ('C20 a complete 20.4k-printing collection fits under the cap', false);
+end $$;
+
+-- C21: oversize is still rejected. The cap exists to catch a client posting
+-- card OBJECTS instead of counts, which is megabytes, not kilobytes.
+do $$
+declare big jsonb;
+begin
+  select jsonb_build_object('pokemon',
+           jsonb_object_agg('k' || g, repeat('x', 600))) into big
+    from generate_series(1, 2400) g;
+  update public.user_settings set collection = big
+   where user_id = '99999999-7777-4777-8777-999999999999';
+  insert into results values ('C21 an over-1 MB collection is rejected', false);
+exception when check_violation then
+  insert into results values ('C21 an over-1 MB collection is rejected', true);
+end $$;
+
+-- C22: a non-object collection is refused. Note WHICH layer refuses it: the
+-- 0004 history trigger runs BEFORE the check constraint and calls
+-- jsonb_object_keys on the new value, so an array raises there first. Either
+-- way the write does not land, which is the property that matters -- but the
+-- error is not a check_violation, so this catches anything.
+do $$
+begin
+  update public.user_settings set collection = '["riftbound"]'
+   where user_id = '99999999-7777-4777-8777-999999999999';
+  insert into results values ('C22 a non-object collection is refused', false);
+exception when others then
+  insert into results values ('C22 a non-object collection is refused', true);
+end $$;
+
 -- C11: app_user_id() cast safety -- a non-uuid sub must yield NULL, not 22P02
 select 'C11 non-uuid JWT sub yields NULL instead of erroring' as test,
        bool_and(result is null) as pass

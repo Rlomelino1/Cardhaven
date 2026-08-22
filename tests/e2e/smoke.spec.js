@@ -14,12 +14,15 @@ test.describe("boot and browse", () => {
     expect(await page.evaluate(() => S.pool.filter(c => c.image).length)).toBe(640);
   });
 
-  test("search narrows the grid", async ({ page }) => {
+  test("search narrows the grid, and the readout keeps the scope it narrowed", async ({ page }) => {
     await openApp(page);
     await page.fill("#q", "kai");
-    await expect(page.locator("#resultCount")).not.toHaveText(/640 cards/);
+    await expect(page.locator("#resultCount")).not.toHaveText(/640 cards in scope/);
     const n = await page.evaluate(() => S.pool.filter(c => c.name.toLowerCase().includes("kai")).length);
-    await expect(page.locator("#resultCount")).toHaveText(new RegExp(`${n} cards?`));
+    // "N of 640 in scope": the filtered count AND what it was filtered from. The
+    // label used to drop to a bare "N cards", which threw the scope away and
+    // changed shape on every keystroke.
+    await expect(page.locator("#resultCount")).toHaveText(new RegExp(`^${n} of 640 in scope$`, "i"));
   });
 
   test("a domain filter changes the result count", async ({ page }) => {
@@ -191,5 +194,60 @@ test.describe("security", () => {
     });
     await page.locator("#zoneList .dname").first().click();
     expect(await page.evaluate(() => window.__x)).toBeUndefined();
+  });
+});
+
+test.describe("themes", () => {
+  /* Badges are drawn on a FIXED dark chip over card art. Ink taken from
+     var(--text) / var(--text2) inverts with the theme while the chip under it
+     does not, so in Paper it went near-black on near-black and the badge became
+     a solid rectangle. Assert the ink is pinned — identical across themes — and
+     light enough to read on that chip. */
+  const relLum = rgb => {
+    const [r, g, b] = rgb.match(/[\d.]+/g).slice(0, 3).map(Number)
+      .map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ink = (page, sel) =>
+    page.evaluate(s => getComputedStyle(document.querySelector(s)).color, sel);
+
+  test("no control falls back to the browser's default button chrome", async ({ page }) => {
+    /* .gmrow styled its layout and set its ink to var(--text), but never reset
+       background or border — and the switchable game row is a <button> while the
+       active one is a <div>. So that row painted the UA default: rgb(240,240,240)
+       with a 2px black border, carrying light Midnight ink. It was the only rule
+       in the file with the gap; this keeps it the only one that can't come back. */
+    await openApp(page);
+    // Open the menus directly: clicking one closes the other by design.
+    await page.evaluate(() => { toggleGameMenu(true); toggleDeckMenu(true); });
+    const r = await page.evaluate(() => {
+      const probe = document.createElement("button");
+      document.body.appendChild(probe);
+      const uaBg = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      const bad = [];
+      for (const b of document.querySelectorAll("button")) {
+        if (!b.getBoundingClientRect().width) continue;      // not on screen
+        if (getComputedStyle(b).backgroundColor === uaBg)
+          bad.push(`${b.className || b.id}: ${b.textContent.trim().slice(0, 24)}`);
+      }
+      return { uaBg, bad, seen: document.querySelectorAll("button").length };
+    });
+    expect(r.bad).toEqual([]);
+    expect(r.seen).toBeGreaterThan(20);   // the sweep actually swept something
+  });
+
+  test("tile badges stay legible in the Paper theme", async ({ page }) => {
+    await openApp(page);
+    // Showcase printings are the ones carrying a .variant badge.
+    await page.evaluate(() => { S.rarityFilter = ["Showcase"]; render(); });
+    await expect(page.locator("#results .variant").first()).toBeVisible();
+    const midnight = await ink(page, "#results .variant");
+    await page.click("#themeBtn");
+    expect(await page.evaluate(() =>
+      document.documentElement.classList.contains("paper"))).toBe(true);
+    const paper = await ink(page, "#results .variant");
+    expect(paper).toBe(midnight);
+    expect(relLum(paper)).toBeGreaterThan(0.5);
   });
 });

@@ -1,16 +1,17 @@
-# Riftbound Deckbuilder
+# Card Haven
 
 ## What this is
 
-A deckbuilding and collection-tracking tool for Riftbound (Riot's League of Legends
-TCG). It currently exists as a single self-contained HTML file that runs from the
-local filesystem: vanilla JS, no build step, no dependencies, all CSS and JS inline.
-State lives in localStorage. Card data comes from a static JSON pool file.
+A deckbuilding and collection-tracking tool for two trading card games: **Riftbound**
+(Riot's League of Legends TCG) and the **Pokémon TCG** (all 174 English sets). It is a
+single self-contained HTML file: vanilla JS, no build step, no dependencies, all CSS and
+JS inline. Card data comes from static JSON pool files. Accounts and per-user storage
+run on Neon Postgres behind RLS.
 
-This is a personal-interest project, not a product. The author collects Riftbound
-cards and mostly doesn't play. Expected traffic is one user plus a trickle of people
-from a niche community. Optimize for "works unattended for months" and "cheap to
-understand six months from now," not for scale.
+This is a personal-interest project, not a product. The author collects cards and mostly
+doesn't play. Expected traffic is one user plus a trickle of people from a niche
+community. Optimize for "works unattended for months" and "cheap to understand six
+months from now," not for scale.
 
 ## Who you're working with
 
@@ -50,9 +51,11 @@ CLAUDE.md               this file
 README.md               human-facing overview
 data/ogn-pool.json      352 Origins (OGN) printings with image URLs
 data/sfd-pool.json      288 Spiritforged (SFD) printings; added stage 8
+data/pokemon/           174 slim per-set pools + sets.json + search-index.json; stage 9
 vendor/neon/            the Neon SDK graph, vendored (served from this origin, not a CDN)
-scripts/                build-pool-v2.mjs (fetch a new set); vendor-neon.mjs (re-vendor the SDK)
-migrations/             0001–0005 SQL + tests/ (41 tests, all passing)
+scripts/                build-pool-v2.mjs (Riftbound set); build-pokemon-pools.mjs
+                        (every English Pokémon set); vendor-neon.mjs (re-vendor the SDK)
+migrations/             0001–0006 SQL + tests/ (48 tests, all passing)
 tests/                  Playwright e2e suite (dev/CI only) + a static server
 docs/                   DECISIONS.md, BLOCKED.md, auth-setup.md, deployment.md,
                         persistence-audit.md, hardening-plan.md
@@ -84,44 +87,152 @@ zero cost:
 
 Neon project ID: `falling-star-08784661` · region `us-east-2` · database `neondb`
 
-## The multi-game frame — built in stage 8
+## Two games, one app — the adapter pattern (stage 9)
 
-The product is **Card Haven**, live at `https://cardhavenapp.com`. Riftbound is the
-first and, today, only supported game.
+The product is **Card Haven**, live at `https://cardhavenapp.com`. It hosts **Riftbound**
+and the **Pokémon TCG**. Stage 8 built the frame; stage 9 put a second game in it and
+turned the frame into the adapter surface.
 
-Stage 8 built the frame. It is real, and it is small:
+**The standing rule for any future game:** each game keeps its own best data source and
+its own vendor script, and every source is transformed into **one internal card shape**.
+There is no unified external API and no attempt to find one.
 
-- **`GAMES` in `index.html`** is the registry: one entry per game, each holding an
-  `id`, a `label`, a two-letter `mark`, and a list of `sets` (`code`, `name`, `pool`
-  path). `ACTIVE_GAME` selects one; `GAME` is the resolved entry. Everything
-  game-specific reads from there.
-- **The header carries a game dropdown.** Riftbound is the only registry entry; the
-  three "planned" rows (Magic, Pokémon, One Piece) are hardcoded display data marked
-  inert — no handler, no href, nothing to click. Keep them out of the registry: the
-  registry describes games the app can actually run, and a fake entry there is
-  reachable by every loop that walks it.
-- **Two Riftbound sets ship**: Origins (`OGN`) and Spiritforged (`SFD`), fetched in
-  parallel and merged into one in-memory pool. A set that fails to load fails the
-  whole load, by name, with retry-all — a partial pool would read as a deck full of
-  unresolved cards and a collection full of holes.
-- **`decks.game`** (migration 0005) scopes deck rows. `user_settings` is deliberately
-  *not* scoped — see the migration header for why.
+- **`GAMES` in `index.html`** is the registry: one entry per game holding its `id`,
+  `label`, two-letter `mark`, its sets (or its set *manifest*), its `zones`, its filter
+  axes, its `rules`, its localStorage key names, and its adapter hooks — `normalize`,
+  `refOf`, `cardKeyRef`, `cardLabelRef`, `setCode`, `numLabel`, `tileMeta`,
+  `tileBadges`, `modalMeta`, `colTag`, `searchMatch`, `validate`. `ACTIVE_GAME` selects
+  one; `GAME` is the resolved entry; `adoptGame()` is the single place a switch takes
+  effect, re-pointing the mutable aliases (`ZONES`, `DOMAINS`, `TYPES`, `RARITY_ORDER`,
+  `DOMAIN_INK`, `RARITY_DOT`) so call sites never ask which game is running.
+- **Adapters are declared above the registry.** The `GAMES` literal evaluates its hook
+  references at load time, so an arrow const defined after it is a TDZ crash on boot.
+- **Riftbound's hooks are its stage 8 expressions moved, not rewritten.** That is why it
+  is pixel-identical across nine element-scoped screenshot comparisons. Keep it that
+  way: if a change to shared code would move a Riftbound pixel, it belongs in a hook.
+- **Two fields carry a Riftbound name for a game-neutral job**, and are deliberately
+  *not* renamed: `domains` is the coloured filter axis (Riftbound domains, Pokémon
+  energy types) and `type` is the primary type axis (Riftbound card type, Pokémon
+  supertype). The export format and every exported deck file already use those names;
+  renaming them breaks import of files in the wild.
+- **The header's game dropdown switches for real**, in place. Not a reload: a reload
+  would discard an unsaved deck instead of asking about it. The two "planned" rows
+  (Magic, One Piece) stay hardcoded display data marked inert — no handler, no href,
+  nothing to click. Keep them out of the registry: the registry describes games the app
+  can actually *run*, and a fake entry there is reachable by every loop that walks it.
+
+### Eager sets vs. lazy sets
+
+Two loading strategies, chosen per game by `lazySets`:
+
+- **Riftbound is eager.** Origins (`OGN`) and Spiritforged (`SFD`) are fetched in
+  parallel and merged into one in-memory pool. A set that fails to load fails the whole
+  load, by name, with retry-all — a partial pool would read as a deck full of unresolved
+  cards and a collection full of holes.
+- **Pokémon is lazy.** 174 sets, 20,444 printings. The set manifest and the global
+  **search index** load at game activation; a set's full pool loads only when that set is
+  opened, and is cached for the session. A chip row is the wrong control for 174 sets, so
+  it gets a series-grouped collapsible picker instead — one open set per game, shared by
+  the deckbuilder and the collection.
+
+**The search index is the deck-resolution layer, not just the search layer.** This is the
+load-bearing idea of the lazy design and the reason the index exists at all: a 60-card
+deck spans many sets, only the open set's pool is in memory, and deck rows plus the copy
+limit have to resolve anyway. `findCard()` falls back to the index and returns a **light
+card** (`light: true`) — name, set, number, image, and a Basic Energy flag, which is
+everything a tile, a deck row and the copy limit need. The card modal fetches the card's
+real set on demand to fill in HP, types and formats. Consequences to respect:
+
+- The index carries a sparse `b:1` Basic Energy flag beyond `{id,n,s,num,img}`, because
+  the copy-limit exemption must be answerable **without** loading pools.
+- Cross-set search runs off the index. The chip filters read fields the index does not
+  carry, so when any chip is on the search stays inside the loaded set and the result
+  count *says which of the two happened*. Silently ignoring a filter would be worse.
+- A lazy game has no aggregate collection grid — 20,444 tiles is not a page. Its
+  collection is always set-scoped, and the whole-game total comes off the index. Per-set
+  owned counts also come off the index, so the picker can show `12/191` for a set whose
+  cards were never fetched.
+
+### Per-game rules — settled, don't drift
+
+| | Riftbound | Pokémon |
+|---|---|---|
+| deck size | per-zone targets (40+ main, 12 runes, 3 battlefields, 0-or-8 side) | **exactly 60**, one zone |
+| copy limit | 3 | 4 |
+| counted by | **printing group** — collector number, then folded across id-groups by the base printing's name | **card name**, across every printing in every set |
+| exempt | — | **Basic Energy**, entirely |
+| collection cap / playset | 3 | 4 |
+
+Pokémon has no Legend, no domains, and no per-card energy cost, so the Legend box, the
+energy curve and the zone tab row **hide** rather than render empty frames. Format
+legality (`legalities`) is **stored and never enforced** — out of scope.
+
+### Storage
+
+- **`decks.game`** (migration 0005) scopes deck rows; a deck is bound to its game at
+  creation and never moves. The auth/data module reads the active game **live** on every
+  query rather than caching it, or a switch would list the other game's rows. An export
+  names its game in `kind`, and importing one game's export into the other is refused by
+  name rather than landing as sixty unresolved entries.
+- **`user_settings.collection` is nested by game** since stage 9:
+  `{riftbound:{ref:qty}, pokemon:{ref:qty}}`. Still one row, one blob, one sync engine. A
+  **pre-stage-9 flat blob is lifted, never rejected** — every browser and every
+  production row has that shape — and written back nested on the next sync. Shape is
+  decided by inspection (`isNestedCollection`), never by trust. Clamping is per *owning*
+  game. Migration 0006 raised the size cap to 1 MB; read its header for the measurement
+  before touching the number. Full detail in `docs/persistence-audit.md`.
 - **localStorage**: the four pre-existing Riftbound keys (`riftbound-deckbuilder-v1`,
   `rb.collection`, `rb.variants`, `rb.open-deck`) **are** the riftbound namespace and
   must never be renamed — renaming orphans every existing browser's local state. New
-  game-specific keys carry the game id (`riftbound.setScope`). `rb.theme` is
-  app-level, not per game.
+  game-specific keys carry the game id (`riftbound.setScope`, `pokemon.deck`,
+  `pokemon.open-deck:{uid}`, `pokemon.openSet`). `rb.theme` and `ch.game` are app-level,
+  not per game. `rb.collection` is shared by every game and holds the nested blob.
 
-**Adding a set is a data-only change**: one `GAMES[…].sets` entry plus one committed
-pool file under `data/`. Nothing in `index.html` switches on a set code — set identity
-travels on each card's own `set` field and on the set-prefixed ref. Keep it that way;
-if a change needs `if (set === "…")`, that's the signal the design drifted.
+### What is still out of scope
 
-**Still no implementation for a second game, and no further sets, unless a stage brief
-asks.** No `GameAdapter` interface, no plugin system, no schema generalization: the
-registry object and game-namespaced keys are the entire abstraction budget. When a
-choice presents a Riftbound-hardcoded shape and an equally cheap game-neutral one, the
-game-neutral one wins; when generalizing costs extra, don't.
+- **Variant tracking is explicitly deferred.** Reverse holo, holo, and 1st edition are
+  *not* tracked: one row per printing, as Riftbound has. Nothing in the slim vendored
+  Pokémon schema preserves variant information, so a future stage that wants it starts
+  with a re-vendor plus a collection-shape change. This was a decision, not an oversight
+  — pick it up deliberately.
+- **No card pricing, no non-English data, no third game.** No plugin system, no schema
+  generalization beyond the registry and its hooks: that hook list is the entire
+  abstraction budget. When a choice presents a game-hardcoded shape and an equally cheap
+  game-neutral one, the game-neutral one wins; when generalizing costs extra, don't.
+
+**Adding a set is a data-only change.** For Riftbound: one `GAMES.riftbound.sets` entry
+plus one committed pool file. For Pokémon it is not even that — the vendored manifest *is*
+the set list, so re-running the vendor script is the whole change. Nothing in `index.html`
+switches on a set code; set identity travels on each card's own `set` field and on the
+set-prefixed ref. Keep it that way — if a change needs `if (set === "...")`, that's the
+signal the design drifted.
+
+## The data pipeline — two vendor scripts, one internal shape
+
+| Game | Source | Script | Output |
+|---|---|---|---|
+| Riftbound | Riftcodex API (`api.riftcodex.com`) | `scripts/build-pool-v2.mjs` | `data/{set}-pool.json`, one per set |
+| Pokémon | `PokemonTCG/pokemon-tcg-data` GitHub repo, raw JSON, no key | `scripts/build-pokemon-pools.mjs` | `data/pokemon/{setId}-pool.json` × 174, `sets.json`, `search-index.json` |
+
+Both are zero-dependency Node scripts, re-runnable, polite about delays. Neither is a
+build step: they are maintenance tools, run by hand, whose output is committed.
+
+**Do not call the live pokemontcg.io API.** It is unreliable and unnecessary — the repo is
+the source, and it is actively maintained.
+
+**Card art is hotlinked, per the standing decision, and the URLs are copied verbatim from
+the source — never rebuilt from a pattern.** Most Pokémon sets serve art from
+`images.pokemontcg.io` as `{set}/{number}.png`, but the four **Mega Evolution** sets serve
+cards, set symbols *and* logos from `images.scrydex.com` under a different path shape. A
+reconstructed URL is wrong for 661 cards today and will be wrong again the next time
+upstream moves hosts. Both hosts are in the page's CSP `img-src`;
+`raw.githubusercontent.com` is **not**, and must not be — it is read at vendoring time and
+never by the page, which `tests/e2e/pokemon.spec.js` asserts.
+
+The slim Pokémon card schema keeps `supertype`/`subtypes` verbatim (they drive the Energy
+exemption and the filter chips) and keeps `number` as a **string** — Pokémon collector
+numbers include `GG69`, `TG12`, `SV107`. Absent fields are omitted rather than written as
+`null`: at 20,444 cards the nulls alone are hundreds of KB.
 
 ## Config and secrets
 
@@ -191,8 +302,15 @@ constraints. `migrations/README.md` has the details; `docs/DECISIONS.md` has the
 
 `0005` added `decks.game` (`text not null default 'riftbound'`) so a deck belongs to
 exactly one game — its payload holds refs that only mean anything inside that game's
-pool. `user_settings` stays unscoped on purpose; the reasoning is in the migration's
-header and in `docs/DECISIONS.md`.
+pool.
+
+`0006` raised `user_settings_collection_size` from 64 KB to **1 MB**, for the
+nested-by-game collection blob. The number is measured, not estimated: a complete
+Pokémon collection (every one of the 20,444 printings, with a quantity) is **480,812
+bytes of jsonb** while being only 255,908 bytes of JSON *text* — jsonb keeps a key-offset
+table per object, so sizing this from text length under-reads by nearly half. Read the
+migration header before touching it. `user_settings` is still not *row*-scoped by game
+and does not need to be; the nesting lives inside the blob.
 
 **Run migrations over `DATABASE_URL_UNPOOLED`.** The pooled endpoint runs PgBouncer in
 transaction mode and does not support `SET`, `search_path`, or session state — and
@@ -272,6 +390,15 @@ and errata's legend text, and neither means "different card".
 Origins printing and its Spiritforged reprint are two distinct collectibles — guarded
 by its own test.
 
+### Pokémon collection (stage 9)
+
+Same idea, different numbers, and one structural difference. The map keys on the card id
+(`sv1-1`), the cap is 4, and the whole thing lives under the `pokemon` key of the nested
+blob. The difference: with 174 sets and only one pool in memory there is **no aggregate
+grid** — the collection is always scoped to the open set, the whole-game total comes off
+the search index, and per-set owned counts come off it too, so the picker shows progress
+for sets whose cards were never fetched. Variant tracking is deferred; see above.
+
 ## The Showcase 3-copy limit — fixed (stage 7)
 
 Previously the 3-copy limit counted a Showcase printing and its base card as two
@@ -317,6 +444,15 @@ sideboard at all.
   path. Decks *and* collection must round-trip through JSON.
 - **GitHub Pages branch deploy, not a build workflow.** Next.js/Gatsby/Jekyll starters
   are all site generators; there is nothing to generate.
+- **The adapter pattern, not a unified card API.** Each game keeps its own best source
+  and its own vendor script; every source is transformed into one internal card shape.
+  Don't go looking for a single API that covers several games.
+- **Pokémon data comes from the `PokemonTCG/pokemon-tcg-data` GitHub repo, never from
+  the live pokemontcg.io API.** The API is unreliable and buys nothing: the repo is plain
+  JSON, needs no key, and is actively maintained.
+- **Pokémon variant tracking (reverse holo, holo, 1st edition) is deferred, not
+  rejected.** One row per printing today. Picking it up means a re-vendor and a
+  collection-shape change, so it should be a stage of its own.
 
 # Constraints that will bite
 
@@ -361,6 +497,7 @@ configuring those screens once instead of twice.
 | 6 | Collection tracker + "what am I missing" view | works on phone |
 | 7 | Showcase / base-card 3-copy limit | 3 base + 1 Showcase gets flagged |
 | 8 | Multi-set (Origins + Spiritforged) + the multi-game frame | both sets browse, scope chips filter only the browser, a cross-set reprint shares one limit |
+| 9 | Pokémon TCG — all 174 English sets, per-game rules, per-game collection | the game switcher round-trips, a 60-card deck validates only at 60, a 5th copy by name across two printings is flagged, collection caps at 4 there and 3 in Riftbound, a legacy flat collection lifts, Riftbound is pixel-identical |
 
 **Stage 1 caveat**: card art currently loads from a `file://` page. On an HTTPS origin,
 a CDN sending restrictive CORS or hotlink-protection headers fails differently. Check

@@ -12,6 +12,7 @@ are hard to read.
 | 0003 | `0003_limit_decks_per_user.sql` | 2026-08-17 | live — 100-deck-per-user cap, a free-tier abuse backstop |
 | 0004 | `0004_collection_history_safety_net.sql` | 2026-08-17 | live — snapshots a collection before any update that removes printings |
 | 0005 | `0005_scope_decks_by_game.sql` | 2026-08-19 | live — `decks.game`, defaulted to `riftbound`; scopes a deck to one Card Haven game |
+| 0006 | `0006_collection_room_for_two_games.sql` | 2026-08-20 | live — collection size cap 64 KB → 1 MB, for the nested-by-game blob stage 9 introduced |
 
 ## Running
 
@@ -34,6 +35,11 @@ node run.mjs --file constraint_test.sql
 node run.mjs --file history_test.sql
 ```
 
+The 0006 cases in `constraint_test.sql` run under their own account
+(`99999999-…`) with its own `app_user_id()` stub, because C10 earlier in the same file
+deletes the account the tests before it share — and `pin_ownership()` takes `user_id`
+from `app_user_id()`, so a fresh row needs a fresh stub, not just a fresh uuid.
+
 Or `npm run test:sql` from the repo root, which runs all three.
 
 Both wrap everything in a transaction that is **rolled back**, including the rows they
@@ -44,7 +50,7 @@ JWT — `pg_session_jwt` would need a real signed token to populate `auth.user_i
 rollback restores the real function. The JWT-to-uuid step it skips is covered separately
 by C11/C11b.
 
-### What they cover — 41 tests, all passing
+### What they cover — 48 tests, all passing
 
 **Isolation (`rls_test.sql`)**
 
@@ -89,6 +95,11 @@ by C11/C11b.
 | C15b | (0005) an explicit `game` is stored as sent |
 | C16 | (0005) a malformed game identifier (spaces, uppercase, empty) is rejected |
 | C17 | (0005) listing by `game` returns only that game's decks, and only this user's |
+| C18 | (0006) the nested-by-game collection shape stores and reads back as sent |
+| C19 | (0006) the **pre-stage-9 flat shape is still accepted** — every production row has it, and the client lifts it on read |
+| C20 | (0006) a complete 20,444-printing Pokémon collection fits under the cap |
+| C21 | (0006) over 1 MB is still rejected — the cap exists to catch a client posting card *objects* instead of counts |
+| C22 | (0006) a non-object collection is refused. Note *which* layer refuses it: the 0004 trigger calls `jsonb_object_keys` on the new value and raises before the CHECK gets a look, so the error is not a `check_violation`. The write does not land either way, which is the property that matters |
 
 **Collection history safety net (`history_test.sql`)**
 
@@ -100,6 +111,8 @@ by C11/C11b.
 | H4 | `authenticated`/`anonymous` hold no grants on the history table |
 | H5 | RLS is enabled **and** forced with zero policies, so it stays unreadable even if a grant is added by accident |
 | H6 | the client's row-creating insert (`ON CONFLICT DO NOTHING`) cannot overwrite an existing collection — the guard against it regressing to `merge-duplicates`, which is what caused the wipe |
+| H7 | (0006) the one-time flat → nested rewrite archives the flat pre-image exactly once. The trigger counts **top-level** keys, so N refs becoming one `"riftbound"` key reads as a shrink. That is intended and useful — it makes the shape migration itself recoverable, at one row per account — and deliberately not special-cased, because a trigger that understood the nesting would be a second implementation of the shape rule, in SQL, drifting from the client's |
+| H7b | nested writes *after* the lift add no history, so the snapshot is genuinely one-off |
 
 T10 is worth reading twice. `neondb_owner` — the role in `DATABASE_URL` — has
 `rolbypassrls = true`, and `BYPASSRLS` overrides `FORCE ROW LEVEL SECURITY`. Anything

@@ -172,6 +172,27 @@ test.describe("cross-set card identity", () => {
       expect(bad.keys).toBe(520);
     });
 
+  test("no two Riftbound printings share an exact name", async ({ page }) => {
+    // addCard() merges a click into an existing deck row by REF. It used to
+    // merge by name, which was interchangeable here and wrong for a game that
+    // reprints one name across sets. This asserts the property that made the
+    // two interchangeable, so the day a Riftbound set ships two printings under
+    // one identical name, the reasoning behind that change gets revisited
+    // rather than quietly stopping being true.
+    await openApp(page);
+    const shared = await page.evaluate(() => {
+      const byName = new Map();
+      for (const c of S.pool) {
+        const k = c.name.toLowerCase();
+        if (!byName.has(k)) byName.set(k, []);
+        byName.get(k).push(refOf(c));
+      }
+      return [...byName].filter(([, refs]) => refs.length > 1)
+        .map(([n, refs]) => n + ": " + refs.join(","));
+    });
+    expect(shared).toEqual([]);
+  });
+
   test("the collection keeps a reprint and its original as distinct printings",
     async ({ page }) => {
       await openApp(page, { hash: "#collection" });
@@ -184,12 +205,19 @@ test.describe("cross-set card identity", () => {
     });
 });
 
+/* The All sets chip is a toggle: pressing it while it is already on backs out of
+   all-mode. So say the intent — be in all-mode — rather than pressing a button
+   whose meaning depends on where you already are. */
+const allSets = page => page.evaluate(() => {
+  if (!S.setScopeAll) toggleSetScope("all");
+  return S.setScopeAll;
+});
+
 test.describe("deck builder set scope", () => {
-  const deselectSfd = page => page.evaluate(() => {
-    toggleSetScope("all");
-    toggleSetScope("SFD");
-    return S.setScope;
-  });
+  const deselectSfd = async page => {
+    await allSets(page);
+    return page.evaluate(() => { toggleSetScope("SFD"); return S.setScope; });
+  };
 
   test("chips scope the browser and the readouts", async ({ page }) => {
     await openApp(page);
@@ -249,15 +277,163 @@ test.describe("deck builder set scope", () => {
     await expect(page.locator("#resultCount")).toHaveText(/352 cards in scope/);
   });
 
-  test("deselecting the last set snaps back to all sets rather than emptying", async ({ page }) => {
+  test("the All sets chip reports the act, not the sum of the picks", async ({ page }) => {
+    /* Ticking every set by hand is not the same act as asking for all sets, so
+       the chip lights only in all-mode. It also means more than the enumeration
+       does: all-mode covers sets that ship later, an enumerated pick does not. */
+    const state = () => page.evaluate(() => ({
+      lit: document.querySelector("#setChips .setchip").classList.contains("on"),
+      all: S.setScopeAll,
+      scope: S.setScope,
+      stored: JSON.parse(localStorage.getItem(setScopeKey()) || "null"),
+    }));
     await openApp(page);
-    const scope = await page.evaluate(() => {
-      toggleSetScope("all");
-      toggleSetScope("SFD");
-      toggleSetScope("OGN");   // nothing would be left
-      return S.setScope;
+    // Fresh: nothing has been picked, so the app really is showing every set.
+    expect(await state()).toMatchObject({ lit: true, all: true });
+
+    await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    expect(await state()).toMatchObject({ lit: false, all: false, scope: ["OGN"] });
+
+    // Back to every set, by hand. The chip must NOT light.
+    await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    expect(await state()).toMatchObject({
+      lit: false, all: false, scope: ["OGN", "SFD"], stored: ["OGN", "SFD"] });
+    await openApp(page);   // and it survives a reload as a hand-picked scope
+    expect(await state()).toMatchObject({ lit: false, all: false });
+
+    // Asking for all sets does light it, and persists as the mode.
+    await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
+    // Stored as the mode plus the scope to back out to.
+    expect(await state()).toMatchObject({
+      lit: true, all: true, stored: { all: true, prev: ["OGN", "SFD"] } });
+    await openApp(page);
+    expect(await state()).toMatchObject({ lit: true, all: true });
+  });
+
+  test("pressing All sets again backs out to the scope you were on", async ({ page }) => {
+    const chip = page.locator("#setChips .setchip", { hasText: "All sets" });
+    const state = () => page.evaluate(() => ({
+      all: S.setScopeAll, scope: S.setScope,
+      prev: S.setScopePrev,
+      lit: document.querySelector("#setChips .setchip").classList.contains("on"),
+    }));
+    await openApp(page);
+    // Get onto a real hand-picked scope first.
+    await page.locator("#setChips .setchip", { hasText: "Origins" }).click();
+    expect(await state()).toMatchObject({ all: false, scope: ["SFD"] });
+
+    await chip.click();
+    expect(await state()).toMatchObject({
+      all: true, lit: true, scope: ["OGN", "SFD"], prev: ["SFD"] });
+    // ...and pressing it again returns you to exactly that scope.
+    await chip.click();
+    expect(await state()).toMatchObject({
+      all: false, lit: false, scope: ["SFD"], prev: null });
+
+    // The round trip survives a reload, because the scope to come back to is
+    // stored with the preference.
+    await chip.click();
+    await openApp(page);
+    expect(await state()).toMatchObject({ all: true, prev: ["SFD"] });
+    await chip.click();
+    expect(await state()).toMatchObject({ all: false, scope: ["SFD"] });
+  });
+
+  test("backing out with nothing to return to lands on the game's first set",
+    async ({ page }) => {
+      const chip = page.locator("#setChips .setchip", { hasText: "All sets" });
+      // A fresh browser starts in all-mode having never picked anything, so
+      // there is no previous scope — the first set beats an empty browser.
+      await openApp(page);
+      expect(await page.evaluate(() => ({
+        all: S.setScopeAll, prev: S.setScopePrev }))).toEqual({ all: true, prev: null });
+      await chip.click();
+      expect(await page.evaluate(() => S.setScope)).toEqual(["OGN"]);
+      expect(await page.evaluate(() => poolSets()[0].code)).toBe("OGN");
     });
-    expect(scope).toEqual(["OGN", "SFD"]);
+
+  test("a remembered set that left the pool falls back to the first set",
+    async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem("riftbound.setScope",
+        JSON.stringify({ all: true, prev: ["GONE"] })));
+      await openApp(page);
+      expect(await page.evaluate(() => S.setScopeAll)).toBe(true);
+      await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
+      expect(await page.evaluate(() => S.setScope)).toEqual(["OGN"]);
+    });
+
+  test("all-mode covers a set that ships later; a hand-picked scope does not",
+    async ({ page }) => {
+      await openApp(page);
+      const withNewSet = () => page.evaluate(() => {
+        S.pool.push({ ...S.pool[0], set: "NEW", setName: "Newest Set",
+                      riftboundId: "new-001-100" });
+        adoptPool();
+        return S.setScope;
+      });
+      // A fresh browser is already in all-mode, so pressing the chip here would
+      // back OUT of it. Assert the starting state instead of clicking into it.
+      expect(await page.evaluate(() => S.setScopeAll)).toBe(true);
+      expect(await withNewSet()).toEqual(["OGN", "SFD", "NEW"]);
+
+      await openApp(page);
+      // Hand-picked: the scope is what was picked, and stays that way.
+      await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+      await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+      expect(await withNewSet()).toEqual(["OGN", "SFD"]);
+    });
+
+  test("a legacy stored array still reads as a hand-picked scope", async ({ page }) => {
+    // Every browser that has ever set a scope holds an array, never "all".
+    await page.addInitScript(() =>
+      localStorage.setItem("riftbound.setScope", JSON.stringify(["OGN", "SFD"])));
+    await openApp(page);
+    const r = await page.evaluate(() => ({
+      all: S.setScopeAll, scope: S.setScope,
+      lit: document.querySelector("#setChips .setchip").classList.contains("on"),
+    }));
+    expect(r).toEqual({ all: false, scope: ["OGN", "SFD"], lit: false });
+  });
+
+  test("the last set standing cannot be deselected", async ({ page }) => {
+    /* Something has to stay in scope. This used to snap to EVERY set, which
+       turned one stray click into a scope nobody asked for; now the click does
+       nothing whatsoever — including not disturbing all-mode or the remembered
+       scope, which is why the guard runs before either is written. */
+    await openApp(page);
+    await allSets(page);
+    await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    expect(await page.evaluate(() => S.setScope)).toEqual(["OGN"]);
+
+    // Click the only remaining set, three times.
+    const lone = page.locator("#setChips .setchip", { hasText: "Origins" });
+    for (let i = 0; i < 3; i++) await lone.click();
+    expect(await page.evaluate(() => ({
+      scope: S.setScope,
+      lit: document.querySelectorAll("#setChips .setchip.on").length,
+      stored: JSON.parse(localStorage.getItem(setScopeKey())),
+    }))).toEqual({ scope: ["OGN"], lit: 1, stored: ["OGN"] });
+    // It says why on hover, so a click that does nothing doesn't read as dead.
+    await expect(lone).toHaveAttribute("title", /at least one set/i);
+    // The other set can still be brought back...
+    await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    expect(await page.evaluate(() => S.setScope.length)).toBe(2);
+    // ...and with two selected, neither is pinned.
+    expect(await page.locator("#setChips .setchip[title]").count()).toBe(0);
+  });
+
+  test("dropping to one set keeps the mode flags honest", async ({ page }) => {
+    await openApp(page);
+    await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
+    expect(await page.evaluate(() => ({ all: S.setScopeAll, prev: S.setScopePrev })))
+      .toEqual({ all: true, prev: ["OGN"] });
+    // Leaving all-mode by clicking a set drops to the other one, and that is a
+    // fresh choice: no remembered scope left over.
+    await page.locator("#setChips .setchip", { hasText: "Origins" }).click();
+    expect(await page.evaluate(() => ({
+      all: S.setScopeAll, prev: S.setScopePrev, scope: S.setScope,
+    }))).toEqual({ all: false, prev: null, scope: ["SFD"] });
   });
 });
 
@@ -280,7 +456,8 @@ test.describe("import / export across sets", () => {
         .toEqual([OGN_VAYNE, SFD_VAYNE].sort());
 
       // Narrow the browser to Origins, then import the file back.
-      await page.evaluate(() => { toggleSetScope("all"); toggleSetScope("SFD"); });
+      await allSets(page);
+      await page.evaluate(() => toggleSetScope("SFD"));
       await page.evaluate(() => { freshDeck(); render(); });
       await page.setInputFiles("#picker", {
         name: "two-sets.json", mimeType: "application/json", buffer: Buffer.from(text),
@@ -468,7 +645,9 @@ test.describe("the game switcher", () => {
     await openApp(page);
     await page.click("#gameBtn");
     const rows = page.locator("#gameMenu .gmrow.planned");
-    await expect(rows).toHaveCount(3);
+    // Two now: Pokemon graduated from a planned row to a registry entry in
+    // stage 9, which is exactly the move this test exists to notice.
+    await expect(rows).toHaveCount(2);
     await expect(rows.first().locator(".gmstate")).toHaveText("Planned");
     await expect(rows.first().locator(".gmsub")).toHaveText("Not yet on Card Haven");
     const r = await page.evaluate(() => ({
@@ -477,7 +656,7 @@ test.describe("the game switcher", () => {
       registryGames: Object.keys(GAMES),
     }));
     expect(r.interactive).toBe(0);
-    expect(r.registryGames).toEqual(["riftbound"]);
+    expect(r.registryGames).toEqual(["riftbound", "pokemon"]);
   });
 
   test("the collection context relabels the header and the menu", async ({ page }) => {
