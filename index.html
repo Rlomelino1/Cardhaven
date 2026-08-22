@@ -690,6 +690,13 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   text-transform:uppercase; color:var(--mute); margin:0 0 6px}
 .meta .text{font-size:15px; line-height:1.9; margin:16px 0; color:var(--text2)}
 .meta .artist{font-size:12px; color:var(--mute); margin:0 0 18px}
+/* Missing art, said in the panel where it isn't self-evident. Themed ink on a
+   themed panel, so it reads in both — and the same warn treatment the
+   validation banners use, at a quieter weight, because the card is real and
+   only its picture is absent. */
+.artmiss{margin:0 0 16px; padding:9px 11px; font-size:12.5px; line-height:1.5;
+  border-left:2px solid var(--warn); background:var(--warn-wash);
+  color:var(--warn-ink)}
 .modalacts{display:flex; gap:8px; flex-wrap:wrap}
  
 /* ---- inline card symbols ---- */
@@ -3729,8 +3736,27 @@ function fallbackSvg(c){
 /* Images sometimes fail (offline, host blocking). Swap in the fallback. */
 window.imgFail = function(img, name){
   const card = S.pool.find(c=>c.name===name) || {name, domains:[]};
+  // Note it before the swap: afterwards the element is gone and with it any way
+  // of telling whether it was the one in the card panel.
+  const inModal = !!img.closest("#modalBox");
   img.outerHTML = fallbackSvg(card);
+  if(inModal) noteMissingArt();
 };
+
+/* On a card tile, the generated fallback art speaks for itself — it is
+   obviously not a card. Opened up close it does not: the name, HP and types
+   beside it are all real, so the panel has to say that only the picture is
+   missing, and that the gap is upstream rather than something to retry. Added
+   at swap time, because whether the art loads is not known when the panel is
+   painted. */
+function noteMissingArt(){
+  const meta = document.querySelector("#modalBox .meta");
+  if(!meta || meta.querySelector(".artmiss")) return;
+  const p = document.createElement("p");
+  p.className = "artmiss";
+  p.textContent = "No image for this printing — the card database has none on file.";
+  meta.insertBefore(p, meta.querySelector(".modalacts"));
+}
 
 /* ...and sometimes they "succeed" wrongly. images.pokemontcg.io answers a
    missing card with HTTP 404 AND a decodable PNG of the CARD BACK, so <img>

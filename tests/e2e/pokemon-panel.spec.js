@@ -941,6 +941,50 @@ test.describe("a 404 that decodes as a card back", () => {
         .filter((i) => i.getAttribute("onload")).length)).toBe(0);
   });
 
+  test("the card panel says the image is missing, once", async ({ page }) => {
+    /* On a tile the generated fallback speaks for itself. Opened up close it
+       does not — the name, HP and types beside it are all real — so the panel
+       has to say that only the picture is absent. */
+    await page.addInitScript(() => localStorage.setItem("ch.game", "pokemon"));
+    await page.route(/images\.(pokemontcg\.io|scrydex\.com)/, (route) =>
+      route.fulfill({ status: 404, contentType: "image/png", body: png(640, 892) }));
+    await openApp(page);
+    await page.waitForFunction(() => PIDX !== null);
+    await page.evaluate(() => openCard(refOf(S.pool[0])));
+    await expect(page.locator("#modalBox .artmiss")).toBeVisible();
+    const r = await page.evaluate(() => ({
+      text: document.querySelector("#modalBox .artmiss").textContent,
+      count: document.querySelectorAll("#modalBox .artmiss").length,
+      // Above the actions, below the card's own detail.
+      order: [...document.querySelectorAll("#modalBox .meta > *")].map((e) => e.className),
+      art: !!document.querySelector("#modalBox svg"),
+    }));
+    expect(r.text).toMatch(/no image/i);
+    expect(r.count).toBe(1);
+    expect(r.art).toBe(true);
+    expect(r.order.indexOf("artmiss")).toBeLessThan(r.order.indexOf("modalacts"));
+
+    // Reopening must not stack a second copy.
+    for (let i = 0; i < 3; i++) {
+      await page.keyboard.press("Escape");
+      await page.evaluate(() => openCard(refOf(S.pool[0])));
+      await expect(page.locator("#modalBox .artmiss")).toBeVisible();
+    }
+    expect(await page.locator("#modalBox .artmiss").count()).toBe(1);
+  });
+
+  test("a card whose art loads gets no such message", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("ch.game", "pokemon"));
+    await page.route(/images\.(pokemontcg\.io|scrydex\.com)/, (route) =>
+      route.fulfill({ status: 200, contentType: "image/png", body: png(245, 342) }));
+    await openApp(page);
+    await page.waitForFunction(() => PIDX !== null);
+    await page.evaluate(() => openCard(refOf(S.pool[0])));
+    await expect(page.locator("#modalBox img")).toBeVisible();
+    await page.waitForTimeout(400);
+    expect(await page.locator("#modalBox .artmiss").count()).toBe(0);
+  });
+
   test("Pokémon emits the handler on every card image", async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem("ch.game", "pokemon"));
     await openApp(page);
