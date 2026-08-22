@@ -1883,6 +1883,9 @@ const GAMES = {
     cardLabelRef: rbCardLabelRef,
     setCode: c => String(c.set || "").toUpperCase(),
     deckCode: c => String(c.set || "").toUpperCase(),
+    /* main/runes/battlefields, as it has always read. The sideboard is left out
+       on purpose: it is 0 or 8 and says nothing about the deck at a glance. */
+    deckRowCounts: cnt => `${cnt("main")}/${cnt("runes")}/${cnt("battlefields")}`,
     numLabel: rbNumLabel,
     tileMeta: rbTileMeta,
     tileBadges: rbTileBadges,
@@ -1945,6 +1948,9 @@ const GAMES = {
     cardLabelRef: pkCardLabelRef,
     setCode: c => String(c.set || ""),
     deckCode: pkDeckCode,
+    /* One deck, one number — and the number that matters is how close it is to
+       legal, so it reads against the target rather than alone. */
+    deckRowCounts: cnt => `${cnt("main")}/${PK_ZONES.main.target} cards`,
     numLabel: pkNumLabel,
     tileMeta: pkTileMeta,
     tileBadges: pkTileBadges,
@@ -2981,8 +2987,8 @@ function deckMeta(row){
   } else if(lg && lg.name){
     legendName = lg.name; domains = lg.domains || [];
   }
-  return {legendName, domains,
-    counts:`${cnt("main")}/${cnt("runes")}/${cnt("battlefields")}`};
+  // Per game: three zone counts mean nothing to a game with one deck.
+  return {legendName, domains, counts: GAME.deckRowCounts(cnt)};
 }
 
 const accentStyle = domains =>
@@ -3007,7 +3013,8 @@ function renderDeckMenu(){
       <i class="accent" style="${accentStyle(m.domains)}"></i>
       <button class="dmmain" onclick="switchDeck('${d.id}')">
         <span class="dmname">${esc(d.name)}</span>
-        <span class="dmsub">${esc(m.legendName || "No legend yet")} · ${m.counts}</span>
+        <span class="dmsub">${GAME.legend
+          ? esc(m.legendName || "No legend yet") + " · " : ""}${m.counts}</span>
       </button>
       <span class="dmmeta${open?" open":""}">${open ? "open" : ago(d.updated_at)}</span>
       <button class="dmdel" onclick="deleteDeckRow('${d.id}')"

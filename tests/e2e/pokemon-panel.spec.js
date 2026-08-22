@@ -1000,3 +1000,57 @@ test.describe("a 404 that decodes as a card back", () => {
     expect(r.wired).toBe(r.total);
   });
 });
+
+test.describe("the deck switcher's row summary", () => {
+  /* Its subtitle was Riftbound's outright: a Legend name and three zone counts
+     (main/runes/battlefields). A Pokémon deck has no Legend and one zone, so it
+     read "No legend yet · 60/0/0" — two facts about a different game. */
+  const menu = (page, rows) => page.evaluate((rows) => {
+    MODE = "cloud";
+    CLOUD_USER = { id: "u1" };
+    DECKS = rows;
+    toggleDeckMenu(true);
+    return {
+      sub: document.querySelector("#deckMenu .dmsub")?.textContent.replace(/\s+/g, " ").trim(),
+      mentionsLegend: /legend/i.test(document.getElementById("deckMenu").innerText),
+      head: document.querySelector("#deckMenu .dmhead")?.innerText.replace(/\s+/g, " ").trim(),
+    };
+  }, rows);
+
+  test("a Pokémon row counts one deck against 60, and says nothing of Legends",
+    async ({ page }) => {
+      await openPokemon(page);
+      const r = await menu(page, [{
+        id: "r1", name: "Test", updated_at: new Date().toISOString(),
+        payload: { schema: 1, legend: null, champion: null,
+                   zones: { main: [{ ref: "sv1-81", qty: 4 }, { ref: "sv1-257", qty: 56 }] } },
+      }]);
+      expect(r.sub).toBe("60/60 cards");
+      expect(r.mentionsLegend).toBe(false);
+      expect(r.head).toMatch(/pokémon tcg/i);   // innerText is CSS-uppercased
+    });
+
+  test("an incomplete Pokémon deck says how far off it is", async ({ page }) => {
+    await openPokemon(page);
+    const r = await menu(page, [{
+      id: "r1", name: "WIP", updated_at: new Date().toISOString(),
+      payload: { schema: 1, zones: { main: [{ ref: "sv1-81", qty: 4 }] } },
+    }]);
+    expect(r.sub).toBe("4/60 cards");
+  });
+
+  test("a Riftbound row keeps its Legend and its three zone counts",
+    async ({ page }) => {
+      await openApp(page);
+      const r = await menu(page, [{
+        id: "r1", name: "RB", updated_at: new Date().toISOString(),
+        payload: { schema: 1, legend: null, champion: null, zones: {
+          main: [{ ref: "ogn-001-298", qty: 2 }],
+          runes: [{ ref: "ogn-004-298", qty: 1 }],
+          battlefields: [{ ref: "ogn-002-298", qty: 1 }],
+        } },
+      }]);
+      expect(r.sub).toBe("No legend yet · 2/1/1");
+      expect(r.mentionsLegend).toBe(true);
+    });
+});
