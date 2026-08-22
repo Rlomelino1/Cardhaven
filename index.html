@@ -1245,9 +1245,16 @@ const rbTileBadges = c =>
   (c.signature ? `<span class="sig">S</span>` : "") +
   (c.set ? `<span class="setbadge">${esc(String(c.set).toUpperCase())}</span>` : "") +
   (rbColTag(c) ? `<span class="variant">${rbColTag(c)}</span>` : "");
+/* EVERY interpolated value here is esc()'d, including the ones that look like
+   numbers. `number`, `might` and `power` are passed through normalize() as
+   whatever the source gave — the pool file is fetched, but the file PICKER can
+   load a hand-made one, so they are attacker-controlled text like any other
+   field. They were the only three unescaped values left in the app, and they
+   were live XSS: an imported pool with markup in `might` executed it in the card
+   panel. Escaped at render, which is where this codebase escapes. */
 const rbModalMeta = c =>
-  `<p class="sub">${esc(c.type)}${c.supertype?" · "+esc(c.supertype):""}${c.rarity?" · "+esc(c.rarity):""}${c.set?" · "+esc(c.set):""}${c.number!=null?" #"+c.number:""}</p>
-   <p class="sub">energy ${c.energy}${c.might!=null?" · might "+c.might:""}${c.power!=null?" · power "+c.power:""}${c.domains.length?" · "+c.domains.join(" / "):""}</p>`;
+  `<p class="sub">${esc(c.type)}${c.supertype?" · "+esc(c.supertype):""}${c.rarity?" · "+esc(c.rarity):""}${c.set?" · "+esc(c.set):""}${c.number!=null?" #"+esc(c.number):""}</p>
+   <p class="sub">energy ${esc(c.energy)}${c.might!=null?" · might "+esc(c.might):""}${c.power!=null?" · power "+esc(c.power):""}${c.domains.length?" · "+esc(c.domains.join(" / ")):""}</p>`;
 const rbColTag = c => c.rarity === "Showcase" ? "Showcase" : c.alternateArt ? "Alt art" : null;
 const rbSearchMatch = (c, term) =>
   c.name.toLowerCase().includes(term)
@@ -2366,7 +2373,19 @@ function hydrateDeck(p){
   for(const k of Object.keys(zones)){
     for(const e of (Array.isArray(src[k]) ? src[k] : [])){
       if(!e) continue;
-      const raw = Math.max(1, Number(e.qty) || 1);
+      /* A whole number, at least 1, and never more than the game's own limit —
+         for an UNRESOLVED entry too. A resolved card has always been clamped by
+         copyCap; an unresolved one was not, so a hand-made file could put a
+         billion on a ref this pool cannot explain and have it counted in the
+         legality numbers and written to the row. Floor it as well: `1.9` copies
+         is not a thing, and it rendered as one. */
+      /* The ceiling is the most any single row could legitimately hold in this
+         game: 3 for Riftbound, 60 for Pokémon — where Basic Energy is exempt
+         from the 4-copy limit and 56 of them in a deck is normal, so clamping to
+         copyLimit here would corrupt a legitimate import. A resolved card is
+         still clamped per card by copyCap() below. */
+      const ceiling = GAME.rules.deckSizeExact || GAME.rules.copyLimit;
+      const raw = Math.min(ceiling, Math.max(1, Math.floor(Number(e.qty) || 1)));
       if(e.ref !== undefined){
         const card = findCard(e.ref);
         if(card) zones[k].push({...card, id:uid(), qty:Math.min(copyCap(card), raw)});
