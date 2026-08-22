@@ -348,14 +348,18 @@ button.gmrow{cursor:pointer}
   color:var(--brass); font-family:ui-monospace,Menlo,monospace; font-size:12px;
   font-weight:700; display:flex; align-items:center; justify-content:center; cursor:help}
 
-/* trainer subtype chips — a stable row of four, muted at zero rather than
-   hidden, so the row does not reflow as a deck is built. */
-.dstrainers{display:flex; gap:6px; flex-wrap:wrap}
-.dschip{display:inline-flex; align-items:baseline; gap:7px; background:var(--ink);
-  border:1px solid var(--edge); border-radius:2px; padding:6px 10px; font-size:12.5px;
-  color:var(--text)}
+/* Trainer subtype chips — a stable row of FOUR, on one line, muted at zero
+   rather than hidden, so the row neither reflows nor rewraps as a deck is
+   built. nowrap is the promise; the metrics below are what keep it honest.
+   Measured against the worst case (every count in double digits) inside the
+   340px deck panel, with room to spare — see the test in pokemon-panel.spec.js,
+   which asserts one line and no clipping rather than trusting these numbers. */
+.dstrainers{display:flex; gap:5px; flex-wrap:nowrap}
+.dschip{display:inline-flex; align-items:baseline; gap:5px; background:var(--ink);
+  border:1px solid var(--edge); border-radius:2px; padding:6px 7px; font-size:11.5px;
+  color:var(--text); min-width:0; white-space:nowrap}
 .dschip b{font-family:ui-monospace,Menlo,monospace; font-size:9.5px; font-weight:400;
-  color:var(--mute)}
+  color:var(--mute); flex:none}
 .dschip.zero{color:var(--mute); opacity:.55}
 
 /* mulligan gauge */

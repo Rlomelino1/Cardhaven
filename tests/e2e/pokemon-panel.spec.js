@@ -217,6 +217,62 @@ test.describe("Trainer subtype chips", () => {
       expect(r.map((x) => x.text)).toEqual(["Items4", "Supporters2", "Stadiums0", "Tools0"]);
       expect(r.map((x) => x.zero)).toEqual([false, false, true, true]);
     });
+
+  /* All four sit on ONE line inside the 340px deck panel. Asserted as geometry
+     rather than trusted to the font metrics that make it fit, so a future
+     padding or type-size change that pushes "Tools" onto a second row fails
+     here instead of on someone's screen. */
+  const chipGeometry = (page) => page.evaluate(() => {
+    const chips = [...document.querySelectorAll(".dschip")];
+    return {
+      count: chips.length,
+      lines: new Set(chips.map((c) => Math.round(c.getBoundingClientRect().top))).size,
+      clipped: chips.filter((c) =>
+        c.scrollWidth > Math.ceil(c.getBoundingClientRect().width) + 1).length,
+      overflowing: chips.filter((c) => {
+        const row = document.querySelector(".dstrainers").getBoundingClientRect();
+        const b = c.getBoundingClientRect();
+        return b.right > Math.ceil(row.right) + 1;
+      }).length,
+    };
+  });
+
+  test("all four stay on one line, unclipped", async ({ page }) => {
+    await openPokemon(page);
+    await build(page, [[ULTRA, 16], [RESEARCH, 10], [MIRAIDON, 4]]);
+    expect(await chipGeometry(page)).toEqual({ count: 4, lines: 1, clipped: 0, overflowing: 0 });
+  });
+
+  test("...even with every count in double digits", async ({ page }) => {
+    await openPokemon(page);
+    /* The widest the row can get: four two-digit counts. Real Trainer cards of
+       each subtype, so the labels are the real labels. */
+    await page.evaluate(async () => {
+      freshDeck();
+      const list = await loadSetPool("sv1");
+      const pick = (st) => list.find((c) =>
+        c.supertype === "Trainer" && (c.subtypes || []).some((x) => x.startsWith(st)));
+      for (const st of ["Item", "Supporter", "Stadium", "Pokémon Tool"]) {
+        const c = pick(st);
+        if (c) S.zones.main.push({ ...c, id: uid(), qty: 44 });
+      }
+      hydrateDeckDetail();
+      render();
+    });
+    await page.waitForFunction(() => DECK_DETAIL_PENDING === 0);
+    const counts = await page.evaluate(() =>
+      [...document.querySelectorAll(".dschip b")].map((b) => b.textContent));
+    // Fixture check: this is only the worst case if the counts really are wide.
+    expect(counts.filter((c) => c.length >= 2).length).toBeGreaterThanOrEqual(3);
+    expect(await chipGeometry(page)).toEqual({ count: 4, lines: 1, clipped: 0, overflowing: 0 });
+  });
+
+  test("and on a phone, where the panel is full width", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openPokemon(page);
+    await build(page, [[ULTRA, 16], [RESEARCH, 10], [MIRAIDON, 4]]);
+    expect(await chipGeometry(page)).toEqual({ count: 4, lines: 1, clipped: 0, overflowing: 0 });
+  });
 });
 
 test.describe("ACE SPEC and Radiant: one per deck, across all of them", () => {
