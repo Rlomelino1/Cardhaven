@@ -634,6 +634,11 @@ body.game-pokemon .crlabel{width:170px}
   font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.08em;
   text-transform:uppercase; padding:2px 5px; line-height:1.1}
 .acts{display:flex; gap:4px; align-items:center; flex-wrap:nowrap; min-height:22px}
+/* An add the rules refuse. Scoped to the tile actions rather than added as a
+   general .btn:disabled, so nothing else in the app changes appearance — and
+   only a game whose rules can refuse an add ever renders one. */
+.acts .btn:disabled{opacity:.4; cursor:not-allowed}
+@media (hover:hover){ .acts .btn:disabled:hover{border-color:var(--edge); color:var(--text)} }
  
 .btn{background:transparent; border:1px solid var(--edge); color:var(--text);
   border-radius:2px; padding:8px 12px; font-size:12px; cursor:pointer}
@@ -3907,11 +3912,17 @@ function render(){
     // Only offer destinations the card is actually legal in: Runes go to the
     // rune deck, Battlefields to battlefields, everything else main or side.
     const sug = zoneFor(c.type);
+    /* Why this card cannot be added right now, if it cannot. Carried on the
+       button itself so a refused add reads as unavailable instead of as a click
+       that did nothing — and so no notice line has to say it. Riftbound's gates
+       refuse nothing, so its tiles never get the attribute. */
+    const no = addBlock(c, sug === "legend" ? "legend" : sug);
+    const off = no ? ` disabled title="${esc(no)}"` : "";
     let acts;
     if(sug === "legend")      acts = `<button class="btn sm" onclick="addCard('${id}','legend')">Legend</button>`;
-    else if(sug === "runes")  acts = `<button class="btn sm" onclick="addCard('${id}','runes')">+ Rune</button>`;
-    else if(sug === "battlefields") acts = `<button class="btn sm" onclick="addCard('${id}','battlefields')">+ Field</button>`;
-    else acts = `<button class="btn sm" onclick="addCard('${id}','main')">+ ${ZONES.sideboard ? "Main" : "Deck"}</button>`
+    else if(sug === "runes")  acts = `<button class="btn sm"${off} onclick="addCard('${id}','runes')">+ Rune</button>`;
+    else if(sug === "battlefields") acts = `<button class="btn sm"${off} onclick="addCard('${id}','battlefields')">+ Field</button>`;
+    else acts = `<button class="btn sm"${off} onclick="addCard('${id}','main')">+ ${ZONES.sideboard ? "Main" : "Deck"}</button>`
              + (ZONES.sideboard ? `<button class="btn sm quiet" onclick="addCard('${id}','sideboard')">+ Side</button>` : "");
     return tileHtml(c, acts);
   }).join("");
@@ -4109,15 +4120,14 @@ window.dropUnresolved = () => { S.unresolved = []; touch(); render(); };
    Advisory validation is unchanged and still reports a deck that arrived over
    size from an import or an old blob: this stops the app BUILDING one, it does
    not stop anyone opening one. */
-function addBlock(card, zone){
+const deckFullReason = () => {
   const target = GAME.rules.deckSizeExact;
-  if(target && zone !== "legend"){
-    const n = zoneCount("main");
-    if(n >= target)
-      return `That would be ${n + 1} cards — a deck is exactly ${target}. `
-           + `Remove something first.`;
-  }
-  return GAME.blockAdd?.(card, zone) || null;
+  return (target && zoneCount("main") >= target)
+    ? `A deck is exactly ${target} cards.` : null;
+};
+function addBlock(card, zone){
+  if(zone === "legend") return null;
+  return deckFullReason() || GAME.blockAdd?.(card, zone) || null;
 }
 
 window.addCard = (id, zone) => {
@@ -4128,7 +4138,12 @@ window.addCard = (id, zone) => {
     S.unresolved = S.unresolved.filter(u => u.zone !== "legend");
     touch(); render(); return;
   }
-  const blocked = addBlock(card, zone);
+  /* A full deck refuses SILENTLY: the deck header already reads 60/60, the
+     legality pill says so, and every add control is disabled — a notice line
+     restating it just sits there afterwards. A subtype refusal does say why,
+     because nothing else on screen explains that one. */
+  if(zone !== "legend" && deckFullReason()) return;
+  const blocked = GAME.blockAdd?.(card, zone);
   if(blocked){ note(blocked); return; }
   const list = S.zones[zone];
   /* Match on the REF, not the name. A Pokémon card name is reprinted set after
@@ -4154,7 +4169,8 @@ window.bump = (zone, id, d) => {
   const c = list.find(x => x.id === id); if(!c) return;
   // Raising a row is an add, and goes through the same gate as one.
   if(d > 0){
-    const blocked = addBlock(c, zone);
+    if(deckFullReason()) return;                  // silent; see addCard
+    const blocked = GAME.blockAdd?.(c, zone);
     if(blocked){ note(blocked); return; }
   }
   c.qty = Math.min(copyCap(c), c.qty + d);

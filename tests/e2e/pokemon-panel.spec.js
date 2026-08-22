@@ -673,14 +673,18 @@ test.describe("a deck of exactly 60 cannot grow", () => {
     expect(await page.evaluate(() => zoneCount("main"))).toBe(60);
     const r = await page.evaluate(() => {
       const row = S.zones.main.find((c) => c.name === "Scatterbug");
+      const noticeBefore = document.getElementById("notice").textContent;
       for (let i = 0; i < 3; i++) bump("main", row.id, 1);
       return { total: zoneCount("main"),
                qty: S.zones.main.find((c) => c.name === "Scatterbug").qty,
-               notice: document.getElementById("notice").textContent };
+               noticeBefore, notice: document.getElementById("notice").textContent };
     });
     // Scatterbug is at 1 of an allowed 4, and still cannot be raised.
     expect(r).toMatchObject({ total: 60, qty: 1 });
-    expect(r.notice).toMatch(/a deck is exactly 60/);
+    /* Silently. The deck header already reads 60/60 and the + is disabled with
+       the reason on it, so a notice line would only restate that and then sit
+       there afterwards. */
+    expect(r.notice).toBe(r.noticeBefore);
   });
 
   test("a brand-new card cannot be added to a full deck either", async ({ page }) => {
@@ -688,12 +692,19 @@ test.describe("a deck of exactly 60 cannot grow", () => {
     await build(page, [[MIRAIDON, 4], [L_ENERGY, 56]]);
     const r = await page.evaluate((ref) => {
       const before = zoneCount("main");
+      const noticeBefore = document.getElementById("notice").textContent;
       addCard(ref, "main");
-      return { before, after: zoneCount("main"),
-               notice: document.getElementById("notice").textContent };
+      return { before, after: zoneCount("main"), noticeBefore,
+               notice: document.getElementById("notice").textContent,
+               // The browse tile carries the refusal instead.
+               tileOff: [...document.querySelectorAll("#results .acts .btn")]
+                 .filter((b) => b.disabled).length,
+               tileTitle: document.querySelector("#results .acts .btn[disabled]")?.title };
     }, ULTRA);
     expect(r).toMatchObject({ before: 60, after: 60 });
-    expect(r.notice).toMatch(/That would be 61 cards/);
+    expect(r.notice).toBe(r.noticeBefore);
+    expect(r.tileOff).toBeGreaterThan(0);
+    expect(r.tileTitle).toMatch(/exactly 60/);
   });
 
   test("the + stepper respects the one-per-deck subtypes", async ({ page }) => {
@@ -763,6 +774,29 @@ test.describe("a deck of exactly 60 cannot grow", () => {
         for (let i = 0; i < 4; i++) bump("main", energy.id, -1);
       });
       expect(await page.evaluate(() => zoneCount("main"))).toBe(60);
+    });
+
+  test("a full deck refuses quietly, but a subtype refusal still explains itself",
+    async ({ page }) => {
+      /* The 60-card state is already on screen three times over — the deck
+         header, the legality pill, and every add control being disabled — so
+         restating it in the notice line was noise that then lingered. A
+         one-per-deck refusal has no such backdrop, so that one still speaks. */
+      await openPokemon(page);
+      await build(page, [[MIRAIDON, 4], [L_ENERGY, 56]]);
+      const quiet = await page.evaluate((ref) => {
+        const before = document.getElementById("notice").textContent;
+        addCard(ref, "main");
+        return document.getElementById("notice").textContent === before;
+      }, ULTRA);
+      expect(quiet).toBe(true);
+
+      await build(page, [[ACE_A, 1]]);
+      const loud = await page.evaluate((ref) => {
+        addCard(ref, "main");
+        return document.getElementById("notice").textContent;
+      }, ACE_B);
+      expect(loud).toMatch(/Only 1 ACE SPEC/);
     });
 
   test("Riftbound is untouched: no add-time size gate, no disabled steppers",
