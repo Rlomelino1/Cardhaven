@@ -328,6 +328,26 @@ button.gmrow{cursor:pointer}
 .dspill.bad{border-color:var(--warn); color:var(--warn-ink); background:var(--warn-wash)}
 .dspill .mark{font-size:10px; line-height:1}
 
+/* type alignment strip */
+.dsalign{display:flex; align-items:center; gap:12px; background:var(--ink);
+  border:1px solid var(--edge); border-radius:4px; padding:11px 13px}
+.dsalign.warn{border-color:var(--brass)}
+.dsrows{flex:1; min-width:0; display:flex; flex-direction:column; gap:9px}
+.dsrow{display:flex; align-items:center; gap:10px}
+.dsrow > span{font-family:ui-monospace,Menlo,monospace; font-size:8.5px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mute); width:66px;
+  flex:none}
+.dsdots{display:flex; gap:6px; flex-wrap:wrap; align-items:center; min-height:11px}
+.dsdot{width:11px; height:11px; border-radius:50%; flex:none}
+/* Colorless is "any energy pays this", not a type — so it reads as a ring,
+   never as the flat grey dot a Trainer row uses. */
+.dsdot.any{background:none; border:1.5px solid var(--text2); position:relative}
+.dsnone{font-family:ui-monospace,Menlo,monospace; font-size:8.5px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--mute)}
+.dsflag{width:22px; height:22px; border-radius:50%; flex:none; border:1.5px solid var(--brass);
+  color:var(--brass); font-family:ui-monospace,Menlo,monospace; font-size:12px;
+  font-weight:700; display:flex; align-items:center; justify-content:center; cursor:help}
+
 /* trainer subtype chips — a stable row of four, muted at zero rather than
    hidden, so the row does not reflow as a deck is built. */
 .dstrainers{display:flex; gap:6px; flex-wrap:wrap}
@@ -1498,12 +1518,64 @@ function pkTrainerChips(){
   }).join("") + `</div>`;
 }
 
+/* -------------------------- type alignment strip -------------------------
+   Does the deck's energy actually pay for its attackers?
+
+   Required = every non-Colorless type appearing in ANY attack cost of ANY
+   Pokémon in the deck. Colorless never generates a requirement, because any
+   energy pays it — which is precisely why this matches on attack COSTS rather
+   than on the Pokémon's own card type: card-type matching false-flags a
+   Colorless-cost attacker like Mew ex as needing Psychic energy it never asks
+   for.
+
+   Provided = the types of the Basic Energy in the deck.
+
+   Special Energy suppresses the warning outright rather than pretending to
+   model what each one provides. Modelling specials is out of scope, and a deck
+   running them is very often paying its costs in a way this cannot see; a false
+   warning is worse than no warning.
+
+   A soft hint either way. Nothing here ever blocks anything. */
+function pkAlignment(){
+  const attackers = S.zones.main.filter(c => c.supertype === "Pokémon" && c.costs.length);
+  const required = new Set();
+  let anyColorless = false;
+  for(const c of attackers)
+    for(const t of c.costs){
+      if(t === "Colorless") anyColorless = true;
+      else required.add(t);
+    }
+  const provided = new Set(S.zones.main.map(c => c.energyType).filter(Boolean));
+  const special = S.zones.main.some(c => c.specialEnergy);
+  const missing = [...required].filter(t => !provided.has(t));
+  return {required:[...required], provided:[...provided], missing, special, anyColorless,
+          warn: missing.length > 0 && !special};
+}
+
+function pkAlignmentStrip(){
+  const a = pkAlignment();
+  if(!a.required.length && !a.provided.length && !a.anyColorless) return "";
+  const dot = t => `<i class="dsdot" style="background:var(--${t})" title="${esc(t)}"></i>`;
+  const any = `<i class="dsdot any" title="Colorless — any energy pays this"></i>`;
+  const row = (label, dots, empty) => `<div class="dsrow"><span>${label}</span>
+      <div class="dsdots">${dots || `<span class="dsnone">${empty}</span>`}</div></div>`;
+  const flag = a.warn
+    ? `<div class="dsflag" title="No ${a.missing.join(" or ")} energy in the deck for attacks that cost it">!</div>`
+    : "";
+  return `<div class="dsalign${a.warn ? " warn" : ""}">
+    <div class="dsrows">
+      ${row("Attackers", a.required.map(dot).join("") + (a.anyColorless ? any : ""), "none")}
+      ${row("Energy", a.provided.map(dot).join("") + (a.special ? any : ""), "none")}
+    </div>${flag}</div>`;
+}
+
 function pkDeckStats(){
   const pending = DECK_DETAIL_PENDING
     ? `<p class="dspending">Reading card detail for ${DECK_DETAIL_PENDING} set${DECK_DETAIL_PENDING === 1 ? "" : "s"}&hellip;</p>`
     : "";
   if(DECK_DETAIL_PENDING) return pkPills() + pending;
-  return pkPills() + pkSupertypeBar() + pkMulliganGauge() + pkTrainerChips();
+  return pkPills() + pkSupertypeBar() + pkMulliganGauge() + pkTrainerChips()
+       + pkAlignmentStrip();
 }
 
 /* Copies in the main deck carrying `subtype`, across every card that does. */
