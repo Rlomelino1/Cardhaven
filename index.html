@@ -1137,6 +1137,13 @@ const rbSearchMatch = (c, term) =>
    `basicEnergy` is computed here rather than tested at every call site,
    because the copy-limit exemption also has to answer for a card seen only
    through the search index, where supertype and subtypes are absent. */
+/* Basic Energy provides exactly one type, and its name is where that lives.
+   Matched against the known type vocabulary rather than a hardcoded list of the
+   17 names, so a new basic energy needs no code change. */
+function pkEnergyTypeOf(supertype, subtypes, name){
+  if(supertype !== "Energy" || !subtypes.includes("Basic")) return null;
+  return PK_ENERGY_TYPES.find(t => t !== "Colorless" && name.includes(t)) || null;
+}
 function pkNormalize(c){
   const subtypes = Array.isArray(c.subtypes) ? c.subtypes.map(String) : [];
   const types = (Array.isArray(c.types) ? c.types : [])
@@ -1150,7 +1157,21 @@ function pkNormalize(c){
     rarity:c.rarity ?? null,
     regulationMark:c.regulationMark ?? null,
     legalities:(c.legalities && typeof c.legalities === "object") ? c.legalities : null,
+    // Evolution is a NAME reference upstream, which is also the axis the deck
+    // panel groups on — same name-over-printing identity the copy limit uses.
+    evolvesFrom: c.evolvesFrom ?? null,
+    // Every energy type any attack on this card costs, deduped by the vendor
+    // script. Colorless is kept (the alignment strip draws it) but never
+    // generates a requirement — any energy pays it.
+    costs: Array.isArray(c.costs) ? c.costs.map(String) : [],
     basicEnergy: c.supertype === "Energy" && subtypes.includes("Basic"),
+    specialEnergy: c.supertype === "Energy" && subtypes.includes("Special"),
+    basicPokemon: c.supertype === "Pokémon" && subtypes.includes("Basic"),
+    /* Which energy type a Basic Energy card provides. Read off the NAME, not a
+       types field: only 5 of the 394 vendored energy cards carry `types`, while
+       all 17 distinct basic-energy names ("Basic Lightning Energy", the older
+       bare "Lightning Energy") name their type outright. */
+    energyType: pkEnergyTypeOf(c.supertype, subtypes, String(c.name ?? "")),
     set:c.set ?? "", setName:c.setName ?? null,
     // A STRING, always: Pokémon collector numbers include GG69, TG12, SV107.
     number:c.number != null ? String(c.number) : null,
@@ -1532,6 +1553,11 @@ let ZONE_TAB = "main";     // which zone the deck panel is showing; transient
    cross-set search resolves off the index, so it routinely matches thousands
    of cards while one 64-card set is in memory. */
 let RESULT_COUNT = 0;
+/* How many of the DECK's sets are still without a pool. Non-zero means the
+   stats panel and the subtype-scoped legality checks cannot yet see every card
+   in the deck, so they say pending instead of reporting a number that is only
+   true of the cards that happen to have arrived. */
+let DECK_DETAIL_PENDING = 0;
 let MENU_OPEN = false;     // deck switcher dropdown
 
 /* ------------------- the lazy game's index and pool cache ----------------
@@ -1545,6 +1571,11 @@ let MENU_OPEN = false;     // deck switcher dropdown
 let PIDX = null;                    // the index array, or null before it loads
 let PIDX_BY_ID = new Map();         // ref -> index entry
 const POOL_CACHE = new Map();       // set id -> normalized cards, once fetched
+/* Every card of every set fetched this session, by ref. The open set has
+   POOL_BY_REF; this is the same idea across the cache, so a card from a set
+   that was loaded for some other reason (the card modal, a deck the panel
+   needed detail for) resolves fully instead of falling back to a light card. */
+const PK_BY_REF = new Map();
 const pkIndexEntry = ref => PIDX_BY_ID.get(String(ref)) || null;
 /* The denominator of a collector number is the set's OFFICIAL total, not how
    many cards this repo happens to hold for it. The manifest carries both and
@@ -2232,7 +2263,7 @@ window.switchGame = async id => {
   // would be a card, a filter or a set code that means nothing in this one.
   POOL_READY = false;
   S.pool = []; POOL_BY_REF = new Map(); CARD_INDEX = new Map();
-  PIDX = null; PIDX_BY_ID = new Map(); POOL_CACHE.clear();
+  PIDX = null; PIDX_BY_ID = new Map(); POOL_CACHE.clear(); PK_BY_REF.clear();
   bumpSetLoad();          // a set load still in flight belongs to the old game
   S.q = ""; S.domainFilter = []; S.typeFilter = []; S.rarityFilter = []; S.limit = 48;
   S.openSet = null;
@@ -3236,6 +3267,9 @@ function tileHtml(c, acts){
  
 /* --------------------------------- render ------------------------------- */
 function render(){
+  // Kicks off any missing fetches for the deck's own sets, and reports how many
+  // are outstanding. Idempotent: each set is asked for once.
+  DECK_DETAIL_PENDING = deckPoolsPending();
   document.getElementById("deckName").value = S.deckName;
   document.getElementById("onboard").hidden = S.pool.length > 0;
   document.getElementById("browser").hidden = S.pool.length === 0;
@@ -3459,11 +3493,60 @@ function findCard(ref){
   const hit = POOL_BY_REF.get(String(ref)) || S.pool.find(c => refOf(c) === ref);
   if(hit) return hit;
   if(GAME.lazySets){
+    // Any set fetched this session, not just the open one.
+    const cached = PK_BY_REF.get(String(ref));
+    if(cached) return cached;
     const e = pkIndexEntry(ref);
     if(e) return pkLightCard(e);
   }
   return null;
 }
+/* ---------------- full detail for the cards in the deck -------------------
+   The search index answers a tile, a deck row and the copy limit, and that was
+   the whole job until the deck panel started reporting on supertypes, subtypes,
+   attack costs and evolution lines. None of those are in the index, and a
+   60-card deck spans a dozen sets while one set's pool is in memory.
+
+   Rather than grow a 2 MB file every visitor downloads (measured: +24%, paid
+   even by someone who never opens a deck), the deck's OWN sets are fetched on
+   demand and cached — the same detail-on-demand move openCard() already makes
+   for a light card. A deck's sets are few, the fetches are parallel, and a
+   browser that never opens a Pokémon deck pays nothing.
+
+   Until they land the panel says so rather than reporting numbers computed from
+   cards it cannot see: a quietly wrong count is worse than a visible pending
+   state. */
+const DECK_POOLS_ASKED = new Set();   // sets already requested, so this is idempotent
+
+/* Which of the deck's sets still have no pool. Kicks off the missing fetches
+   and returns how many are outstanding, so the panel can render pending. */
+function deckPoolsPending(){
+  if(!GAME.lazySets) return 0;
+  const sets = new Set();
+  for(const z of Object.keys(S.zones))
+    for(const c of S.zones[z]) if(c.set) sets.add(c.set);
+  const missing = [...sets].filter(code => !POOL_CACHE.has(code));
+  for(const code of missing){
+    if(DECK_POOLS_ASKED.has(code)) continue;
+    DECK_POOLS_ASKED.add(code);
+    loadSetPool(code)
+      .then(() => { hydrateDeckDetail(); render(); })
+      .catch(() => { /* the row still works; the panel keeps saying pending */ });
+  }
+  return missing.length;
+}
+
+/* Swap light deck rows for the real cards now that their sets are in. Keeps the
+   row's identity (its own id) and quantity — only the card data is replaced. */
+function hydrateDeckDetail(){
+  for(const z of Object.keys(S.zones))
+    S.zones[z] = S.zones[z].map(c => {
+      if(!c.light) return c;
+      const full = PK_BY_REF.get(refOf(c));
+      return full ? {...full, id:c.id, qty:c.qty} : c;
+    });
+}
+
 /* An index entry (has `n`) or a card (has `name`) -> a card. */
 const asCard = x => x && x.name !== undefined
   ? x : (POOL_BY_REF.get(String(x.id)) || pkLightCard(x));
@@ -3793,6 +3876,7 @@ async function loadSetPool(code){
     .map(c => normalize({...c, set: code, setName: meta?.name || code}));
   if(!list.length) throw new Error(`${label}: no cards in the pool file`);
   POOL_CACHE.set(code, list);
+  for(const c of list) PK_BY_REF.set(refOf(c), c);
   return list;
 }
 
