@@ -1318,6 +1318,31 @@ function rbValidate(){
    Advisory only: an incomplete deck is still savable, exactly as a Riftbound
    deck under 40 is. Format legality (Standard / Expanded) is stored on the
    card and deliberately not enforced. */
+/* Copies in the main deck carrying `subtype`, across every card that does. */
+const pkSubtypeCount = st => S.zones.main
+  .filter(c => (c.subtypes || []).includes(st))
+  .reduce((n, c) => n + c.qty, 0);
+const pkSubtypeQty = st => S.zones.main
+  .filter(c => (c.subtypes || []).includes(st));
+
+/* Add-time gate, the same shape as the copy limit: a blocked add says why and
+   changes nothing. Returns a message, or null to allow.
+
+   Only as good as the detail loaded — a deck row still waiting for its set's
+   pool has no subtypes to test. pkValidate() catches what slips through, which
+   is the same division of labour the copy limit already uses for unresolved
+   entries. */
+function pkBlockAdd(card){
+  for(const cap of GAME.rules.subtypeCaps || []){
+    if(!(card.subtypes || []).includes(cap.subtype)) continue;
+    if(pkSubtypeCount(cap.subtype) < cap.max) continue;
+    const held = pkSubtypeQty(cap.subtype).map(c => c.name);
+    return `Only ${cap.max} ${cap.label} per deck`
+      + (held.length ? ` — this deck already has ${held.join(", ")}.` : ".");
+  }
+  return null;
+}
+
 function pkValidate(){
   const probs = [];
   const target = GAME.rules.deckSizeExact;
@@ -1344,6 +1369,19 @@ function pkValidate(){
   if(over.length)
     probs.push(`Over ${limit} copies by card name: `
       + over.map(e => `${esc(e.label)} (${e.copies})`).join(", ") + `.`);
+  /* Subtype-scoped checks need the deck's own sets loaded to be true, so they
+     stay quiet while that is outstanding rather than reporting "no Basic
+     Pokémon" about a deck whose Pokémon simply have not arrived yet. */
+  if(POOL_READY && !DECK_DETAIL_PENDING && zoneCount("main") > 0){
+    if(!S.zones.main.some(c => c.basicPokemon))
+      probs.push(`No Basic Pokémon — a deck needs at least one to start a game.`);
+    for(const cap of GAME.rules.subtypeCaps || []){
+      const n = pkSubtypeCount(cap.subtype);
+      if(n > cap.max)
+        probs.push(`${n} ${esc(cap.label)} cards — the limit is ${cap.max} per deck: `
+          + pkSubtypeQty(cap.subtype).map(c => esc(c.name)).join(", ") + `.`);
+    }
+  }
   return probs;
 }
 /* --------------------------- the game registry ---------------------------
@@ -1395,6 +1433,7 @@ const GAMES = {
       collectionCap: 3,
       playset: 3,
       unlimitedCopies: null,
+      subtypeCaps: [],
     },
     ls: { deck:"riftbound-deckbuilder-v1", openDeck:"rb.open-deck" },
     normalize: rbNormalize,
@@ -1443,6 +1482,14 @@ const GAMES = {
       collectionCap: 4,
       playset: 4,
       unlimitedCopies: c => !!c.basicEnergy,
+      /* At most ONE card carrying each of these subtypes, counted across every
+         card that carries it rather than per name: a second ACE SPEC is illegal
+         even when it is a different ACE SPEC, which is the opposite shape from
+         the 4-copy-by-name limit and why it needs its own rule. */
+      subtypeCaps: [
+        {subtype:"ACE SPEC", max:1, label:"ACE SPEC"},
+        {subtype:"Radiant",  max:1, label:"Radiant Pokémon"},
+      ],
     },
     ls: { deck:"pokemon.deck", openDeck:"pokemon.open-deck" },
     normalize: pkNormalize,
@@ -1457,6 +1504,7 @@ const GAMES = {
     colTag: pkColTag,
     searchMatch: pkSearchMatch,
     validate: pkValidate,
+    blockAdd: pkBlockAdd,
   },
 };
 const GAME_IDS = Object.keys(GAMES);
@@ -3579,6 +3627,10 @@ window.addCard = (id, zone) => {
     S.unresolved = S.unresolved.filter(u => u.zone !== "legend");
     touch(); render(); return;
   }
+  // A game may refuse an add outright — Pokémon caps ACE SPEC and Radiant at
+   // one per deck across all such cards. Riftbound declares no such rule.
+  const blocked = GAME.blockAdd?.(card, zone);
+  if(blocked){ note(blocked); return; }
   const list = S.zones[zone];
   /* Match on the REF, not the name. A Pokémon card name is reprinted set after
      set, so a name match silently bumped the printing already in the deck
