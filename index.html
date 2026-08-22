@@ -93,6 +93,9 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute);
   white-space:nowrap}
 .savestate.dirty{color:var(--warn)}
+/* A saved deck has nothing to push, so the button reads as unavailable instead
+   of saying "Saved" while still inviting a click. */
+#saveBtn:disabled{opacity:.55; cursor:default}
 .topright{margin-left:auto; display:flex; align-items:center; gap:9px}
 .themebtn{font-family:ui-monospace,Menlo,monospace; font-size:10px;
   letter-spacing:.12em; text-transform:uppercase}
@@ -2653,6 +2656,11 @@ window.clearLocalDeck = gameId => {
 let SAVING = false;
 window.saveDeckCloud = async function(){
   if(MODE !== "cloud" || !window.cloud || SAVING) return;
+  /* The button is disabled when there is nothing to save, but this is also
+     reachable from the dirty-gate dialog and from the console, so the rule lives
+     here as well as in the rendering. A save that FAILED leaves BASELINE alone,
+     so the deck stays dirty and a retry still gets through. */
+  if(!isDirty()) return;
   SAVING = true; renderSaveState();
   try{
     const name = (S.deckName.trim() || "Untitled deck").slice(0,120);
@@ -2706,7 +2714,10 @@ function renderSaveState(){
   }
   btn.hidden = false;
   const dirty = isDirty();
-  btn.disabled = SAVING;
+  /* Nothing to push means nothing to press. A saved deck with no edits left this
+     enabled, so every click was another POST writing the identical payload — and
+     CU-hours are the scarcest thing this project has. */
+  btn.disabled = SAVING || !dirty;
   btn.textContent = SAVING ? "Saving…" : dirty ? "Save deck" : "Saved";
   btn.classList.toggle("go", dirty && !SAVING);
   state.textContent = SAVING ? "saving…" :
