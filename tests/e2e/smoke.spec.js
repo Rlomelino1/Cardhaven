@@ -251,3 +251,117 @@ test.describe("themes", () => {
     expect(relLum(paper)).toBeGreaterThan(0.5);
   });
 });
+
+test.describe("saving", () => {
+  /* A signed-in session, mocked, with a counter on the endpoint. The real auth
+     module dispatches onCloudSession(null) once its own getSession resolves,
+     which would drop us back to local mode mid-test — so that late null is
+     swallowed after the mock is installed. */
+  const signIn = (page) => page.evaluate(() => {
+    window.__writes = 0;
+    const rows = [];
+    window.cloud = {
+      list: async () => ({ data: rows.slice() }),
+      get: async (id) => ({ data: rows.find((r) => r.id === id) || null }),
+      insert: async ({ name, payload }) => {
+        window.__writes++;
+        const r = { id: "r" + (rows.length + 1), name, payload,
+                    game: window.ACTIVE_GAME, updated_at: new Date().toISOString() };
+        rows.push(r);
+        return { data: r };
+      },
+      update: async (id, p) => {
+        window.__writes++;
+        const r = rows.find((x) => x.id === id);
+        Object.assign(r, p);
+        return { data: r };
+      },
+      remove: async () => ({}), saveCollection: async () => ({}),
+      syncCollection: async () => ({ map: {} }), collectionKeepalive: () => {},
+    };
+    const real = window.onCloudSession;
+    window.onCloudSession = (u, ...rest) => {
+      if (!u && window.__mocked) return;
+      return real(u, ...rest);
+    };
+    window.__mocked = true;
+    window.onCloudSession({ id: "u1", email: "t@example.com" }, [], null, { riftbound: {} });
+  });
+
+  const state = (page) => page.evaluate(() => ({
+    text: document.getElementById("saveBtn").textContent.trim(),
+    disabled: document.getElementById("saveBtn").disabled,
+    writes: window.__writes,
+  }));
+
+  test("a saved deck with no changes cannot be saved again", async ({ page }) => {
+    /* Every click used to be another POST writing the identical payload. CU-hours
+       are the scarcest resource here, so an idempotent write is not harmless. */
+    await openApp(page);
+    await signIn(page);
+    await page.waitForTimeout(300);
+
+    await page.evaluate(() => addCard("ogn-001-298", "main"));
+    expect(await state(page)).toMatchObject({ text: "Save deck", disabled: false, writes: 0 });
+
+    await page.locator("#saveBtn").click();
+    await expect(page.locator("#saveBtn")).toBeDisabled();
+    expect(await state(page)).toMatchObject({ text: "Saved", disabled: true, writes: 1 });
+
+    // Clicking anyway — and calling the function directly — must write nothing.
+    for (let i = 0; i < 5; i++) await page.locator("#saveBtn").click({ force: true });
+    await page.evaluate(() => saveDeckCloud());
+    await page.waitForTimeout(300);
+    expect(await state(page)).toMatchObject({ disabled: true, writes: 1 });
+  });
+
+  test("any real change re-enables it, including a rename", async ({ page }) => {
+    await openApp(page);
+    await signIn(page);
+    await page.waitForTimeout(300);
+    await page.evaluate(() => addCard("ogn-001-298", "main"));
+    await page.locator("#saveBtn").click();
+    await expect(page.locator("#saveBtn")).toBeDisabled();
+
+    // a quantity change
+    await page.evaluate(() => bump("main", S.zones.main[0].id, 1));
+    await expect(page.locator("#saveBtn")).toBeEnabled();
+    await page.locator("#saveBtn").click();
+    await expect(page.locator("#saveBtn")).toBeDisabled();
+    expect((await state(page)).writes).toBe(2);
+
+    // the deck NAME is part of what gets stored, so it counts too
+    await page.fill("#deckName", "Renamed");
+    await expect(page.locator("#saveBtn")).toBeEnabled();
+  });
+
+  test("a brand-new deck is savable even though nothing has been edited",
+    async ({ page }) => {
+      /* Dirty means "differs from the stored row", and a deck with no row at all
+         differs from it by definition — otherwise a fresh deck could never be
+         saved the first time. */
+      await openApp(page);
+      await signIn(page);
+      await page.waitForTimeout(300);
+      expect(await page.evaluate(() => ({ deckId: S.deckId, dirty: isDirty() })))
+        .toEqual({ deckId: null, dirty: true });
+      await expect(page.locator("#saveBtn")).toBeEnabled();
+    });
+
+  test("a failed save leaves the deck dirty so it can be retried", async ({ page }) => {
+    await openApp(page);
+    await signIn(page);
+    await page.waitForTimeout(300);
+    await page.evaluate(() => {
+      window.cloud.insert = async () => ({ error: "network is down" });
+      addCard("ogn-001-298", "main");
+    });
+    await page.locator("#saveBtn").click();
+    await page.waitForTimeout(300);
+    // Still dirty, still pressable, and it said what went wrong.
+    expect(await page.evaluate(() => isDirty())).toBe(true);
+    await expect(page.locator("#saveBtn")).toBeEnabled();
+    expect(await page.evaluate(() =>
+      document.getElementById("notice").textContent)).toContain("network is down");
+  });
+});
