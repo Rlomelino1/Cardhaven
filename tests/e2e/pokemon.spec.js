@@ -875,16 +875,32 @@ test.describe("filter bar layout", () => {
      separate containers so each still renders itself; display:contents is what
      puts their chips into one flex row. Pokémon is the demanding case at 14
      chips — Riftbound has 12 and inherits the same markup. */
+  /* Wide enough that the chips cannot wrap for want of room in ANY font. The
+     default 1280 leaves the browse column ~880px, which fits 14 chips in
+     Windows' metrics and not in the Linux ones CI runs — the change under test
+     is that the two groups share a row, not that the row never wraps, so pin
+     the width rather than assert a coincidence. */
+  test.use({ viewport: { width: 1600, height: 1000 } });
+
   const chipLines = (page, a, b) => page.evaluate(([a, b]) => {
     const chips = [...document.querySelectorAll(`${a} .chip, ${b} .chip`)];
     const tops = new Set(chips.map(c => Math.round(c.getBoundingClientRect().top)));
-    return { lines: tops.size, chips: chips.length };
+    return {
+      lines: tops.size,
+      chips: chips.length,
+      /* The structural guarantee, independent of width or font: both groups'
+         chips are laid out by ONE row element. That is what display:contents
+         buys, and it is what "on the same line" actually meant — a single
+         wrapping run instead of two half-empty rows. */
+      rows: new Set(chips.map(c => c.closest(".row"))).size,
+    };
   }, [a, b]);
 
   test("both type axes share one line in the deck browser", async ({ page }) => {
     await openPokemon(page);
     const r = await chipLines(page, "#domainRow", "#typeRow");
     expect(r.chips).toBe(14);
+    expect(r.rows).toBe(1);
     expect(r.lines).toBe(1);
   });
 
@@ -893,6 +909,7 @@ test.describe("filter bar layout", () => {
       await openPokemon(page, { hash: "#collection" });
       const r = await chipLines(page, "#colDomainRow", "#colTypeRow");
       expect(r.chips).toBe(14);
+      expect(r.rows).toBe(1);
       expect(r.lines).toBe(1);
       // The card count keeps its place at the right end of that same row.
       const count = await page.evaluate(() => {
