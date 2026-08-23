@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-EPfkpXLjCubyNNgiN59Ele+yiCZabyRL0GdrIaOjMe8=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-38dpF0MIY3giQE+gbTirzI1fVn0wG8pzdVCDI+vEATE=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -344,15 +344,20 @@ button.gmrow{cursor:pointer}
 .dorphan{font-family:ui-monospace,Menlo,monospace; font-size:10px; color:var(--mute);
   flex:none; cursor:help}
 
-#askModal{position:fixed; inset:0; background:rgba(8,6,14,.6); display:none;
-  place-items:center; padding:20px; z-index:70}
-#askModal.open{display:grid}
+#askModal,#legalModal{position:fixed; inset:0; background:rgba(8,6,14,.6);
+  display:none; place-items:center; padding:20px; z-index:70}
+#askModal.open,#legalModal.open{display:grid}
 .askbox{background:var(--panel); border:1px solid var(--edge); border-radius:6px;
   padding:22px; max-width:430px; width:100%}
 .askbox h3{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:19px; font-weight:600; margin:0 0 10px}
 .askbox p{font-size:13.5px; line-height:1.65; color:var(--text2); margin:0 0 18px}
 .askacts{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+.legalbox{max-width:560px; max-height:80vh; overflow-y:auto}
+.legalbox h4{font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text2); margin:18px 0 6px}
+.legalbox h4:first-of-type{margin-top:0}
+.legalbox p{font-size:12px; line-height:1.7; margin:0}
 
 .viewnav{display:flex; gap:3px; background:var(--ink); border:1px solid var(--edge);
   border-radius:3px; padding:3px}
@@ -566,6 +571,10 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   border-top:1px solid var(--edge); padding-top:13px}
 .legal{margin:36px auto 0; font-size:10px; line-height:1.7; color:var(--mute);
   max-width:64ch; text-align:center}
+.legal + .legal{margin-top:10px}
+.legallink{background:none; border:none; padding:0; font:inherit; color:inherit;
+  text-decoration:underline; cursor:pointer}
+.legallink:hover{color:var(--text2)}
  
 #modal{position:fixed; inset:0; background:rgba(8,6,14,.85); display:none;
   place-items:center; padding:20px; z-index:50}
@@ -896,17 +905,11 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
 </div>
 
 <footer>
+  <p class="legal" id="legalActive"></p>
   <p class="legal">
-    Unofficial fan tool for personal use. Riftbound, League of Legends, and all card
-    assets belong to Riot Games. Created under Riot Games' &ldquo;Legal Jibber Jabber&rdquo;
-    policy using assets owned by Riot Games. Riot Games does not endorse or sponsor
-    this project.
-  </p>
-  <p class="legal">
-    Card Haven is not affiliated with, endorsed, sponsored, or specifically approved
-    by Nintendo, Creatures Inc., GAME FREAK inc., or The Pok&eacute;mon Company.
-    Pok&eacute;mon and all related names and card images are trademarks and copyrights
-    of their respective owners.
+    Card Haven is an unofficial fan tool for personal use. All card images, names,
+    and game content are property of their respective owners.
+    <button type="button" class="legallink" id="legalAllBtn">View all legal notices</button>
   </p>
 </footer>
 
@@ -917,6 +920,16 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
     <h3 id="askTitle"></h3>
     <p id="askText"></p>
     <div class="askacts" id="askActs"></div>
+  </div>
+</div>
+
+<div id="legalModal">
+  <div class="askbox legalbox">
+    <h3>Legal notices</h3>
+    <div id="legalList"></div>
+    <div class="askacts">
+      <button type="button" class="btn quiet" id="legalClose">Close</button>
+    </div>
   </div>
 </div>
 
@@ -1465,6 +1478,7 @@ const GAMES = {
     searchMatch: rbSearchMatch,
     deckText: rbDeckText,
     validate: rbValidate,
+    legal: "Unofficial fan tool for personal use. Riftbound, League of Legends, and all card assets belong to Riot Games. Created under Riot Games' “Legal Jibber Jabber” policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.",
   },
 
   pokemon: {
@@ -1520,6 +1534,7 @@ const GAMES = {
     validate: pkValidate,
     blockAdd: pkBlockAdd,
     deckStats: pkDeckStats,
+    legal: "Card Haven is not affiliated with, endorsed, sponsored, or specifically approved by Nintendo, Creatures Inc., GAME FREAK inc., or The Pokémon Company. Pokémon and all related names and card images are trademarks and copyrights of their respective owners.",
   },
 };
 const GAME_IDS = Object.keys(GAMES);
@@ -1538,6 +1553,11 @@ function adoptGame(){
   ZONES = GAME.zones;
   window.ACTIVE_GAME = ACTIVE_GAME;
   document.body.classList.toggle("game-pokemon", ACTIVE_GAME === "pokemon");
+  const legal = document.getElementById("legalActive");
+  if(legal){
+    legal.textContent = GAME.legal || "";
+    legal.hidden = !GAME.legal;
+  }
 }
 
 const readActiveGame = () => {
@@ -2315,6 +2335,28 @@ document.getElementById("askActs").addEventListener("click", e => {
 });
 document.getElementById("askModal").addEventListener("click", e => {
   if(e.target.id === "askModal") closeAsk("cancel");
+});
+
+function openLegal(){
+  const list = document.getElementById("legalList");
+  list.replaceChildren();
+  for(const id of GAME_IDS){
+    const g = GAMES[id];
+    if(!g.legal) continue;
+    const h = document.createElement("h4");
+    h.textContent = g.label;
+    const p = document.createElement("p");
+    p.textContent = g.legal;
+    list.append(h, p);
+  }
+  document.getElementById("legalModal").classList.add("open");
+}
+const closeLegal = () =>
+  document.getElementById("legalModal").classList.remove("open");
+document.getElementById("legalAllBtn").addEventListener("click", openLegal);
+document.getElementById("legalClose").addEventListener("click", closeLegal);
+document.getElementById("legalModal").addEventListener("click", e => {
+  if(e.target.id === "legalModal") closeLegal();
 });
 
 async function resolveDirty(text, proceedLabel){
@@ -3455,6 +3497,7 @@ document.addEventListener("keydown", e => {
   if(e.key !== "Escape") return;
   closeModal();
   closeAsk("cancel");
+  closeLegal();
   if(MENU_OPEN) toggleDeckMenu(false);
   if(GAME_MENU_OPEN) toggleGameMenu(false);
   if(SETPICK_OPEN) toggleSetPick(false);
