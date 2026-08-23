@@ -6,12 +6,18 @@ const PIKACHU_BASE2 = "base2-60";
 const BASIC_ENERGY  = "base1-99";
 const SMALL_SET     = "base2";
 
-const problemsAfter = (page, main) => page.evaluate((main) => {
-  freshDeck();
-  S.zones.main = main.map(([ref, qty]) => ({ ...findCard(ref), id: uid(), qty }));
-  render();
-  return document.getElementById("problems").innerText;
-}, main);
+const problemsAfter = async (page, main) => {
+  await page.evaluate((main) => {
+    freshDeck();
+    S.zones.main = main.map(([ref, qty]) => ({ ...findCard(ref), id: uid(), qty }));
+    render();
+  }, main);
+  await page.waitForFunction(() => DECK_DETAIL_PENDING === 0);
+  return page.evaluate(() => {
+    render();
+    return document.getElementById("problems").innerText;
+  });
+};
 
 test.describe("boot and lazy loading", () => {
   test("the manifest and the index load, one set pool loads, not 174", async ({ page }) => {
@@ -144,7 +150,8 @@ test.describe("deck rules", () => {
     const under = await problemsAfter(page, [[BASIC_ENERGY, 59]]);
     expect(under).toMatch(/Deck needs 1 more card — a deck is exactly 60\./);
     const at = await problemsAfter(page, [[BASIC_ENERGY, 60]]);
-    expect(at).toBe("");
+    expect(at).not.toMatch(/exactly 60|over 60/);
+    expect(at).toMatch(/No Basic Pok/);
     const over = await problemsAfter(page, [[BASIC_ENERGY, 61]]);
     expect(over).toMatch(/Deck is 1 card over 60\./);
   });
