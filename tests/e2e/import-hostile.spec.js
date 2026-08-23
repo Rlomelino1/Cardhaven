@@ -1,17 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openApp } from "./helpers.js";
-
-/* The file picker accepts anything a user can select — `accept` on an <input>
-   is a filter in the file dialog, not a guarantee about what arrives. Everything
-   in an imported file is attacker-controlled text: card names, artists, rules
-   text, image URLs, quantities, zone keys, even the shape of the JSON.
-
-   The page's CSP keeps 'unsafe-inline' for script-src (its own handlers are
-   inline), so it does NOT contain injected script. Escaping is the actual
-   defence, which makes these tests the thing standing behind it.
-
-   Each test drives the REAL picker with a real file. window.__pwn is the canary:
-   if any payload achieves script execution, it is set and the test fails. */
+import { openApp, openPokemon } from "./helpers.js";
 
 const upload = (page, name, body) =>
   page.setInputFiles("#picker", {
@@ -22,8 +10,6 @@ const upload = (page, name, body) =>
 
 const pwned = (page) => page.evaluate(() => window.__pwn ?? null);
 
-/* Payloads that try to break out of an HTML attribute, a JS string inside an
-   inline handler, or a text node. */
 const XSS = [
   `<img src=x onerror="window.__pwn=1">`,
   `<script>window.__pwn=1</script>`,
@@ -42,7 +28,6 @@ test.describe("a hostile import cannot execute script", () => {
   for (const [i, payload] of XSS.entries()) {
     test(`payload ${i} in every rendered card field`, async ({ page }) => {
       await openApp(page);
-      // One card, with the payload in every field the UI renders anywhere.
       await upload(page, "evil.json", JSON.stringify({
         pool: [{
           name: payload, artist: payload, text: payload, rarity: payload,
@@ -52,17 +37,14 @@ test.describe("a hostile import cannot execute script", () => {
         }],
       }));
       await expect(page.locator("#results .tile")).toHaveCount(1);
-      // Open the card panel too — a second renderer, with more fields.
       await page.evaluate(() => openCard(refOf(S.pool[0])));
       await page.waitForTimeout(150);
-      // And the deck panel's row renderer.
       await page.evaluate(() => {
         closeModal();
         addCard(refOf(S.pool[0]), "main");
       });
       await page.waitForTimeout(150);
       expect(await pwned(page)).toBeNull();
-      // The payload must be visible as TEXT, not parsed as markup.
       const injected = await page.evaluate(() =>
         document.querySelectorAll("#results script, #modalBox script, #zoneList script").length);
       expect(injected).toBe(0);
@@ -89,15 +71,42 @@ test.describe("a hostile import cannot execute script", () => {
     }));
     await page.waitForTimeout(250);
     expect(await pwned(page)).toBeNull();
-    // It is shown, as text, in the unresolved banner.
     expect(await page.evaluate(() =>
       document.getElementById("problems").innerText)).toContain("img src=x");
   });
 
+  test("a hostile attack cost cannot reach a style attribute", async ({ page }) => {
+    await openPokemon(page);
+    await upload(page, "evil.json", JSON.stringify({
+      kind: "pokemon",
+      name: "hostile",
+      zones: {
+        main: [{
+          name: "Not A Real Card",
+          supertype: "Pok\u00e9mon",
+          subtypes: ["Basic"],
+          costs: ['" onload="window.__pwn=1', "Water"],
+          qty: 1,
+        }],
+      },
+    }));
+    await page.waitForFunction(() => zoneCount("main") === 1);
+    const r = await page.evaluate(() => ({
+      costs: S.zones.main[0].costs,
+      styles: [...document.querySelectorAll(".dsdot")].map((el) => el.getAttribute("style")),
+      handlers: [...document.querySelectorAll("#deckPanel *, #zoneList *")]
+        .flatMap((el) => [...el.attributes].map((a) => a.name))
+        .filter((n) => n.startsWith("on")),
+    }));
+    expect(r.costs).toEqual(["Water"]);
+    for (const style of r.styles)
+      expect(style).toMatch(/^background:var\(--[A-Za-z]+\)$/);
+    expect(r.handlers).toEqual([]);
+    expect(await pwned(page)).toBeNull();
+  });
+
   test("a hostile decklist TEXT import cannot execute script", async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("ch.game", "pokemon"));
-    await openApp(page);
-    await page.waitForFunction(() => PIDX !== null);
+    await openPokemon(page);
     await upload(page, "list.txt",
       ["Pokemon: 4", `4 <img src=x onerror="window.__pwn=1"> SVI 81`,
        `2 x'); window.__pwn=1; // MEW 151`, ""].join("\n"));
@@ -134,9 +143,7 @@ test.describe("a hostile import cannot corrupt state", () => {
       counted: zoneCount("main"),
       stored: JSON.parse(localStorage.getItem("riftbound-deckbuilder-v1") || "null"),
     }));
-    // A resolved card is capped by the copy limit.
     expect(r.resolved).toEqual([3]);
-    // An unresolved one must not be able to carry a billion either.
     expect(Math.max(...r.unresolved, 0)).toBeLessThanOrEqual(3);
     expect(r.counted).toBeLessThanOrEqual(100);
   });
@@ -182,15 +189,11 @@ test.describe("a hostile import cannot corrupt state", () => {
     }
     expect(await pwned(page)).toBeNull();
     expect(errors).toEqual([]);
-    // The app is still usable after all of that.
     expect(await page.evaluate(() => typeof render === "function")).toBe(true);
     await page.evaluate(() => render());
   });
 
   test("an imported pool cannot persist itself into localStorage", async ({ page }) => {
-    /* A malicious pool is scoped to the session: it is never written to storage,
-       so a reload restores the real card data. `load()` also strips a `pool` key
-       out of any legacy blob for exactly this reason. */
     await openApp(page);
     await upload(page, "pool.json", JSON.stringify({
       pool: [{ name: "Fake Card", riftboundId: "evil-001-1", image: "https://evil.example/x.png" }],
@@ -201,16 +204,13 @@ test.describe("a hostile import cannot corrupt state", () => {
       localStorage.getItem("riftbound-deckbuilder-v1") || "");
     expect(stored).not.toContain("Fake Card");
     expect(stored).not.toContain("evil.example");
-    await openApp(page);   // reload
+    await openApp(page);
     expect(await page.evaluate(() => S.pool.length)).toBe(640);
   });
 });
 
 test.describe("what an imported image URL can reach", () => {
   test("a card image is confined to the CSP's hosts", async ({ page }) => {
-    /* An imported pool controls img src. The CSP img-src is the boundary that
-       stops it becoming an outbound beacon, so assert the policy still names
-       only the art hosts and data:. */
     await openApp(page);
     const csp = await page.evaluate(() =>
       document.querySelector('meta[http-equiv="Content-Security-Policy"]').content);
@@ -221,7 +221,6 @@ test.describe("what an imported image URL can reach", () => {
       "https://images.pokemontcg.io",
       "https://images.scrydex.com",
     ]);
-    // No wildcard, and nothing that would allow an arbitrary host.
     expect(img).not.toContain("*");
     expect(img).not.toContain("https:");
   });
@@ -229,7 +228,6 @@ test.describe("what an imported image URL can reach", () => {
   test("a javascript: image URL does not execute", async ({ page }) => {
     await openApp(page);
     await upload(page, "js.json", JSON.stringify({
-      // Needs a set, or the card falls outside the set scope and never renders.
       pool: [{ name: "a", riftboundId: "ogn-999-298", set: "OGN",
                image: "javascript:window.__pwn=1" }],
     }));

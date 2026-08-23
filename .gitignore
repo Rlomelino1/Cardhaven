@@ -46,3 +46,8 @@ local/
 scratch/
 tmp/
 *.local.json
+
+# Project memory & working docs - local only. Kept on disk, never committed:
+# handoffs, audit plans, decision logs, mockups, hygiene logs.
+CLAUDE.md
+docs/

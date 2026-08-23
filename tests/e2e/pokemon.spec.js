@@ -1,38 +1,23 @@
 import { test, expect } from "@playwright/test";
-import { openApp } from "./helpers.js";
+import { openApp, openPokemon } from "./helpers.js";
 
-/* Stage 9: the second game.
-
-   Fixtures are REAL vendored data, not constructions, and every one is asserted
-   to exist before it is used — a re-vendored pool that dropped them should fail
-   loudly here rather than quietly turn this file into a no-op.
-
-   Pikachu is printed in both Base Set and Base Set 2 under the same name and
-   different collector numbers, which is exactly the shape the 4-copy limit has
-   to see through: Pokémon counts copies by NAME across every printing in every
-   set, the opposite axis from Riftbound's printing-group. */
 const PIKACHU_BASE1 = "base1-58";
 const PIKACHU_BASE2 = "base2-60";
-const BASIC_ENERGY  = "base1-99";   // Grass Energy — exempt from the limit
-const SMALL_SET     = "base2";      // 64 cards, loads fast
+const BASIC_ENERGY  = "base1-99";
+const SMALL_SET     = "base2";
 
-/* Land on Pokémon. The active game is a device preference, so setting the key
-   before the first paint is how a returning user's browser starts. */
-async function openPokemon(page, { hash = "", collection = null } = {}) {
-  await page.addInitScript(([col]) => {
-    localStorage.setItem("ch.game", "pokemon");
-    if (col) localStorage.setItem("rb.collection", col);
-  }, [collection ? JSON.stringify(collection) : null]);
-  await openApp(page, { hash });
-  await page.waitForFunction(() => PIDX !== null);
-}
-
-const problemsAfter = (page, main) => page.evaluate((main) => {
-  freshDeck();
-  S.zones.main = main.map(([ref, qty]) => ({ ...findCard(ref), id: uid(), qty }));
-  render();
-  return document.getElementById("problems").innerText;
-}, main);
+const problemsAfter = async (page, main) => {
+  await page.evaluate((main) => {
+    freshDeck();
+    S.zones.main = main.map(([ref, qty]) => ({ ...findCard(ref), id: uid(), qty }));
+    render();
+  }, main);
+  await page.waitForFunction(() => DECK_DETAIL_PENDING === 0);
+  return page.evaluate(() => {
+    render();
+    return document.getElementById("problems").innerText;
+  });
+};
 
 test.describe("boot and lazy loading", () => {
   test("the manifest and the index load, one set pool loads, not 174", async ({ page }) => {
@@ -52,7 +37,6 @@ test.describe("boot and lazy loading", () => {
     }));
     expect(r.sets).toBe(174);
     expect(r.index).toBe(20444);
-    // Exactly one pool file, for the one open set. The other 173 stay on disk.
     expect(pools).toHaveLength(1);
     expect(pools[0]).toBe(`${r.openSet}-pool.json`);
     expect(r.cached).toBe(1);
@@ -69,7 +53,6 @@ test.describe("boot and lazy loading", () => {
     await page.evaluate(s => openSet(s), SMALL_SET);
     await page.waitForFunction(s => S.openSet === s, SMALL_SET);
     expect(pools).toEqual([`${SMALL_SET}-pool.json`]);
-    // Re-opening comes out of the session cache — no second request.
     const first = await page.evaluate(() => S.openSet);
     await page.evaluate(() => openSet(GAME.sets[0].code));
     await page.waitForFunction(c => S.openSet === c, await page.evaluate(() => GAME.sets[0].code));
@@ -80,13 +63,7 @@ test.describe("boot and lazy loading", () => {
   });
 
   test("the last set clicked wins a mid-load switch", async ({ page }) => {
-    // Two clicks are two fetches in flight. Without a generation check the
-    // SLOWER one wins by resolving last, so clicking a big set and then a small
-    // one left you on the big set — pool, picker label and notice line all
-    // consistently wrong, which is the hard kind of wrong to notice.
     await openPokemon(page);
-    // Hold sv3's pool open until we let it go, so "the slow one resolves last"
-    // is arranged rather than timed — a sleep here is flaky under a parallel run.
     let release, seen;
     const gate = new Promise(r => { release = r; });
     const requested = new Promise(r => { seen = r; });
@@ -95,13 +72,10 @@ test.describe("boot and lazy loading", () => {
       await gate;
       return route.continue();
     });
-    // Not awaited: openSet only settles when its fetch does, which is the point.
     await page.evaluate(() => { openSet("sv3"); });
     await requested;
     await page.evaluate(s => openSet(s), SMALL_SET);
     await page.waitForFunction(s => S.openSet === s, SMALL_SET);
-    // Now let the superseded fetch land. It must not steal the screen back;
-    // POOL_CACHE gaining sv3 is proof it really did finish.
     release();
     await page.waitForFunction(() => POOL_CACHE.has("sv3"));
     const r = await page.evaluate(s => ({
@@ -116,7 +90,6 @@ test.describe("boot and lazy loading", () => {
     expect(r.poolIsSmallSet).toBe(true);
     expect(r.label).toBe(r.wanted);
     expect(r.stored).toBe(SMALL_SET);
-    // The abandoned fetch is still cached, so nothing was wasted.
     expect(r.cachedAnyway).toBe(true);
   });
 
@@ -130,9 +103,6 @@ test.describe("boot and lazy loading", () => {
   });
 
   test("nothing reaches raw.githubusercontent.com at runtime", async ({ page }) => {
-    // The vendor script fetches from there; the page must not. If this ever
-    // fires, the CSP needs a connect-src entry — which is the signal that a
-    // build-time dependency leaked into the runtime.
     const offsite = [];
     await page.route("**://raw.githubusercontent.com/**", route => {
       offsite.push(route.request().url());
@@ -151,8 +121,6 @@ test.describe("boot and lazy loading", () => {
       for (const e of PIDX) if (e.img) hosts.add(new URL(e.img).host);
       return {
         hosts: [...hosts].sort(),
-        // The tile src is the vendored URL verbatim: no transform params, since
-        // neither host is a transforming CDN and `small` is already the thumb.
         firstSrc: document.querySelector("#results img")?.getAttribute("src"),
         firstRef: refOf(S.pool[0]),
         firstImage: S.pool[0].image,
@@ -173,7 +141,6 @@ test.describe("deck rules", () => {
     }), [PIKACHU_BASE1, PIKACHU_BASE2, BASIC_ENERGY]);
     expect(r[0]).toMatchObject({ name: "Pikachu", set: "base1", basic: false });
     expect(r[1]).toMatchObject({ name: "Pikachu", set: "base2", basic: false });
-    // Two printings, two sets, ONE deck-limit identity.
     expect(r[0].key).toBe(r[1].key);
     expect(r[2]).toMatchObject({ name: "Grass Energy", basic: true });
   });
@@ -183,7 +150,8 @@ test.describe("deck rules", () => {
     const under = await problemsAfter(page, [[BASIC_ENERGY, 59]]);
     expect(under).toMatch(/Deck needs 1 more card — a deck is exactly 60\./);
     const at = await problemsAfter(page, [[BASIC_ENERGY, 60]]);
-    expect(at).toBe("");
+    expect(at).not.toMatch(/exactly 60|over 60/);
+    expect(at).toMatch(/No Basic Pok/);
     const over = await problemsAfter(page, [[BASIC_ENERGY, 61]]);
     expect(over).toMatch(/Deck is 1 card over 60\./);
   });
@@ -192,7 +160,6 @@ test.describe("deck rules", () => {
     await openPokemon(page);
     const over = await problemsAfter(page, [[PIKACHU_BASE1, 3], [PIKACHU_BASE2, 2]]);
     expect(over).toMatch(/Over 4 copies by card name: Pikachu \(5\)/);
-    // 3 + 1 across the two printings is four copies of one card: legal.
     const ok = await problemsAfter(page, [[PIKACHU_BASE1, 3], [PIKACHU_BASE2, 1]]);
     expect(ok).not.toMatch(/Over 4 copies/);
   });
@@ -205,8 +172,8 @@ test.describe("deck rules", () => {
       energy: copyCap(findCard(refs[0])),
       pokemon: copyCap(findCard(refs[1])),
     }), [BASIC_ENERGY, PIKACHU_BASE1]);
-    expect(caps.pokemon).toBe(4);   // the stepper stops at 4
-    expect(caps.energy).toBe(60);   // capped only by the deck size
+    expect(caps.pokemon).toBe(4);
+    expect(caps.energy).toBe(60);
   });
 
   test("the stepper enforces the per-card cap, energy excepted", async ({ page }) => {
@@ -224,10 +191,6 @@ test.describe("deck rules", () => {
   });
 
   test("two printings of one card are two deck rows, under one copy limit", async ({ page }) => {
-    // addCard() merged on the card NAME, so clicking Jungle Pikachu after Base
-    // Pikachu bumped the Base row to 2 and the printing actually clicked never
-    // entered the deck. The panel draws one row per printing when the same deck
-    // arrives from storage, so the browser has to agree with it.
     await openPokemon(page);
     const r = await page.evaluate(async refs => {
       freshDeck();
@@ -241,14 +204,11 @@ test.describe("deck rules", () => {
       };
     }, [PIKACHU_BASE1, PIKACHU_BASE2]);
     expect(r.rows).toEqual([`${PIKACHU_BASE1}x1`, `${PIKACHU_BASE2}x1`]);
-    // Separate rows, still one 4-copy limit by name: a 5th is over.
     const over = await problemsAfter(page, [[PIKACHU_BASE1, 4], [PIKACHU_BASE2, 1]]);
     expect(over).toMatch(/Over 4 copies by card name: Pikachu \(5\)/);
   });
 
   test("a deck spanning sets whose pools are not loaded still resolves", async ({ page }) => {
-    // The reason the search index doubles as the resolution layer: only the
-    // open set's pool is in memory, and a 60-card deck is not one set.
     await openPokemon(page);
     const r = await page.evaluate(refs => {
       freshDeck();
@@ -263,14 +223,11 @@ test.describe("deck rules", () => {
     }, [PIKACHU_BASE1, PIKACHU_BASE2, BASIC_ENERGY]);
     expect(r.unresolved).toBe(0);
     expect(r.names).toEqual(["Pikachu", "Pikachu", "Grass Energy"]);
-    expect(r.loadedSets).not.toContain("base1");   // never fetched
+    expect(r.loadedSets).not.toContain("base1");
     expect(r.rows).toContain("Pikachu");
   });
 
   test("a deck row opens the card modal", async ({ page }) => {
-    // The row's click handler read the Riftbound id field, which a Pokémon card
-    // has none of — so it handed a NAME to a resolver that wants a ref, and the
-    // modal simply never opened. Nothing in the console said a word about it.
     await openPokemon(page);
     await page.evaluate(ref => {
       freshDeck();
@@ -297,7 +254,6 @@ test.describe("deck rules", () => {
       pokemon: localStorage.getItem("pokemon.deck"),
       riftbound: localStorage.getItem("riftbound-deckbuilder-v1"),
     }));
-    // Its own key. The Riftbound key is not touched, ever.
     expect(stored.pokemon).toContain("Sixty Sparks");
     expect(stored.riftbound).toBeNull();
     await page.reload();
@@ -315,7 +271,6 @@ test.describe("deck rules", () => {
   test("a deck is bound to its game: the other game's export is refused", async ({ page }) => {
     await openPokemon(page);
     const msg = await page.evaluate(() => {
-      // Drive the importer's own guard rather than a copy of it.
       const raw = { kind: "riftbound", version: 3, name: "RB deck",
                     zones: { main: [{ ref: "ogn-001-298", qty: 3 }] } };
       try {
@@ -325,7 +280,6 @@ test.describe("deck rules", () => {
       } catch (e) { return e.message; }
     });
     expect(msg).toBe("that's a Riftbound deck — switch games first");
-    // And an export from this game names this game.
     expect(await page.evaluate(() => ACTIVE_GAME)).toBe("pokemon");
   });
 });
@@ -345,8 +299,6 @@ test.describe("browsing and search", () => {
   });
 
   test("a type chip narrows to the open set, and the count says which", async ({ page }) => {
-    // The index carries no supertype or energy type, so a chipped search stays
-    // in the loaded pool rather than silently ignoring the chip.
     await openPokemon(page);
     await page.evaluate(s => openSet(s), SMALL_SET);
     await page.waitForFunction(s => S.openSet === s, SMALL_SET);
@@ -362,16 +314,12 @@ test.describe("browsing and search", () => {
   });
 
   test("a rarity filter the newly opened set has no card for is dropped", async ({ page }) => {
-    // Otherwise: an empty grid, "0 cards", and no lit chip anywhere to clear,
-    // because the rarity row only renders the OPEN set's rarities. It reads as
-    // a set that failed to load.
     await openPokemon(page);
     await page.evaluate(() => openSet("sv1"));
     await page.waitForFunction(() => S.openSet === "sv1");
     await page.evaluate(() => toggleFilter("rarityFilter", "Double Rare"));
     expect(await page.evaluate(() => S.rarityFilter)).toEqual(["Double Rare"]);
     expect(await page.locator("#results .tile").count()).toBeGreaterThan(0);
-    // Base has no Double Rare at all.
     await page.evaluate(() => openSet("base1"));
     await page.waitForFunction(() => S.openSet === "base1");
     const r = await page.evaluate(() => ({
@@ -398,14 +346,11 @@ test.describe("browsing and search", () => {
     expect(r.meta).toBe(`Pokémon · ${r.hp} HP · ${r.type}`);
     expect(r.badges).toContain(`${r.hp} HP`);
     expect(r.chips).toContain("Lightning");
-    expect(r.chips).not.toContain("Fury");        // no Riftbound domains
+    expect(r.chips).not.toContain("Fury");
     expect(r.types).toEqual(["Pokémon", "Trainer", "Energy"]);
   });
 
   test("the regulation mark and HP badges stay legible in Paper", async ({ page }) => {
-    // Every Pokemon tile carries both, so themed ink on a fixed dark chip was
-    // two unreadable rectangles per card. See the Riftbound half of this in
-    // smoke.spec.js — the .variant rule is shared.
     const relLum = rgb => {
       const [r, g, b] = rgb.match(/[\d.]+/g).slice(0, 3).map(Number)
         .map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
@@ -423,29 +368,22 @@ test.describe("browsing and search", () => {
   });
 
   test("Riftbound-only deck panels are actually invisible", async ({ page }) => {
-    // Asserted on VISIBILITY, not on the hidden attribute. The attribute was
-    // set correctly all along; a `display:flex` added to #curveBlock (to restore
-    // a flex gap) silently beat [hidden]'s display:none, and the energy curve
-    // went on rendering a 60-brick tower in column 0 for a game whose cards all
-    // have energy 0. An attribute assertion could not see that.
     await openPokemon(page);
     await expect(page.locator("#legendBox")).toBeHidden();
     await expect(page.locator("#curveBlock")).toBeHidden();
     await expect(page.locator(".curve")).toBeHidden();
-    await expect(page.locator("#zoneTabs")).toBeHidden();   // one zone, no tabs
+    await expect(page.locator("#zoneTabs")).toBeHidden();
     const r = await page.evaluate(() => ({
       variantsChip: document.getElementById("typeRow").innerText.includes("Variants"),
       zones: Object.keys(ZONES),
       checks: document.getElementById("checks").innerText.replace(/\n/g, " "),
     }));
-    expect(r.variantsChip).toBe(false);   // no Showcase concept this stage
+    expect(r.variantsChip).toBe(false);
     expect(r.zones).toEqual(["main"]);
     expect(r.checks).toContain("0/60");
   });
 
   test("Riftbound still shows the panels it owns", async ({ page }) => {
-    // The other half: hiding them per game must not hide them everywhere, which
-    // is what an over-broad CSS rule would do.
     await openApp(page);
     await expect(page.locator("#legendBox")).toBeVisible();
     await expect(page.locator("#curveBlock")).toBeVisible();
@@ -454,11 +392,6 @@ test.describe("browsing and search", () => {
   });
 
   test("Show all on a cross-set search really shows every hit", async ({ page }) => {
-    // The handler used to set the limit to S.pool.length, which WAS the result
-    // count back when the pool was the only thing searched. A cross-set search
-    // resolves off the index, so the two numbers parted ways: 3,133 hits, a
-    // 64-card set open, and the button rendered 64 tiles then offered itself
-    // again.
     await openPokemon(page);
     await page.evaluate(s => openSet(s), SMALL_SET);
     await page.waitForFunction(s => S.openSet === s, SMALL_SET);
@@ -475,15 +408,11 @@ test.describe("browsing and search", () => {
     }));
     expect(r.tiles).toBe(hits);
     expect(r.limit).toBe(hits);
-    expect(r.moreHidden).toBe(true);    // nothing left to page to
+    expect(r.moreHidden).toBe(true);
     expect(r.allHidden).toBe(true);
   });
 
   test("a collector number's denominator is the set total, not the file count", async ({ page }) => {
-    // The manifest carries both, and the vendor script's own comment draws the
-    // line: `cards` is what the repo holds, `total` is what the set officially
-    // contains. Progress bars want the former; a printed collector number wants
-    // the latter. They differ for 6 of the 174 sets.
     await openPokemon(page);
     const r = await page.evaluate(() => {
       const split = GAME.sets.filter(s => s.total && s.cards && s.total !== s.cards);
@@ -495,8 +424,6 @@ test.describe("browsing and search", () => {
         sameSet: GAME.numLabel({ set: "base1", number: "58" }),
       };
     });
-    // Fixture check: if a re-vendor ever makes every set agree, this test stops
-    // meaning anything and should say so rather than pass silently.
     expect(r.splitCount).toBeGreaterThan(0);
     expect(r.svp.total).not.toBe(r.svp.cards);
     expect(r.label).toBe(`SVP 1/${r.svp.total}`);
@@ -504,15 +431,13 @@ test.describe("browsing and search", () => {
   });
 
   test("a light card from cross-set search still labels itself", async ({ page }) => {
-    // Index entries carry no supertype, HP or types, so the caption line would
-    // otherwise be empty on a result set that is mostly light cards.
     await openPokemon(page);
     await page.fill("#q", "charizard");
     const metas = await page.evaluate(() =>
       [...document.querySelectorAll("#results .ttype")].map(e => e.textContent.trim()));
     expect(metas.length).toBeGreaterThan(10);
     expect(metas.every(Boolean)).toBe(true);
-    expect(metas.some(m => /\/\d+$/.test(m))).toBe(true);   // "SV3 4/197"
+    expect(metas.some(m => /\/\d+$/.test(m))).toBe(true);
   });
 });
 
@@ -526,22 +451,13 @@ test.describe("the set picker", () => {
       openSeries: setMetaOf(S.openSet).series,
       firstGroup: document.querySelector("#setPickList .spghead").innerText.replace(/\s+/g, " "),
     }));
-    // Every series has a group; only the open set's series is expanded, so the
-    // panel is not a flat 174-row list.
     expect(r.groups).toBe(17);
     expect(r.rowsShown).toBeGreaterThan(0);
     expect(r.rowsShown).toBeLessThan(30);
-    // The heading is CSS-uppercased, so innerText comes back shouting.
     expect(r.firstGroup.toLowerCase()).toContain(r.openSeries.toLowerCase());
   });
 
   test("expanding a series keeps the panel open; picking a set closes it", async ({ page }) => {
-    /* The group header's handler re-renders the list, which detaches the very
-       button that was clicked — so the document-level outside-click guard's
-       e.target.closest() walked a dead chain, returned null, read the click as
-       "outside" and shut the panel. The group DID expand; you just never saw it,
-       because it closed on the same click. Real clicks only: the bug lives in
-       event propagation, so driving toggleSetGroup() directly cannot see it. */
     await openPokemon(page);
     await page.click("#setPickBtn");
     const before = await page.evaluate(() =>
@@ -555,12 +471,10 @@ test.describe("the set picker", () => {
     expect(expanded.open).toBe(true);
     expect(expanded.hidden).toBe(false);
     expect(expanded.rows).toBe(before + 25);
-    // Collapsing it again also stays open.
     await page.locator("#setPickList .spghead", { hasText: "Sword & Shield" }).click();
     expect(await page.evaluate(() => SETPICK_OPEN)).toBe(true);
     expect(await page.evaluate(() =>
       document.querySelectorAll("#setPickList .sprow").length)).toBe(before);
-    // ...but choosing a set still closes it, which is the point of the control.
     await page.locator("#setPickList .sprow").first().click();
     await page.waitForFunction(() => SETPICK_OPEN === false);
     expect(await page.locator("#setPickPanel").isHidden()).toBe(true);
@@ -625,7 +539,6 @@ test.describe("collection", () => {
     const pkRef = await page.evaluate(() => refOf(S.pool[0]));
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("rb.collection")));
     expect(stored).toEqual({ pokemon: { [pkRef]: 2 } });
-    // Switch to Riftbound: its map is its own, and the Pokémon one is untouched.
     await page.evaluate(() => switchGame("riftbound"));
     await page.waitForFunction(() => ACTIVE_GAME === "riftbound" && POOL_READY);
     await page.evaluate(() => colBump("ogn-001-298", 1));
@@ -638,7 +551,6 @@ test.describe("collection", () => {
   });
 
   test("a legacy flat blob lifts to nested with no data loss", async ({ page }) => {
-    // Every browser and every user_settings row holds the flat shape today.
     const legacy = { "ogn-001-298": 3, "ogn-039a-298": 1, "sfd-224*-221": 2 };
     await page.addInitScript(l => localStorage.setItem("rb.collection", JSON.stringify(l)), legacy);
     await openApp(page, { hash: "#collection" });
@@ -650,8 +562,6 @@ test.describe("collection", () => {
     expect(r.nested).toEqual({ riftbound: legacy });
     expect(r.qty).toEqual([3, 1, 2]);
     expect(r.copies).toBe(6);
-    // The write-back is nested, and it happens without the user doing anything
-    // destructive first.
     await page.evaluate(() => colBump("ogn-002-298", 1));
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("rb.collection"))))
       .toEqual({ riftbound: { ...legacy, "ogn-002-298": 1 } });
@@ -660,8 +570,6 @@ test.describe("collection", () => {
   test("a Pokémon collection is per set, with a whole-game total", async ({ page }) => {
     await openPokemon(page, { hash: "#collection" });
     const r = await page.evaluate(() => ({
-      // No "All sets" chip row for a lazy game — the picker is the control, and
-      // 20,444 tiles is not a page.
       colBarHidden: document.getElementById("colSetBar").hidden,
       pickBarHidden: document.getElementById("pickSetBar").hidden,
       scoped: colScoped().length,
@@ -688,9 +596,6 @@ test.describe("collection", () => {
   });
 
   test("the copies readout spans every set, not just the open one", async ({ page }) => {
-    // It summed the loaded pool, which for a lazy game is ONE set — so copies
-    // logged in any other set silently dropped out of a number the header
-    // presents as a total, right above a panel that gets it right.
     await openPokemon(page, { hash: "#collection",
       collection: { pokemon: { "base1-58": 4, "base2-60": 3, "nope-999": 2 } } });
     const r = await page.evaluate(() => ({
@@ -700,8 +605,6 @@ test.describe("collection", () => {
       openSet: S.openSet,
       loaded: [...POOL_CACHE.keys()],
     }));
-    // Seven copies across two sets, neither of them the open one — and the ref
-    // the index cannot place is left out of the count, as everywhere else.
     expect(r.copies).toBe(7);
     expect(r.printings).toBe(2);
     expect(r.readout).toContain("7 copies logged");
@@ -709,8 +612,6 @@ test.describe("collection", () => {
   });
 
   test("a Pokémon printing and a Riftbound one cannot collide", async ({ page }) => {
-    // The refs live in separate game keys now, so even identical ref strings
-    // would be two different collectibles. Belt for 0005's braces.
     await openPokemon(page, { hash: "#collection",
       collection: { pokemon: { "x-1": 4 }, riftbound: { "x-1": 3 } } });
     const pk = await page.evaluate(() => COL["x-1"]);
@@ -736,8 +637,6 @@ test.describe("the game switcher", () => {
     const pk = await page.evaluate(() => ({
       game: ACTIVE_GAME, pool: S.pool.length, cap: GAME.rules.copyLimit,
       zones: Object.keys(ZONES), deckKey: deckKey(),
-      // The auth/data module reads this live, so the decks it lists are this
-      // game's rows.
       moduleGame: window.ACTIVE_GAME,
       persisted: localStorage.getItem("ch.game"),
       label: document.getElementById("gameLabel").textContent,
@@ -749,7 +648,6 @@ test.describe("the game switcher", () => {
       moduleGame: "pokemon", persisted: "pokemon", label: "Pokémon TCG" });
     expect(pk.zones).toEqual(["main"]);
     expect(pk.pool).toBeLessThan(640);
-    // ...and back, with Riftbound exactly as it was.
     await page.click("#gameBtn");
     await page.click("#gameMenu .gmrow[data-a1='riftbound']");
     await page.waitForFunction(() => ACTIVE_GAME === "riftbound" && POOL_READY, null,
@@ -778,7 +676,6 @@ test.describe("the game switcher", () => {
   test("switching with an unsaved deck asks first, and Cancel means cancel", async ({ page }) => {
     await openApp(page);
     await page.evaluate(() => {
-      // Signed-in state is what makes a deck "unsaved": signed out it autosaves.
       MODE = "cloud"; CLOUD_USER = { id: "u1" }; DECKS = []; BASELINE = null;
       freshDeck();
       addCard("ogn-001-298", "main");
@@ -812,9 +709,6 @@ test.describe("the game switcher", () => {
 
 test.describe("the collection's set picker stays current", () => {
   test("logging a copy refreshes the picker's own counts", async ({ page }) => {
-    // renderColSummary paints both set controls, because colBump() takes the
-    // cheap single-tile path and calls only that — so whichever control the
-    // active game uses has to refresh from there or it goes stale on a tap.
     await page.addInitScript(() => localStorage.setItem("ch.game", "pokemon"));
     await page.goto("/#collection");
     await page.waitForFunction(() => typeof POOL_READY !== "undefined" && POOL_READY,
@@ -836,10 +730,6 @@ test.describe("phone width", () => {
     return { left: Math.round(r.left), right: Math.round(r.right), vw: innerWidth };
   }, sel);
 
-  /* Each dropdown hung off a small wrapper sitting well into its row, with a
-     max-width in vw that knew nothing about the offset. The game menu ended 66px
-     past the right edge at this width — its Active/Switch labels with it — and
-     the page has no horizontal scroll, so none of it was reachable. */
   test("every dropdown stays inside the viewport, in both games", async ({ page }) => {
     for (const open of [
       { btn: "#gameBtn", panel: "#gameMenu" },
@@ -863,23 +753,12 @@ test.describe("phone width", () => {
       expect(b.right, `${open.panel} right`).toBeLessThanOrEqual(b.vw);
       await page.keyboard.press("Escape");
     }
-    // And nothing pushed the page itself sideways.
     expect(await page.evaluate(() =>
       document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   });
 });
 
 test.describe("filter bar layout", () => {
-  /* Both type axes (energy types and supertypes) share one wrapping line rather
-     than holding a row each, in the deck browser AND the collection. They stay
-     separate containers so each still renders itself; display:contents is what
-     puts their chips into one flex row. Pokémon is the demanding case at 14
-     chips — Riftbound has 12 and inherits the same markup. */
-  /* Wide enough that the chips cannot wrap for want of room in ANY font. The
-     default 1280 leaves the browse column ~880px, which fits 14 chips in
-     Windows' metrics and not in the Linux ones CI runs — the change under test
-     is that the two groups share a row, not that the row never wraps, so pin
-     the width rather than assert a coincidence. */
   test.use({ viewport: { width: 1600, height: 1000 } });
 
   const chipLines = (page, a, b) => page.evaluate(([a, b]) => {
@@ -888,10 +767,6 @@ test.describe("filter bar layout", () => {
     return {
       lines: tops.size,
       chips: chips.length,
-      /* The structural guarantee, independent of width or font: both groups'
-         chips are laid out by ONE row element. That is what display:contents
-         buys, and it is what "on the same line" actually meant — a single
-         wrapping run instead of two half-empty rows. */
       rows: new Set(chips.map(c => c.closest(".row"))).size,
     };
   }, [a, b]);
@@ -911,7 +786,6 @@ test.describe("filter bar layout", () => {
       expect(r.chips).toBe(14);
       expect(r.rows).toBe(1);
       expect(r.lines).toBe(1);
-      // The card count keeps its place at the right end of that same row.
       const count = await page.evaluate(() => {
         const c = document.getElementById("colCount").getBoundingClientRect();
         const row = document.querySelector(".colchips").getBoundingClientRect();

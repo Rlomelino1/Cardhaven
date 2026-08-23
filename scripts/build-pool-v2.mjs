@@ -1,19 +1,4 @@
 #!/usr/bin/env node
-/**
- * build-pool.mjs (v2) — fetch one Riftbound set into an import-ready pool file.
- *
- * Requires Node 18+. No dependencies.
- *
- *   node build-pool.mjs                  # Origins from Riftcodex
- *   node build-pool.mjs --set sfd        # Spiritforged
- *   node build-pool.mjs --set unl        # Unleashed
- *   node build-pool.mjs --raw            # dump one page and print the real keys
- *
- * Output: <set>-pool.json
- *
- * Mapping follows the documented Riftcodex schema: attributes / classification
- * / media / set / metadata are nested objects, not top-level fields.
- */
  
 const args = process.argv.slice(2);
 const flag = (n, d) => {
@@ -28,7 +13,6 @@ const BASE = "https://api.riftcodex.com";
  
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  
-/* Colorless is a real domain and is legal in every deck — keep it. */
 const DOMAINS = ["Fury", "Calm", "Mind", "Body", "Chaos", "Order", "Colorless"];
 const titleCase = (s) =>
   String(s).charAt(0).toUpperCase() + String(s).slice(1).toLowerCase();
@@ -73,8 +57,6 @@ const toCard = (c) => {
   };
 };
  
-/* -------------------------------- fetch ----------------------------- */
- 
 const fs = await import("node:fs/promises");
  
 const getPage = async (page) => {
@@ -105,7 +87,7 @@ try {
   process.stderr.write(`page 1 → ${raw.length} cards\n`);
  
   for (let page = 2; page <= 25; page++) {
-    await sleep(400); // these are volunteer-run APIs; don't hammer them
+    await sleep(400);
     const json = await getPage(page);
     const batch = unwrap(json);
     process.stderr.write(`page ${page} → ${batch.length} cards\n`);
