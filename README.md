@@ -165,6 +165,9 @@ Card Haven is not affiliated with, endorsed, sponsored, or specifically approved
 Nintendo, Creatures Inc., GAME FREAK inc., or The Pokémon Company. Pokémon and all
 related names and card images are trademarks and copyrights of their respective owners.
 
-Card art is hotlinked from the publishers' own CDNs — `cmsassets.rgpub.io` for
-Riftbound, `images.pokemontcg.io` and `images.scrydex.com` for Pokémon — and is not
-redistributed here. Non-commercial, personal use.
+No card images are redistributed here; every one is hotlinked and served by someone else.
+Card fronts come from the publishers' own CDNs — `cmsassets.rgpub.io` for Riftbound,
+`images.pokemontcg.io` and `images.scrydex.com` for Pokémon. Card backs come from two
+third-party archives rather than a publisher: `raw.githubusercontent.com` (a
+fan-maintained image repository, pinned to a commit) and `archives.bulbagarden.net` (a
+community wiki archive). Non-commercial, personal use.
