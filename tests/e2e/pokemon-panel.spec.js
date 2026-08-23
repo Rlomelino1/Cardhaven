@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openApp } from "./helpers.js";
+import { openApp, openPokemon } from "./helpers.js";
 
 const MIRAIDON = "sv1-81";
 const SCATTER  = "sv1-8";
@@ -13,12 +13,6 @@ const RESEARCH = "sv1-189";
 const L_ENERGY = "sv1-257";
 const W_ENERGY = "sv2-279";
 const SPECIAL  = "sv4-266";
-
-async function openPokemon(page) {
-  await page.addInitScript(() => localStorage.setItem("ch.game", "pokemon"));
-  await openApp(page);
-  await page.waitForFunction(() => PIDX !== null);
-}
 
 async function build(page, refs) {
   await page.evaluate(async (refs) => {

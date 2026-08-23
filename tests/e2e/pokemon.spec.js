@@ -1,19 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { openApp } from "./helpers.js";
+import { openApp, openPokemon } from "./helpers.js";
 
 const PIKACHU_BASE1 = "base1-58";
 const PIKACHU_BASE2 = "base2-60";
 const BASIC_ENERGY  = "base1-99";
 const SMALL_SET     = "base2";
-
-async function openPokemon(page, { hash = "", collection = null } = {}) {
-  await page.addInitScript(([col]) => {
-    localStorage.setItem("ch.game", "pokemon");
-    if (col) localStorage.setItem("rb.collection", col);
-  }, [collection ? JSON.stringify(collection) : null]);
-  await openApp(page, { hash });
-  await page.waitForFunction(() => PIDX !== null);
-}
 
 const problemsAfter = (page, main) => page.evaluate((main) => {
   freshDeck();

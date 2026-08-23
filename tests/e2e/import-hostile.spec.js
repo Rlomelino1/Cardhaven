@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openApp } from "./helpers.js";
+import { openApp, openPokemon } from "./helpers.js";
 
 const upload = (page, name, body) =>
   page.setInputFiles("#picker", {
@@ -76,9 +76,7 @@ test.describe("a hostile import cannot execute script", () => {
   });
 
   test("a hostile decklist TEXT import cannot execute script", async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("ch.game", "pokemon"));
-    await openApp(page);
-    await page.waitForFunction(() => PIDX !== null);
+    await openPokemon(page);
     await upload(page, "list.txt",
       ["Pokemon: 4", `4 <img src=x onerror="window.__pwn=1"> SVI 81`,
        `2 x'); window.__pwn=1; // MEW 151`, ""].join("\n"));
