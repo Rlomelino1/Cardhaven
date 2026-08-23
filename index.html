@@ -518,7 +518,10 @@ body.game-pokemon .crlabel{width:170px}
 .frame{position:relative; border:none; border-radius:6px; padding:2px; cursor:pointer;
   display:block; width:100%; line-height:0; box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .tile.flagged .frame{box-shadow:0 0 0 1px var(--warn)}
-.frame.land img,.cframe.land img{object-fit:contain}
+.frame.land,.cframe.land{aspect-ratio:744/1039}
+.frame.land img,.cframe.land img{position:absolute; top:50%; left:50%;
+  width:139.65%; height:71.61%; aspect-ratio:auto; object-fit:cover;
+  transform:translate(-50%,-50%) rotate(-90deg)}
 .frame img,.frame svg{width:100%; height:auto; display:block; border-radius:4px;
   background:var(--tile-bg); aspect-ratio:744/1039}
 .orb{position:absolute; top:6px; left:6px; width:20px; height:20px; border-radius:50%;

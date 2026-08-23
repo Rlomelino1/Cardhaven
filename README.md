@@ -88,9 +88,12 @@ registry entry.
 
 Riftbound battlefields are printed landscape — Riot serves them as 1038x744 files, against
 744x1039 for everything else. `GAMES.riftbound.landscape(c)` marks them, which tags the tile
-and the card modal. In the grid the slot stays portrait so rows keep aligning and the art is
-letterboxed inside it; in the modal the card renders landscape and its back turns with it.
-A game with no landscape cards declares nothing.
+and the card modal. In the grid the slot stays portrait so rows keep aligning, and the card is
+turned 90 degrees to fill it edge to edge rather than sitting letterboxed inside it — the art
+reads sideways, which is the trade a flat image forces: it cannot both fill an upright slot and
+stay horizontal. In the modal there is no such conflict, so the card renders landscape at its
+natural orientation and its back turns to match. A game with no landscape cards declares
+nothing.
 
 ### Maintenance notes
 

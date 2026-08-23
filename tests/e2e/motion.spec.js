@@ -472,34 +472,72 @@ test.describe("battlefields are printed landscape", () => {
     expect(r.anyOther).toBe(false);
   });
 
-  test("the tile keeps a portrait slot and letterboxes the art", async ({ page }) => {
-    await openApp(page);
-    await page.evaluate(() => { S.typeFilter = ["Battlefield"]; render(); });
-    await page.waitForFunction(
-      () => document.querySelectorAll("#results .frame.land").length > 0);
-    const r = await page.evaluate(() => {
-      const f = document.querySelector("#results .frame.land");
-      const box = f.getBoundingClientRect();
-      return { fit: getComputedStyle(f.querySelector("img")).objectFit,
-               portraitSlot: box.height > box.width,
-               plain: document.querySelectorAll("#results .frame:not(.land)").length };
+  test("the tile turns the card to fill its portrait slot, undistorted",
+    async ({ page }) => {
+      await openApp(page);
+      await page.evaluate(() => { S.typeFilter = ["Battlefield"]; render(); });
+      await page.waitForFunction(
+        () => document.querySelectorAll("#results .frame.land").length > 0);
+      await page.waitForFunction(() => {
+        const i = document.querySelector("#results .frame.land img");
+        return i && i.complete && i.naturalWidth > 0;
+      });
+      const r = await page.evaluate(() => {
+        const f = document.querySelector("#results .frame.land");
+        const img = f.querySelector("img");
+        const slot = f.getBoundingClientRect(), painted = img.getBoundingClientRect();
+        return {
+          portraitSlot: slot.height > slot.width,
+          preRotateLandscape: img.offsetWidth > img.offsetHeight,
+          fillsW: Math.abs(painted.width - slot.width) < 6,
+          fillsH: Math.abs(painted.height - slot.height) < 6,
+          rotated: getComputedStyle(img).transform,
+          boxAspect: img.offsetWidth / img.offsetHeight,
+          srcAspect: img.naturalWidth / img.naturalHeight,
+          plain: document.querySelectorAll("#results .frame:not(.land)").length,
+        };
+      });
+      expect(r.portraitSlot).toBe(true);
+      expect(r.preRotateLandscape).toBe(true);
+      expect(r.fillsW).toBe(true);
+      expect(r.fillsH).toBe(true);
+      expect(r.rotated).not.toBe("none");
+      expect(Math.abs(r.boxAspect - r.srcAspect)).toBeLessThan(0.05);
+      expect(r.plain).toBe(0);
     });
-    expect(r.fit).toBe("contain");
+
+  test("the collection tile turns it the same way", async ({ page }) => {
+    await openApp(page, { hash: "#collection" });
+    await page.evaluate(() => {
+      COLF.types = ["Battlefield"]; renderCollection();
+    });
+    await page.waitForFunction(
+      () => document.querySelectorAll(".cframe.land").length > 0);
+    const r = await page.evaluate(() => {
+      const f = document.querySelector(".cframe.land");
+      const img = f.querySelector("img");
+      const slot = f.getBoundingClientRect(), painted = img.getBoundingClientRect();
+      return { portraitSlot: slot.height > slot.width,
+               fills: Math.abs(painted.width - slot.width) < 6
+                   && Math.abs(painted.height - slot.height) < 6,
+               rotated: getComputedStyle(img).transform };
+    });
     expect(r.portraitSlot).toBe(true);
-    expect(r.plain).toBe(0);
+    expect(r.fills).toBe(true);
+    expect(r.rotated).not.toBe("none");
   });
 
-  test("a non-landscape card gets neither the class nor contain", async ({ page }) => {
+  test("a portrait card is not turned at all", async ({ page }) => {
     await openApp(page);
     await page.evaluate(() => { S.typeFilter = ["Unit"]; render(); });
     await page.waitForFunction(() => document.querySelectorAll("#results .frame").length > 0);
     const r = await page.evaluate(() => {
       const f = document.querySelector("#results .frame");
       return { land: f.classList.contains("land"),
-               fit: getComputedStyle(f.querySelector("img")).objectFit };
+               transform: getComputedStyle(f.querySelector("img")).transform };
     });
     expect(r.land).toBe(false);
-    expect(r.fit).not.toBe("contain");
+    expect(r.transform).toBe("none");
   });
 
   test("the modal scene is landscape and the back turns to fill it", async ({ page }) => {
