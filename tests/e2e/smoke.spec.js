@@ -414,24 +414,38 @@ test.describe("the browse page ends on a full row", () => {
     await expect(page.locator("#more")).toHaveText(`Show ${first.tiles} more`);
   });
 
+  /* No absolute column counts here. The count depends on how much width the
+     browser gives the grid, and a headless Linux runner reserves no scrollbar
+     where this machine reserves ~15px — enough to change the count at the same
+     viewport width. The property under test is relational anyway: whatever the
+     two counts are, the page re-rounds to whole rows and never shrinks.
+
+     Polled on an interval rather than the default rAF, because rAF stops in a
+     backgrounded page and CI runs several workers at once — the first version of
+     this test timed out there while passing everywhere else. */
   test("a resize re-rounds the page rather than leaving it ragged",
     async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1000 });
       await openApp(page);
-      expect((await shelf(page)).cols).toBe(11);
-      // 9 columns: the 55 from 11 columns does not divide by it.
-      await page.setViewportSize({ width: 1600, height: 1000 });
-      await page.waitForFunction(() => {
+      const wide = await shelf(page);
+      expect(wide.lastRow).toBe(wide.cols);
+
+      await page.setViewportSize({ width: 1100, height: 1000 });
+      const settled = await page.waitForFunction((was) => {
         const el = document.getElementById("results");
         const cols = getComputedStyle(el).gridTemplateColumns
           .split(" ").filter((t) => t.endsWith("px")).length;
-        return el.querySelectorAll(".tile").length % cols === 0;
-      }, null, { timeout: 5000 });
+        const tiles = el.querySelectorAll(".tile").length;
+        return cols !== was && tiles % cols === 0 ? { cols, tiles } : null;
+      }, wide.cols, { timeout: 15000, polling: 100 }).then((h) => h.jsonValue());
+
       const r = await shelf(page);
-      expect(r.cols).toBe(9);
+      expect(r.cols, `narrow cols should differ from ${wide.cols}`).not.toBe(wide.cols);
+      expect(r.tiles % r.cols, `${r.tiles} tiles over ${r.cols} columns`).toBe(0);
       expect(r.lastRow).toBe(r.cols);
       // Up, never down: a reader who paged through screens keeps them.
-      expect(r.tiles).toBeGreaterThanOrEqual(55);
+      expect(r.tiles).toBeGreaterThanOrEqual(wide.tiles);
+      expect(settled.cols).toBe(r.cols);
     });
 
   test("Show all is allowed to end ragged — that is the end of the results",
