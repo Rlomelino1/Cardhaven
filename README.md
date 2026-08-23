@@ -81,7 +81,344 @@ regenerated `data/pokemon/`.
 
 One entry in the `GAMES` registry plus one vendor script that transforms the source into
 the internal card shape. There is deliberately no plugin system and no schema
-generalisation beyond that — see `CLAUDE.md`.
+generalisation beyond that. See **Architecture & core logic** below.
+
+## Architecture & core logic
+
+The app is one HTML file with no build step: three inline scripts and one inline
+stylesheet. Two of the scripts are classic scripts holding the app, the third is a
+module holding auth and the Data API client. The code carries no comments by policy —
+this section is where the reasoning lives, and anything not here is an implementation
+detail that was deliberately left undocumented.
+
+### One app, two games: the registry and its adapters
+
+`GAMES` is a registry with one entry per game. An entry owns the game's identity (`id`,
+`label`, two-letter `mark`), its sets or its set *manifest*, its `zones`, its filter
+axes, its `rules`, its localStorage key names, and a list of adapter hooks —
+`normalize`, `refOf`, `cardKeyRef`, `cardLabelRef`, `setCode`, `deckCode`, `numLabel`,
+`tileMeta`, `tileBadges`, `modalMeta`, `colTag`, `searchMatch`, `validate`, `blockAdd`,
+`deckStats`, `deckSections`, `rowBadges`, `deckRowCounts`, `deckText`, `parseDeckText`,
+plus an `artPlaceholder` value.
+
+`ACTIVE_GAME` names the running game, `GAME` is the resolved entry, and `adoptGame()` is
+the single place a switch takes effect: it re-points the mutable aliases (`ZONES`,
+`DOMAINS`, `TYPES`, `RARITY_ORDER`, `DOMAIN_INK`, `RARITY_DOT`) so no call site ever asks
+which game is running. Adding a game is one registry entry plus one vendor script; there
+is no plugin system and no schema generalisation beyond the hooks.
+
+Two constraints are easy to trip over. Adapter functions must be declared **above** the
+registry, because the `GAMES` object literal evaluates its hook references at load time
+and an arrow function defined afterwards is a temporal-dead-zone crash on boot. And the
+game dropdown switches **in place** rather than reloading, because a reload would discard
+an unsaved deck instead of asking about it.
+
+Two fields keep a Riftbound name for a game-neutral job and are deliberately not
+renamed: `domains` is the coloured filter axis (Riftbound domains, Pokémon energy types)
+and `type` is the primary type axis (Riftbound card type, Pokémon supertype). Every
+exported deck file already uses those names, so renaming them would break importing files
+that already exist.
+
+### Eager sets, lazy sets, and the search index
+
+Loading strategy is per game, chosen by `lazySets`.
+
+Riftbound is **eager**: both sets are fetched in parallel and merged into one in-memory
+pool, and a set that fails to load fails the whole load by name with a retry — a partial
+pool would present as a deck full of unresolved cards and a collection full of holes.
+
+Pokémon is **lazy**: 174 sets, 20,444 printings. The set manifest and a global search
+index load when the game activates; a set's full pool loads only when that set is opened,
+then stays cached for the session.
+
+The search index is the load-bearing idea, and it is the **deck-resolution** layer rather
+than just a search layer. A 60-card deck spans many sets while only the open set's pool
+is in memory, yet deck rows and the copy limit still have to resolve. So `findCard()`
+falls back to the index and returns a **light card** (`light: true`) carrying name, set,
+number, image and a Basic Energy flag — everything a tile, a deck row and the copy limit
+need. The card modal fetches the card's real set on demand to fill in HP, types and
+formats. Three consequences follow:
+
+- The index carries a sparse Basic Energy flag, because the copy-limit exemption has to
+  be answerable without loading any pool.
+- Cross-set search runs off the index, but the filter chips read fields the index does
+  not carry. So when any chip is active, search stays inside the loaded set, and the
+  result count says which of the two happened. Silently ignoring an active filter would
+  be worse than saying so.
+- A lazy game has no aggregate collection grid, because 20,444 tiles is not a page. Its
+  collection is always set-scoped, and both the whole-game total and the per-set owned
+  counts come off the index — which is how the set picker shows progress for a set whose
+  cards were never fetched.
+
+### Card identity is two layers, and the two views want opposite things
+
+The deck builder and the collection tracker want opposite behaviour from the same data,
+and collapsing them breaks one of the two. For deck legality a base printing and its
+Showcase printing are **one card** sharing one copy limit. For the collection they are
+**two distinct objects**, because owning the Showcase specifically is the entire point of
+collecting it.
+
+So the collection keys on the full printing ref and nothing else, while deck legality
+derives a separate grouping in two layers:
+
+1. **Within a set**, `copyGroupRef()` strips the variant suffix from the middle id
+   segment, so `ogn-039a-298` and `ogn-039-298` are both card `ogn-039`.
+2. **Across id groups**, `cardKey()` folds groups together by the **base printing's**
+   name — the group member whose id carries no variant suffix — with the trailing
+   `(Alternate Art)`, `(Signature)` or `(Overnumbered)` marker stripped off that one name
+   only. Suffixes are never stripped from arbitrary variant names to build a key: a group
+   can hold `X (Overnumbered)` and `X (Signature)` and no bare `X` at all.
+
+Riftbound needs the second layer because it defines identity for legality by *name*: the
+copy limit is on named cards and a reprint is the same card. On the real merged pool that
+is 640 printings, 562 id groups, 520 cards. All 42 merges are genuine, and they are not
+only cross-set — 29 are within-set merges that layer one alone misses, because a set's
+overnumbered Showcase printings get their own collector number rather than a suffix on
+the base card's.
+
+Name grouping is only correct while two genuinely different cards never share a name.
+That is a property of the data rather than an assumption, so it is asserted by a test
+that compares gameplay fields across every merged group and goes red the day it stops
+holding.
+
+### Deck rules per game, and where a rule is enforced
+
+| | Riftbound | Pokémon |
+|---|---|---|
+| deck size | per-zone targets (40+ main, 12 runes, 3 battlefields, 0-or-8 side) | exactly 60, one zone |
+| copy limit | 3 | 4 |
+| counted by | printing group, then folded across id groups by the base printing's name | card name, across every printing in every set |
+| exempt | — | Basic Energy, entirely |
+| one per deck | — | ACE SPEC and Radiant, each counted across all such cards, not per name |
+| must contain | a Legend | at least one Basic Pokémon |
+| collection cap | 3 | 4 |
+
+The copy limit spans main deck **plus** sideboard, per Riftbound's tournament rules;
+runes and battlefields are separate decks under their own rules and are not counted.
+
+Pokémon has no Legend, no domains and no per-card energy cost, so the Legend box, the
+energy curve and the zone tab row **hide** rather than render empty frames. Format
+legality is stored and never enforced.
+
+Enforcement splits cleanly, and the split is deliberate:
+
+- **Add time blocks.** One `addBlock()` gate is run by *both* add paths — the browse
+  tile's button and the deck row's `+` stepper. Those two once disagreed, because the
+  stepper ran no gates at all, which let a 60-card deck reach 63 and a single ACE SPEC
+  reach three. A new add-time rule goes in that gate or it will be half-enforced. A
+  blocked add carries its reason on the disabled control; only a subtype refusal also
+  writes to the notice line, because the deck-size case is already visible three times
+  over.
+- **Validation only advises.** A deck that *arrives* over size or over cap — an import,
+  an old blob — is reported, never rejected, and `−` always works. The gate stops the app
+  *building* an illegal deck, not opening one. `deckSizeExact` is null for Riftbound,
+  whose main deck is 40 or more, so the size gate is inert there.
+
+### The Pokémon deck panel
+
+All of it renders from one hook, `GAME.deckStats`, into one container, so Riftbound —
+which declares no such hook — cannot be reached by any of it.
+
+**Mulligan odds are exact**: `C(n-b,7)/C(n,7)` in BigInt, against the deck's actual size
+rather than an assumed 60. BigInt is not for the result, which fits a double, but for the
+intermediates that a naive factorial overflows. Reference points: 15 Basics gives 11.8%,
+12 gives 19.1%, 10 gives 25.9%.
+
+**The type-alignment strip matches attack costs, not the Pokémon's own card type.**
+Card-type matching false-flags a Colorless-cost attacker as needing energy it never asks
+for. Colorless generates no requirement, and any Special Energy in the deck suppresses
+the warning outright rather than modelling what each one provides. It is a soft hint and
+never blocks anything.
+
+**Evolution grouping is by name**, because `evolvesFrom` is a name reference upstream —
+the same name-over-printing axis the copy limit uses. Two printings of one pre-evolution
+attach the line to the first of them, and an evolution whose pre-evolution is absent gets
+a muted mark rather than an error, because running one is legal and sometimes deliberate.
+
+The panel needs `supertype`, `subtypes`, `costs` and `evolvesFrom` for every card in the
+deck, and the search index carries none of them. Putting them in the index measured at
++24% on a 2 MB file every visitor downloads, including visitors who never open a deck. So
+the deck's own set pools are fetched on demand and cached instead, the same
+detail-on-demand move the card modal already makes. The price is a real pending state:
+while `DECK_DETAIL_PENDING` is non-zero the panel draws only what it can stand behind and
+the subtype-scoped legality checks stay **silent**. That silence is deliberate — a deck of
+Basics must not be told it has no Basic Pokémon because its Pokémon have not arrived yet.
+
+**Copy as text** emits the Limitless/PTCGL sectioned format and Import reads it back,
+resolving on `(set code, collector number)` and never on the name, because names carry
+parentheses, digits and apostrophes. Nine of the 20,432 code/number pairs are shared by
+two printings; first wins, and both are the same card by name and number. `sets.json`
+carries `ptcgoCode` for 149 of the 174 sets — "SVI" where the internal set id is "sv1" —
+and the rest fall back to the uppercased id, because without it a copied list names its
+sets in a way Pokémon TCG Live does not recognise.
+
+### Storage
+
+- **`decks.game`** scopes deck rows. A deck is bound to its game at creation and never
+  moves, because its payload holds refs that only mean anything inside that game's pool.
+  The auth module reads the active game **live** on every query rather than caching it —
+  a cached value would list one game's rows on the other game's screen. An export names
+  its game, and importing one game's export into the other is refused by name rather than
+  landing as sixty unresolved entries.
+- **The collection blob is nested by game**: `{riftbound:{ref:qty}, pokemon:{ref:qty}}`,
+  still one row and one sync engine. A pre-nesting **flat blob is lifted, never rejected**,
+  and written back nested on the next sync; the shape is decided by inspection, never by
+  trust. Clamping is per owning game.
+- **localStorage.** The four original Riftbound keys (`riftbound-deckbuilder-v1`,
+  `rb.collection`, `rb.variants`, `rb.open-deck`) *are* the Riftbound namespace and must
+  never be renamed, because renaming orphans every existing browser's local state. Newer
+  per-game keys carry the game id. `rb.theme` and `ch.game` are app-level, and
+  `rb.collection` is shared by every game and holds the nested blob.
+
+### Auth and the session
+
+Accounts are Neon Managed Better Auth; data is Neon Postgres through the Data API, with
+Row Level Security as the authorization layer. There is no backend service: the browser
+talks to Postgres over HTTPS with a JWT. The two Neon URLs sit in plain sight in this
+file by design — nothing behind them works without a valid JWT, and **RLS is the security
+boundary**.
+
+The session is a **partitioned (CHIPS) cookie**, and the flow is not obvious:
+
+- Google's callback returns to the app with a one-time verifier in the query string
+  (`?neon_auth_session_verifier=...`). The next `getSession()` call trades it for the
+  session cookie, so `getSession()` is the OAuth **return leg**, not merely a session
+  read. The SDK's own interceptor reads the param out of `location.search`, appends it to
+  the request and sends credentials; nothing in this app hands it over. Calling
+  `getSession()` on load is the whole integration, which is also why it hangs off the
+  load path rather than off any button — the email-verification link lands in a fresh tab
+  that never saw the sign-up form.
+- The response sets `__Secure-neon-auth.session_token` for 7 days with `HttpOnly`,
+  `Secure`, `SameSite=None` and **`Partitioned`**. Partitioning is the mechanism that
+  makes this work at all, because it is what lets the cookie survive in a third-party
+  context.
+- The challenge cookies Neon sends up are spelled **`session_challange`**. Grepping for
+  `challenge` finds nothing.
+- A failed session read is **not** the same as being signed out: a blocked cookie, a CORS
+  failure and an expired session all land in the same place, and painting "Sign in" for
+  all three hides which one happened.
+- Better Auth's error codes are not one vocabulary. The endpoint answers a bad sign-in
+  with `INVALID_EMAIL_OR_PASSWORD`, while the thrown client error carries
+  `invalid_credentials`, and the message text is rewritten too. Both spellings are
+  matched, and the client one is what actually fires.
+
+Signing in **merges** the signed-out deck into the account as an additional deck, for
+every game rather than only the one on screen, because the handoff runs exactly once per
+session and a deck left behind would sit in localStorage unimported. Only the active
+game's import is opened on the table.
+
+### The Data API client, and one lesson it paid for
+
+The token getter is `getSession()` then `session.token`, which the auth SDK has already
+swapped for the JWT the server returns in its `set-auth-jwt` header. `getSession()` is
+cached by the SDK with the JWT's own expiry, so this costs no round trip per query. Every
+normal token fetch also stashes the JWT, because the collection sync's flush-on-tab-close
+has to issue a keepalive fetch synchronously inside `pagehide`, with no time for an async
+lookup. Every cloud result is flattened to `{data, error}` so the app never has to know
+PostgREST's error shape.
+
+The collection write is an upsert carrying only the collection column, so the settings
+column cannot be clobbered. The lesson worth keeping: **a read that does not come back as
+an array is a failed read, not proof that the server is empty.** Treating one as "no row"
+once destroyed a real collection, because the write that followed replaced it with `{}`
+through the upsert. Two rules came out of that — nothing local to contribute means
+nothing is written, whatever the read said; and "no row reported *and* nothing local" is
+resolved by creating the row only if it is genuinely missing (`ON CONFLICT DO NOTHING`,
+so an existing collection is never touched) and then reading again. After that, "no row"
+can only mean the read is failing, which is reported so the retry path can recover.
+
+Merging server and local collections is **max per printing, within each game**. Summing
+would double-count the same physical cards and overwriting either side destroys data.
+
+### The CSP is load-bearing
+
+`script-src` contains no `'unsafe-inline'`. It names each inline script by sha256 instead,
+plus `'self'` for the vendored SDK's module imports. That is what makes the escaping in
+this app worth anything: with `'unsafe-inline'` a missed `esc()` is an XSS, and without it
+the same miss is inert markup. Two rules follow, and breaking either gives a blank page
+rather than a warning:
+
+1. **Edit an inline script, then rehash it**: `node scripts/csp-hashes.mjs --write`. The
+   e2e suite fails if you forget, and `main` will not merge a red suite, so the worst case
+   is a caught mistake rather than a dead site.
+2. **`index.html` stays LF**, pinned by `.gitattributes`. Windows checks out CRLF while
+   Pages serves the LF that git stores, and a hash can only match one of them.
+
+There are **no inline event handlers**, and there must not be new ones — the policy would
+refuse to run them. Controls carry `data-a` (the action) and `data-a1..3` (its arguments),
+dispatched by one delegated listener through the `ACTIONS` map. Card art uses two
+capture-phase listeners keyed on `data-card`, because `error` and `load` do not bubble.
+This is also why no JS-string escaper exists: nothing has to survive the HTML parser and
+then the JS parser, so `esc()` alone is correct everywhere. Reaching for a JS-string
+escaper means an inline handler is being added.
+
+One related gotcha: `csp-hashes.mjs` blanks HTML comments before scanning for scripts,
+because a comment merely *mentioning* a script tag would otherwise be counted as one and
+shift every hash after it.
+
+### Data pipeline and card art
+
+Each game keeps its own best source and its own vendor script, and every source is
+transformed into one internal card shape. There is no unified external API and no attempt
+to find one. Riftbound comes from the Riftcodex API via `build-pool-v2.mjs`; Pokémon comes
+from the `PokemonTCG/pokemon-tcg-data` GitHub repo — raw JSON, no key — via
+`build-pokemon-pools.mjs`. Neither is a build step: both are re-runnable maintenance tools
+whose output is committed. The live pokemontcg.io API is deliberately not used.
+
+Adding a set is a data-only change. Nothing in `index.html` switches on a set code — set
+identity travels on each card's own `set` field and on the set-prefixed ref — and a change
+that needs `if (set === ...)` is a signal the design has drifted.
+
+**Card art is hotlinked, and the URLs are copied verbatim from the source rather than
+rebuilt from a pattern.** Most Pokémon sets serve art from `images.pokemontcg.io`, but the
+four Mega Evolution sets serve cards, set symbols and logos from `images.scrydex.com` under
+a different path shape. A reconstructed URL is wrong for 661 cards today and will be wrong
+again the next time upstream moves hosts.
+
+**The art host lies about missing images, and the page has to notice.**
+`images.pokemontcg.io` answers a card it has no image for with HTTP 404 *and* a decodable
+PNG of the card back, so an `<img>` fires `load` rather than `error` and an `onerror`
+fallback never runs — the card back renders as though it were the card, with the real name
+and HP beside it. The tell is the size: the placeholder is 640×892, which is neither a real
+small (245×342, or 240×330 on the oldest sets) nor a real hires (734×1024).
+`GAME.artPlaceholder` declares those dimensions per game — Riot's CDN 404s properly, so
+Riftbound declares none and never even emits the handler — and the load handler swaps in
+the app's own fallback art. Checking on load costs no request, catches cards that break
+upstream later, and heals itself when real art appears. 52 of the 20,444 images are
+affected today; detection is by dimension, never by a blocklist.
+
+The Pokémon card schema is slimmed deliberately. `supertype` and `subtypes` are kept
+verbatim because they drive the Energy exemption, the filter chips and the ACE SPEC and
+Radiant rules. `number` stays a **string**, because collector numbers include `GG69`,
+`TG12` and `SV107`. `evolvesFrom` is kept as the upstream *name*, and `costs` is the
+deduped union of every attack cost symbol on the card with the `Free` token dropped.
+Absent fields are omitted rather than written as `null`, because at 20,444 cards the nulls
+alone are hundreds of kilobytes. Attack text, abilities, weaknesses and retreat costs stay
+unvendored; anything wanting damage numbers or effect text is a re-vendor and a size
+conversation, not a client change.
+
+### The vendored SDK
+
+The Neon SDK is vendored under `vendor/neon/` so the app loads it from its own origin
+rather than a transforming CDN at runtime. `index.html` imports **`bundle.mjs`**, one file;
+the 132 individual modules stay committed beside it purely as the audit trail for a version
+bump, and nothing fetches them. Measured over HTTP/2, which is what Pages serves: the graph
+costs 232 KB across 132 requests and the auth module reports at 10.6s on a slow-3G profile,
+while the bundle is 135 KB in one request and reports at 7.0s. First paint and
+time-to-cards do not move either way, because the card pool wins that race regardless — so
+the win is entirely how fast a signed-in user's decks appear.
+
+The names the bundle exposes are listed as `ENTRIES[].expose` in `scripts/vendor-neon.mjs`
+and must match `index.html`'s import, or tree-shaking drops what the page then asks for.
+`node scripts/vendor-neon.mjs --bundle-only` rebuilds the bundle from the committed modules
+with no network. esbuild is fetched by `npx` at a pinned version when that script runs; it
+is not a dependency of the app, not in `package.json`, and nothing runs it to serve, test
+or deploy the page.
+
+One measurement caveat worth keeping: **do not measure load performance on a server that
+does not compress.** An earlier pass put time-to-cards on slow 3G at 22 seconds and blamed
+the module graph; the test server was serving the page and the pools uncompressed. With
+gzip it is around 4 seconds on HTTP/1.1 and HTTP/2 alike.
 
 ## Layout
 
@@ -94,21 +431,11 @@ data/pokemon/           174 slim per-set pools + sets.json + search-index.json (
 scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon)
 vendor/neon/            bundle.mjs (what the page loads) + the vendored module graph
 migrations/             schema + tests
-docs/                   decisions, open questions, and runbooks
-CLAUDE.md               working agreement and architecture notes
+tests/                  Playwright e2e suite and a static server
 ```
 
-## Docs
-
-| File | What's in it |
-|---|---|
-| [`CLAUDE.md`](CLAUDE.md) | Architecture, constraints, build order, how to work on this |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Every choice made, and what was rejected |
-| [`docs/BLOCKED.md`](docs/BLOCKED.md) | Open decisions and what they hold up |
-| [`docs/auth-setup.md`](docs/auth-setup.md) | Neon Auth + Google OAuth console runbook |
-| [`docs/deployment.md`](docs/deployment.md) | How Pages is configured, and what was verified |
-| [`docs/persistence-audit.md`](docs/persistence-audit.md) | What the app stores and where it belongs |
-| [`docs/hardening-plan.md`](docs/hardening-plan.md) | Security, testing, and performance audit and plan |
+This README is the only documentation in the repository. Decision logs, runbooks,
+mockups and audit notes are kept outside it and are not published.
 
 ## Tests
 
