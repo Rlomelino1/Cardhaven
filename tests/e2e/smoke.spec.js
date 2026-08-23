@@ -365,3 +365,101 @@ test.describe("saving", () => {
       document.getElementById("notice").textContent)).toContain("network is down");
   });
 });
+
+test.describe("the browse page ends on a full row", () => {
+  /* The grid is auto-fill, so its column count is whatever fits — 11 at 1920px,
+     3 on a phone. A fixed page of 48 therefore landed mid-row at most widths,
+     leaving a ragged last line. The page is now a whole number of rows, rounded
+     UP from 48 so no width shows less than it used to. */
+  const shelf = (page) => page.evaluate(() => {
+    const el = document.getElementById("results");
+    const cols = getComputedStyle(el).gridTemplateColumns
+      .split(" ").filter((t) => t.endsWith("px")).length;
+    const tops = [...el.querySelectorAll(".tile")].map((t) =>
+      Math.round(t.getBoundingClientRect().top));
+    const bottom = Math.max(...tops);
+    return {
+      cols, tiles: tops.length, rows: new Set(tops).size,
+      lastRow: tops.filter((t) => t === bottom).length,
+      limit: S.limit,
+    };
+  });
+
+  // Widths chosen because 48 divides evenly into some and not others.
+  for (const width of [1920, 1600, 1100, 940, 1440, 390]) {
+    test(`at ${width}px the last row is full and the page is not smaller than 48`,
+      async ({ page }) => {
+        await page.setViewportSize({ width, height: 1000 });
+        await openApp(page);
+        const r = await shelf(page);
+        expect(r.cols).toBeGreaterThan(0);
+        expect(r.tiles % r.cols, `${r.tiles} tiles over ${r.cols} columns`).toBe(0);
+        expect(r.lastRow).toBe(r.cols);
+        expect(r.tiles).toBeGreaterThanOrEqual(48);
+        // ...and no more than a row's worth beyond it, so this is a page and not
+        // an excuse to render everything.
+        expect(r.tiles).toBeLessThan(48 + r.cols);
+      });
+  }
+
+  test("paging keeps every drawn row full", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1000 });
+    await openApp(page);
+    const first = await shelf(page);
+    await page.locator("#more").click();
+    const second = await shelf(page);
+    expect(second.tiles).toBe(first.tiles * 2);
+    expect(second.lastRow).toBe(second.cols);
+    // The button offers a whole page, not the old fixed 48.
+    await expect(page.locator("#more")).toHaveText(`Show ${first.tiles} more`);
+  });
+
+  /* No absolute column counts here. The count depends on how much width the
+     browser gives the grid, and a headless Linux runner reserves no scrollbar
+     where this machine reserves ~15px — enough to change the count at the same
+     viewport width. The property under test is relational anyway: whatever the
+     two counts are, the page re-rounds to whole rows and never shrinks.
+
+     Polled on an interval rather than the default rAF, because rAF stops in a
+     backgrounded page and CI runs several workers at once — the first version of
+     this test timed out there while passing everywhere else. */
+  test("a resize re-rounds the page rather than leaving it ragged",
+    async ({ page }) => {
+      await page.setViewportSize({ width: 1920, height: 1000 });
+      await openApp(page);
+      const wide = await shelf(page);
+      expect(wide.lastRow).toBe(wide.cols);
+
+      await page.setViewportSize({ width: 1100, height: 1000 });
+      const settled = await page.waitForFunction((was) => {
+        const el = document.getElementById("results");
+        const cols = getComputedStyle(el).gridTemplateColumns
+          .split(" ").filter((t) => t.endsWith("px")).length;
+        const tiles = el.querySelectorAll(".tile").length;
+        return cols !== was && tiles % cols === 0 ? { cols, tiles } : null;
+      }, wide.cols, { timeout: 15000, polling: 100 }).then((h) => h.jsonValue());
+
+      const r = await shelf(page);
+      expect(r.cols, `narrow cols should differ from ${wide.cols}`).not.toBe(wide.cols);
+      expect(r.tiles % r.cols, `${r.tiles} tiles over ${r.cols} columns`).toBe(0);
+      expect(r.lastRow).toBe(r.cols);
+      // Up, never down: a reader who paged through screens keeps them.
+      expect(r.tiles).toBeGreaterThanOrEqual(wide.tiles);
+      expect(settled.cols).toBe(r.cols);
+    });
+
+  test("Show all is allowed to end ragged — that is the end of the results",
+    async ({ page }) => {
+      await page.setViewportSize({ width: 1920, height: 1000 });
+      await openApp(page);
+      await page.locator("#showAll").click();
+      const r = await shelf(page);
+      expect(r.tiles).toBe(640);          // every card, not a whole-row page
+      await expect(page.locator("#more")).toBeHidden();
+      // Collapsing returns to exactly one full page.
+      await page.locator("#showLess").click();
+      const back = await shelf(page);
+      expect(back.lastRow).toBe(back.cols);
+      expect(back.tiles % back.cols).toBe(0);
+    });
+});

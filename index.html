@@ -24,7 +24,7 @@
      Neon hosts, img-src to the three card-art hosts, and
      base-uri/object-src/form-action shut the usual escalation paths. Endpoints
      must match the NEON config below. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-K+Mag1YI69itJNEnvf8CwyuPfUeph+/iRJwe8v7w2j8=' 'sha256-18+2Tw8QXUVNiunPnBmwZiN27ZByQ9aDm4WAOnVdxNA=' 'sha256-P5ay3voDqDj+tfDrPI2fQSpBrqyL0ggU0a++tlL0fTI=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-K+Mag1YI69itJNEnvf8CwyuPfUeph+/iRJwe8v7w2j8=' 'sha256-7xK0xFodm3nm4tqSLlrNqAjEUWeGKefXbxEBvF4fEsw=' 'sha256-P5ay3voDqDj+tfDrPI2fQSpBrqyL0ggU0a++tlL0fTI=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <!-- Three card-art hosts, one per source. Riot's CDN serves Riftbound.
      Pokémon art comes from images.pokemontcg.io for 170 of the 174 English
      sets and from images.scrydex.com for the four Mega Evolution sets — cards,
@@ -2082,6 +2082,56 @@ let ZONE_TAB = "main";     // which zone the deck panel is showing; transient
    cross-set search resolves off the index, so it routinely matches thousands
    of cards while one 64-card set is in memory. */
 let RESULT_COUNT = 0;
+
+/* ------------------------------ page size --------------------------------
+   The browse grid is auto-fill, so its column count is whatever fits: 11 at
+   1920px, 8 at 1440, 3 on a phone. A fixed page of 48 therefore lands mid-row
+   at most widths — at 1920 it fills four rows and leaves 4 of 11 in the fifth,
+   which reads as a ragged edge rather than a page boundary.
+
+   So the page is a whole number of ROWS, rounded UP from the 48 it has always
+   been. Up, never down, so no width ends up showing less than it used to: 1920
+   goes to 55 (five full rows), 1600 to 54, and the widths where 48 already
+   divides evenly are untouched — including every phone width. */
+const PAGE_MIN = 48;
+const shelfCols = () => {
+  const el = document.getElementById("results");
+  if(!el) return 0;
+  return getComputedStyle(el).gridTemplateColumns
+    .split(" ").filter(t => t.endsWith("px")).length;
+};
+/* 0 columns means the grid is not laid out yet, and the honest answer then is
+   the historical page size — better than re-deriving it from the CSS's own
+   minmax and gap numbers, which would be a second copy of them. */
+const pageSize = () => {
+  const cols = shelfCols();
+  return cols ? Math.ceil(PAGE_MIN / cols) * cols : PAGE_MIN;
+};
+
+/* Resizing changes the column count, which would leave the page ending mid-row
+   again. Snap it up to the next whole row — UP only, so a reader who has paged
+   through several screens does not lose them to a window drag.
+
+   The cost of "up only" is that repeated resizes ratchet the page size a little
+   (five resizes took 55 to 78 in testing). That is the better side of the trade:
+   the alternative rules either shrink the page, which makes tiles vanish
+   mid-scroll, or reset it, which throws away paging. The drift is bounded — at
+   most cols-1 per resize, and render() clamps the limit to the result count
+   anyway.
+
+   Debounced because a resize is a drag, not a click. This is not the banned kind
+   of timer: nothing fires without a resize behind it. */
+let SHELF_COLS = 0, shelfResizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(shelfResizeTimer);
+  shelfResizeTimer = setTimeout(() => {
+    const cols = shelfCols();
+    if(!cols || cols === SHELF_COLS) return;
+    SHELF_COLS = cols;
+    S.limit = Math.ceil(S.limit / cols) * cols;
+    render();
+  }, 150);
+});
 /* How many of the DECK's sets are still without a pool. Non-zero means the
    stats panel and the subtype-scoped legality checks cannot yet see every card
    in the deck, so they say pending instead of reporting a number that is only
@@ -2815,7 +2865,7 @@ window.switchGame = async id => {
   S.pool = []; POOL_BY_REF = new Map(); CARD_INDEX = new Map();
   PIDX = null; PIDX_BY_ID = new Map(); POOL_CACHE.clear(); PK_BY_REF.clear();
   bumpSetLoad();          // a set load still in flight belongs to the old game
-  S.q = ""; S.domainFilter = []; S.typeFilter = []; S.rarityFilter = []; S.limit = 48;
+  S.q = ""; S.domainFilter = []; S.typeFilter = []; S.rarityFilter = []; S.limit = pageSize();
   S.openSet = null;
   initSetScope();
   COLF.q = ""; COLF.tab = "all"; COLF.domains = []; COLF.types = []; COLF.set = "all";
@@ -2971,7 +3021,7 @@ window.toggleSetScope = code => {
     S.setScope = next;
   }
   writeSetScope();
-  S.limit = 48;
+  S.limit = pageSize();
   render();
 };
 
@@ -3983,8 +4033,11 @@ function render(){
     return GAME.searchMatch(c, term);
   });
 
-  // Never let the page size drift past the result count.
-  S.limit = Math.max(48, Math.min(S.limit, Math.max(48, res.length)));
+  /* Never let the page size drift past the result count, and keep it a whole
+     number of rows so the last line the pager draws is full. */
+  const page = pageSize();
+  SHELF_COLS = shelfCols();
+  S.limit = Math.max(page, Math.min(S.limit, Math.max(page, res.length)));
 
   // Count of what search + every active filter currently shows, always against
   // the scope it is counting inside — the readout used to drop "in scope" the
@@ -4022,12 +4075,12 @@ function render(){
  
   RESULT_COUNT = res.length;
   const remaining = Math.max(0, res.length - S.limit);
-  const expanded = S.limit > 48 && res.length > 48;
+  const expanded = S.limit > page && res.length > page;
   const more = document.getElementById("more");
   const showAll = document.getElementById("showAll");
   const showLess = document.getElementById("showLess");
   more.hidden = remaining === 0;
-  more.textContent = `Show ${Math.min(48, remaining)} more`;
+  more.textContent = `Show ${Math.min(page, remaining)} more`;
   showAll.hidden = remaining === 0;
   showAll.textContent = `Show all ${res.length}`;
   showLess.hidden = !expanded;
@@ -4188,10 +4241,10 @@ function pkIndexMatches(term){
  
 window.toggleFilter = (k,v) => {
   S[k] = S[k].includes(v) ? S[k].filter(x=>x!==v) : [...S[k], v];
-  S.limit = 48; render();
+  S.limit = pageSize(); render();
 };
 window.toggleVariants = () => {
-  S.variants = !S.variants; S.limit = 48;
+  S.variants = !S.variants; S.limit = pageSize();
   // A browser-filter preference, not deck content — its own key, never dirty.
   try{ localStorage.setItem(LS_VARIANTS, String(S.variants)); }catch{}
   render();
@@ -4555,7 +4608,7 @@ document.addEventListener("load", e => {
 
 /* --------------------------------- wiring ------------------------------- */
 document.getElementById("q").addEventListener("input", e => {
-  S.q = e.target.value; S.limit = 48; render();
+  S.q = e.target.value; S.limit = pageSize(); render();
 });
 document.getElementById("colQ").addEventListener("input", e => {
   COLF.q = e.target.value; renderCollection();
@@ -4564,13 +4617,13 @@ document.getElementById("deckName").addEventListener("input", e => {
   S.deckName = e.target.value; touch();
 });
 document.getElementById("more").addEventListener("click", () => {
-  S.limit += 48; render();
+  S.limit += pageSize(); render();
 });
 document.getElementById("showAll").addEventListener("click", () => {
   S.limit = RESULT_COUNT; render();
 });
 document.getElementById("showLess").addEventListener("click", () => {
-  S.limit = 48; render();
+  S.limit = pageSize(); render();
   // Collapsing a 352-card grid otherwise leaves you stranded far below it.
   document.getElementById("q").scrollIntoView({behavior:"smooth", block:"start"});
 });
@@ -4746,7 +4799,7 @@ window.openSet = async code => {
     try{ localStorage.setItem(openSetKey(), code); }catch{}
     S.pool = list;
     adoptPool();
-    S.limit = 48;
+    S.limit = pageSize();
     note(`${label} · ${list.length} cards`);
   }catch(err){
     if(seq !== SETLOAD_SEQ) return;

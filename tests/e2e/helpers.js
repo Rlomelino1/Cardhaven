@@ -13,4 +13,15 @@ export async function openApp(page, { hash = "" } = {}) {
   await page.waitForFunction(() => typeof POOL_READY !== "undefined" && POOL_READY, null, {
     timeout: 15_000,
   });
+  /* ...and wait for the auth module to have reported, which is a SEPARATE
+     arrival. The vendored SDK is 132 module files: here it settles long before
+     the pool, but on a cold CI runner it lands after, and its signed-out
+     callback runs `MODE = "local"` plus `freshDeck()` when it finds the app in
+     cloud mode. Any test that forces `MODE = "cloud"` was therefore racing it —
+     the deck it had just built got wiped, or `isDirty()` went false so the
+     unsaved-changes prompt never appeared. Both shapes turned up on CI and
+     neither reproduces here. COL_READY is the observable: it starts false and
+     only onCloudSession sets it. */
+  await page.waitForFunction(() => COL_READY === true, null,
+    { timeout: 15_000, polling: 50 });
 }
