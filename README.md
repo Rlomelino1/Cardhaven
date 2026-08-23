@@ -99,7 +99,7 @@ axes, its `rules`, its localStorage key names, and a list of adapter hooks —
 `normalize`, `refOf`, `cardKeyRef`, `cardLabelRef`, `setCode`, `deckCode`, `numLabel`,
 `tileMeta`, `tileBadges`, `modalMeta`, `colTag`, `searchMatch`, `validate`, `blockAdd`,
 `deckStats`, `deckSections`, `rowBadges`, `deckRowCounts`, `deckText`, `parseDeckText`,
-plus the `artPlaceholder` and `legal` values.
+plus the `artPlaceholder`, `legal` and `cardBack` values.
 
 `ACTIVE_GAME` names the running game, `GAME` is the resolved entry, and `adoptGame()` is
 the single place a switch takes effect: it re-points the mutable aliases (`ZONES`,
@@ -261,6 +261,96 @@ two printings; first wins, and both are the same card by name and number. `sets.
 carries `ptcgoCode` for 149 of the 174 sets — "SVI" where the internal set id is "sv1" —
 and the rest fall back to the uppercased id, because without it a copied list names its
 sets in a way Pokémon TCG Live does not recognise.
+
+### Card motion: grid tilt and the modal flip
+
+Two effects, both of them opt-out rather than opt-in for the browser.
+
+**Grid hover tilt.** A hovered `.frame` lifts and tilts toward the cursor — the corner under
+the pointer presses in, the opposite corner rises, capped at 7° per axis. The transform is
+driven by two custom properties (`--rx`, `--ry`) that CSS reads, so the JavaScript only ever
+writes two numbers and never touches layout. Listeners are **delegated from `document`**, not
+attached per tile: shelves re-render constantly and can hold hundreds of frames, and delegation
+survives every re-render with nothing to rebind. The bounding rect is measured once on pointer
+enter and re-measured on scroll, and writes are gated behind `requestAnimationFrame` so
+intermediate pointer moves between frames are dropped. `will-change: transform` is set by the
+`:hover` rule alone — applying it globally would mean hundreds of permanent compositor layers,
+which costs more than it buys.
+
+The whole effect lives behind `@media (hover:hover)` and is switched off again under
+`prefers-reduced-motion: reduce`, in both the CSS and the JavaScript, leaving those users the
+brightness bump the grid always had. Keyboard focus gets the lift without the tilt, there being
+no pointer to track. Flagged tiles keep their warning ring while hovered, which needs an
+explicit rule because the lift's shadow would otherwise replace it.
+
+**Modal flip.** The card art in the modal is a standard 3D flip: a scene with `perspective`, a
+flipper with `preserve-3d` and a transform transition, and two faces with `backface-visibility:
+hidden`, the back pre-rotated 180°. Rotation is Y-axis only, so the card reads as turning on a
+spit rather than tumbling.
+
+Two ways to turn it: a click on the art, and **dragging the art left or right**. There is no
+flip button — the card is the control. The drag is the interesting one,
+because it is *interactive* rather than a gesture that triggers an animation. While the pointer
+is down the transition is switched off and the rotation is written straight from the pointer
+offset, so the card turns exactly as far as the hand moves — a full 180° costs 60% of the card's
+width. On release, past halfway commits the flip and anything short of halfway returns, easing
+from wherever the card happened to be. So abandoning a drag genuinely almost-flips and falls
+back, rather than snapping.
+
+**Rotation is an accumulating angle, not a boolean.** The first version pinned the resting state
+to a `.flipped` class carrying `rotateY(180deg)`, which meant a leftward drag could only settle
+by unwinding 315° back the other way — it visibly spun the wrong direction to get there. The
+angle is now kept as a running total and the card settles at `base ± 180` in whichever direction
+the hand went, so it always turns the way it was pushed. `.flipped` survives as a state marker
+for parity, not as the source of the transform.
+
+**The turn is clipped while it runs.** A card rotating under perspective projects a near edge
+taller than the card itself, which pushed a scrollbar into the modal whenever the box was
+already at its `90vh` cap. `#modalBox` takes `overflow:hidden` for the duration of the gesture
+and the settle, so the transient growth cannot produce a scrollbar; at rest the modal scrolls
+normally.
+
+The drag also has to not do three things: close the modal (the backdrop's click is swallowed
+once after any real drag), select the card as text (`user-select:none` plus a prevented
+default), or fight vertical scrolling on touch (`touch-action:pan-y`). The scene owns the whole
+gesture, which is why it carries no `data-a` — leaving the delegated click handler in place
+alongside the pointer handler would have flipped twice and looked like nothing happened.
+
+Reduced motion keeps both controls and drops the animation: the faces swap instantly and the
+drag stops tracking, committing or cancelling on release instead.
+
+Note the accessibility consequence of having no button: flipping is pointer-only, so there is
+no keyboard or assistive-technology path to the back face. The card art is an image, not a
+focusable control.
+
+**The back faces are registry data.** `cardBack(c)` is a function rather than a string because
+Riftbound has three backs keyed by card type — black for Legends and Battlefields, white for
+Runes, blue for everything in the main deck — while Pokémon has one for all cards. Both are
+hotlinked like the fronts and carry the same `referrerpolicy="no-referrer"`. They are fetched
+only when a modal opens, never on page load.
+
+The two backs are not framed the same way, and the CSS has to know it. Riftbound's scans bleed
+to the edge, so they take the same 8px corner as everything else. Pokémon's Bulbagarden scan is
+a rounded card inscribed in a square image, with white pixels in the corners, so an 8px corner
+left four white notches showing. The Pokémon back alone is rounded to `5% / 3.6%`, which
+reproduces the card's own ~34px corner at any rendered size. It hangs off the `game-pokemon` body
+class rather than a new registry field, since it describes one image rather than a rule of the
+game. Pokémon *fronts* need nothing: their art bleeds to the edge.
+
+Getting that radius right took measuring the **rendered** pixels rather than the source file. A
+first pass sampled the source for pixels brighter than 225, found the white ran 28px along each
+edge, and set the radius from that — which still left a one-pixel pale arc at every corner,
+because the boundary is anti-aliased and its fringe sits below that threshold. Fitting a circle
+to the arc's actual rendered coordinates gives ~19.5px at a 420px render, i.e. ~34px in the
+source. The lesson is the general one: when a fix is judged by what lands on screen, measure what
+landed on screen.
+
+Neither back host is a publisher CDN: Riftbound's are a pinned commit in a fan-maintained image
+repo and Pokémon's is a wiki archive. That is exactly why a failed back image is not left
+broken — it swaps silently to a generated SVG back built from the registry's own `mark` and
+`label`, with no user-facing notice, since a missing *back* tells the reader nothing useful. The
+same SVG serves any game that has no `cardBack` at all. The front face keeps its own separate
+error path, so the missing-art notice still fires for a front that genuinely has no image.
 
 ### Storage
 

@@ -407,3 +407,50 @@ test.describe("the browse page ends on a full row", () => {
       expect(back.tiles % back.cols).toBe(0);
     });
 });
+
+test.describe("every printing is always shown", () => {
+  test("there is no Variants control anywhere", async ({ page }) => {
+    await openApp(page);
+    const r = await page.evaluate(() => ({
+      chip: document.body.innerText.includes("Variants"),
+      action: typeof window.toggleVariants,
+      state: "variants" in S,
+      byAction: document.querySelectorAll('[data-a="toggleVariants"]').length,
+    }));
+    expect(r.chip).toBe(false);
+    expect(r.action).toBe("undefined");
+    expect(r.state).toBe(false);
+    expect(r.byAction).toBe(0);
+  });
+
+  test("Showcase and alternate-art printings are in the grid by default",
+    async ({ page }) => {
+      await openApp(page);
+      const r = await page.evaluate(() => {
+        S.limit = S.pool.length;
+        render();
+        const shown = document.querySelectorAll("#results .tile").length;
+        return { shown, pool: S.pool.length,
+                 showcase: S.pool.filter(c => c.rarity === "Showcase").length,
+                 alt: S.pool.filter(c => c.alternateArt).length };
+      });
+      expect(r.showcase).toBeGreaterThan(0);
+      expect(r.alt).toBeGreaterThan(0);
+      expect(r.shown).toBe(r.pool);
+    });
+
+  test("an old rb.variants=false in storage no longer hides anything",
+    async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem("rb.variants", "false"));
+      await openApp(page);
+      const r = await page.evaluate(() => {
+        S.limit = S.pool.length;
+        render();
+        return { shown: document.querySelectorAll("#results .tile").length,
+                 pool: S.pool.length,
+                 count: document.getElementById("resultCount").textContent };
+      });
+      expect(r.shown).toBe(r.pool);
+      expect(r.count).toContain("cards in scope");
+    });
+});

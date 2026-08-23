@@ -217,9 +217,11 @@ test.describe("what an imported image URL can reach", () => {
     const img = /img-src ([^;]+)/.exec(csp)[1].trim().split(/\s+/);
     expect(img.sort()).toEqual([
       "data:",
+      "https://archives.bulbagarden.net",
       "https://cmsassets.rgpub.io",
       "https://images.pokemontcg.io",
       "https://images.scrydex.com",
+      "https://raw.githubusercontent.com",
     ]);
     expect(img).not.toContain("*");
     expect(img).not.toContain("https:");
