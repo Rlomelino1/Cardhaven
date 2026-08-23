@@ -60,5 +60,8 @@ Verified, on the bundle and on the 132-file graph side by side: a real sign-in
 attempt against the live auth endpoint produces the same request
 (`POST /neondb/auth/sign-in/email`), the same status, and the same message, so
 the proxy path resolution, better-fetch, zod validation and URL building all
-behave identically. Not verified locally: a *successful* sign-in — the auth
-service rejects a local origin before it gets that far.
+behave identically. A *successful* sign-in cannot be verified locally at all —
+the auth service rejects a local origin before it gets that far — so it was
+checked on production after deploying: signing in works, and an invalid account
+is refused with a 401 on credentials rather than the 403 on origin that a local
+run gets. Nothing here is an open question.
