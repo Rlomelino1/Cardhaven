@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-s0b9HNSG7SFQNpuVmO/Y2gm9AGfTmIWT9utGqlGuGvw=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-R55RrVAolr39wlI9Jau7MkBAd9CLErzjzyC16/xgs28=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -518,6 +518,10 @@ body.game-pokemon .crlabel{width:170px}
 .frame{position:relative; border:none; border-radius:6px; padding:2px; cursor:pointer;
   display:block; width:100%; line-height:0; box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .tile.flagged .frame{box-shadow:0 0 0 1px var(--warn)}
+.frame.land,.cframe.land{aspect-ratio:744/1039}
+.frame.land img,.cframe.land img{position:absolute; top:50%; left:50%;
+  width:139.65%; height:71.61%; aspect-ratio:auto; object-fit:cover;
+  transform:translate(-50%,-50%) rotate(-90deg)}
 .frame img,.frame svg{width:100%; height:auto; display:block; border-radius:4px;
   background:var(--tile-bg); aspect-ratio:744/1039}
 .orb{position:absolute; top:6px; left:6px; width:20px; height:20px; border-radius:50%;
@@ -594,6 +598,9 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
 .box .face.back{position:absolute; inset:0; transform:rotateY(180deg)}
 .box .flipscene img,.box .flipscene svg{width:100%; max-width:none}
 .box .face.back img,.box .face.back svg{height:100%; object-fit:cover}
+.box .flipscene.land .face.back img{position:absolute; top:50%; left:50%;
+  width:71.7%; height:139.5%; object-fit:cover;
+  transform:translate(-50%,-50%) rotate(90deg)}
 body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 .meta{flex:1; min-width:260px}
 .meta h3{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
@@ -1040,6 +1047,8 @@ const rbCardBack = c =>
   (c.type === "Legend" || c.type === "Battlefield") ? RB_BACKS.black
   : c.type === "Rune" ? RB_BACKS.white
   : RB_BACKS.blue;
+
+const rbLandscape = c => c.type === "Battlefield";
 
 const rbRefOf = c => c.riftboundId || c.name;
 const rbCardKeyRef = ref => CARD_INDEX.get(copyGroupRef(ref))?.key || copyGroupRef(ref);
@@ -1520,6 +1529,7 @@ const GAMES = {
     deckText: rbDeckText,
     validate: rbValidate,
     cardBack: rbCardBack,
+    landscape: rbLandscape,
     legal: "Unofficial fan tool for personal use. Riftbound, League of Legends, and all card assets belong to Riot Games. Created under Riot Games' “Legal Jibber Jabber” policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.",
   },
 
@@ -2747,7 +2757,8 @@ function colTileHtml(c){
   const segs = Array.from({length: cap}, (_, i) =>
     `<i class="${q >= i + 1 ? (q >= cap ? "full" : "on") : ""}"></i>`).join("");
   return `<figure class="ctile${missing ? " ismissing" : ""}" data-ref="${esc(id)}">
-    <button class="cframe" style="--fc:${border}" title="${esc(c.name)}"
+    <button class="cframe${GAME.landscape?.(c) ? " land" : ""}" style="--fc:${border}"
+      title="${esc(c.name)}"
       data-a="openCard" data-a1="${esc(id)}">
       ${art}
       <span class="hatch"></span>
@@ -2936,8 +2947,9 @@ function fallbackSvg(c){
     <rect width="74" height="104" fill="${base}" fill-opacity="0.16"/>${circles}</svg>`;
 }
  
-function backSvg(){
-  const p = GAME.artPlaceholder || {w:744, h:1039};
+function backSvg(land){
+  const base = GAME.artPlaceholder || {w:744, h:1039};
+  const p = land ? {w:base.h, h:base.w} : base;
   const cx = Math.round(p.w / 2), cy = Math.round(p.h / 2);
   const pad = Math.round(p.w * 0.055);
   const r = Math.round(p.w * 0.20);
@@ -2992,8 +3004,9 @@ function tileHtml(c, acts){
          data-card="${esc(c.name)}">`
     : fallbackSvg(c);
   const tag = GAME.colTag(c);
+  const land = GAME.landscape?.(c) ? " land" : "";
   return `<figure class="tile${offDomain(c)?" flagged":""}">
-    <button class="frame" style="background:${frameStyle(c)}"
+    <button class="frame${land}" style="background:${frameStyle(c)}"
       title="${esc(c.name)}${tag?" — "+esc(tag):""}"
       data-a="openCard" data-a1="${esc(refOf(c))}">
       ${art}
@@ -3367,10 +3380,13 @@ function paintCard(c){
          data-card="${esc(c.name)}">`
     : fallbackSvg(c);
   const backUrl = GAME.cardBack ? GAME.cardBack(c) : null;
+  const land = !!GAME.landscape?.(c);
   const back = backUrl
-    ? `<img src="${esc(backUrl)}" alt="" referrerpolicy="no-referrer" data-back="1">`
-    : backSvg();
-  document.getElementById("modalBox").innerHTML = `<div class="flipscene">
+    ? `<img src="${esc(backUrl)}" alt="" referrerpolicy="no-referrer"
+         data-back="${land ? "land" : "1"}">`
+    : backSvg(land);
+  document.getElementById("modalBox").innerHTML =
+    `<div class="flipscene${land ? " land" : ""}">
       <div class="flipper" id="cardFlipper">
         <div class="face front">${art}</div>
         <div class="face back">${back}</div>
@@ -3604,7 +3620,10 @@ document.addEventListener("click", e => {
 document.addEventListener("error", e => {
   const img = e.target;
   if(!(img instanceof HTMLImageElement)) return;
-  if(img.dataset.back){ img.outerHTML = backSvg(); return; }
+  if(img.dataset.back){
+    img.outerHTML = backSvg(img.dataset.back === "land");
+    return;
+  }
   if(img.dataset.card) imgFail(img, img.dataset.card);
 }, true);
 document.addEventListener("load", e => {

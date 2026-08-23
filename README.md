@@ -84,6 +84,17 @@ the internal card shape. There is deliberately no plugin system and no schema
 generalisation beyond that: everything a game differs by is a value or a function on its
 registry entry.
 
+### A note on landscape cards
+
+Riftbound battlefields are printed landscape — Riot serves them as 1038x744 files, against
+744x1039 for everything else. `GAMES.riftbound.landscape(c)` marks them, which tags the tile
+and the card modal. In the grid the slot stays portrait so rows keep aligning, and the card is
+turned 90 degrees to fill it edge to edge rather than sitting letterboxed inside it — the art
+reads sideways, which is the trade a flat image forces: it cannot both fill an upright slot and
+stay horizontal. In the modal there is no such conflict, so the card renders landscape at its
+natural orientation and its back turns to match. A game with no landscape cards declares
+nothing.
+
 ### Maintenance notes
 
 Two rules about `index.html`, because breaking either serves a blank page rather than an

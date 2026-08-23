@@ -452,3 +452,145 @@ test.describe("the Pokemon back has no white corners", () => {
       expect(await backRadius(page)).toBe("8px");
     });
 });
+
+test.describe("battlefields are printed landscape", () => {
+  const openType2 = async (page, type) => {
+    await page.evaluate((t) => openCard(refOf(S.pool.find((c) => c.type === t))), type);
+    await page.waitForSelector("#cardFlipper");
+  };
+
+  test("only battlefields are marked landscape", async ({ page }) => {
+    await openApp(page);
+    const r = await page.evaluate(() => {
+      const bf = S.pool.filter((c) => c.type === "Battlefield");
+      const other = S.pool.filter((c) => c.type !== "Battlefield");
+      return { bf: bf.length, allBf: bf.every((c) => GAME.landscape(c)),
+               anyOther: other.some((c) => GAME.landscape(c)) };
+    });
+    expect(r.bf).toBeGreaterThan(0);
+    expect(r.allBf).toBe(true);
+    expect(r.anyOther).toBe(false);
+  });
+
+  test("the tile turns the card to fill its portrait slot, undistorted",
+    async ({ page }) => {
+      await openApp(page);
+      await page.evaluate(() => { S.typeFilter = ["Battlefield"]; render(); });
+      await page.waitForFunction(
+        () => document.querySelectorAll("#results .frame.land").length > 0);
+      await page.waitForFunction(() => {
+        const i = document.querySelector("#results .frame.land img");
+        return i && i.complete && i.naturalWidth > 0;
+      });
+      const r = await page.evaluate(() => {
+        const f = document.querySelector("#results .frame.land");
+        const img = f.querySelector("img");
+        const slot = f.getBoundingClientRect(), painted = img.getBoundingClientRect();
+        return {
+          portraitSlot: slot.height > slot.width,
+          preRotateLandscape: img.offsetWidth > img.offsetHeight,
+          fillsW: Math.abs(painted.width - slot.width) < 6,
+          fillsH: Math.abs(painted.height - slot.height) < 6,
+          rotated: getComputedStyle(img).transform,
+          boxAspect: img.offsetWidth / img.offsetHeight,
+          srcAspect: img.naturalWidth / img.naturalHeight,
+          plain: document.querySelectorAll("#results .frame:not(.land)").length,
+        };
+      });
+      expect(r.portraitSlot).toBe(true);
+      expect(r.preRotateLandscape).toBe(true);
+      expect(r.fillsW).toBe(true);
+      expect(r.fillsH).toBe(true);
+      expect(r.rotated).not.toBe("none");
+      expect(Math.abs(r.boxAspect - r.srcAspect)).toBeLessThan(0.05);
+      expect(r.plain).toBe(0);
+    });
+
+  test("the collection tile turns it the same way", async ({ page }) => {
+    await openApp(page, { hash: "#collection" });
+    await page.evaluate(() => {
+      COLF.types = ["Battlefield"]; renderCollection();
+    });
+    await page.waitForFunction(
+      () => document.querySelectorAll(".cframe.land").length > 0);
+    const r = await page.evaluate(() => {
+      const f = document.querySelector(".cframe.land");
+      const img = f.querySelector("img");
+      const slot = f.getBoundingClientRect(), painted = img.getBoundingClientRect();
+      return { portraitSlot: slot.height > slot.width,
+               fills: Math.abs(painted.width - slot.width) < 6
+                   && Math.abs(painted.height - slot.height) < 6,
+               rotated: getComputedStyle(img).transform };
+    });
+    expect(r.portraitSlot).toBe(true);
+    expect(r.fills).toBe(true);
+    expect(r.rotated).not.toBe("none");
+  });
+
+  test("a portrait card is not turned at all", async ({ page }) => {
+    await openApp(page);
+    await page.evaluate(() => { S.typeFilter = ["Unit"]; render(); });
+    await page.waitForFunction(() => document.querySelectorAll("#results .frame").length > 0);
+    const r = await page.evaluate(() => {
+      const f = document.querySelector("#results .frame");
+      return { land: f.classList.contains("land"),
+               transform: getComputedStyle(f.querySelector("img")).transform };
+    });
+    expect(r.land).toBe(false);
+    expect(r.transform).toBe("none");
+  });
+
+  test("the modal scene is landscape and the back turns to fill it", async ({ page }) => {
+    await openApp(page);
+    await openType2(page, "Battlefield");
+    const r = await page.evaluate(() => {
+      const scene = document.querySelector(".flipscene");
+      const s = scene.getBoundingClientRect();
+      const img = document.querySelector(".face.back img");
+      const painted = img.getBoundingClientRect();
+      return {
+        land: scene.classList.contains("land"),
+        sceneLandscape: s.width > s.height,
+        dataBack: img.dataset.back,
+        preRotate: [Math.round(img.offsetWidth), Math.round(img.offsetHeight)],
+        painted: [Math.round(painted.width), Math.round(painted.height)],
+        face: [Math.round(s.width), Math.round(s.height)],
+      };
+    });
+    expect(r.land).toBe(true);
+    expect(r.sceneLandscape).toBe(true);
+    expect(r.dataBack).toBe("land");
+    expect(r.preRotate[1]).toBeGreaterThan(r.preRotate[0]);
+    expect(r.painted[0]).toBeGreaterThan(r.painted[1]);
+    expect(Math.abs(r.painted[0] - r.face[0])).toBeLessThanOrEqual(2);
+    expect(Math.abs(r.painted[1] - r.face[1])).toBeLessThanOrEqual(2);
+  });
+
+  test("a portrait card's back is not rotated", async ({ page }) => {
+    await openApp(page);
+    await openType2(page, "Unit");
+    const r = await page.evaluate(() => {
+      const img = document.querySelector(".face.back img");
+      return { land: document.querySelector(".flipscene").classList.contains("land"),
+               dataBack: img.dataset.back,
+               transform: getComputedStyle(img).transform };
+    });
+    expect(r.land).toBe(false);
+    expect(r.dataBack).toBe("1");
+    expect(r.transform).toBe("none");
+  });
+
+  test("the generated back follows the orientation when the image fails",
+    async ({ page }) => {
+      await page.route("**/others/back/*.jpg", (route) => route.abort());
+      await openApp(page);
+      await openType2(page, "Battlefield");
+      await page.waitForSelector(".face.back svg[data-backsvg]");
+      const box = await page.evaluate(() => {
+        const vb = document.querySelector(".face.back svg").getAttribute("viewBox")
+          .split(" ").map(Number);
+        return { w: vb[2], h: vb[3] };
+      });
+      expect(box.w).toBeGreaterThan(box.h);
+    });
+});
