@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-38dpF0MIY3giQE+gbTirzI1fVn0wG8pzdVCDI+vEATE=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-p4WWMI4MqiL1Btm7JVXX121Zx6WVcx58TRpnFaDmMN4=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -583,6 +583,14 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   display:flex; gap:24px; max-width:980px; width:100%; flex-wrap:wrap;
   align-items:flex-start; max-height:90vh; overflow:auto}
 .box img,.box svg{width:420px; max-width:100%; border-radius:8px; display:block}
+.box .flipscene{width:420px; max-width:100%; perspective:1400px; cursor:pointer}
+.box .flipper{position:relative; transform-style:preserve-3d;
+  transition:transform 620ms cubic-bezier(.2,.75,.25,1)}
+.box .flipper.flipped{transform:rotateY(180deg)}
+.box .face{backface-visibility:hidden; -webkit-backface-visibility:hidden}
+.box .face.back{position:absolute; inset:0; transform:rotateY(180deg)}
+.box .flipscene img,.box .flipscene svg{width:100%; max-width:none}
+.box .face.back img,.box .face.back svg{height:100%; object-fit:cover}
 .meta{flex:1; min-width:260px}
 .meta h3{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:26px; margin:0 0 8px; font-weight:600}
@@ -678,10 +686,27 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
 
 @media (hover:hover){
   #deckName:hover{background:var(--hover-wash)}
+  .frame{transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))
+    scale(var(--pop,1)); transition:transform 210ms ease-out, box-shadow 210ms ease-out}
+  .frame.tilt{transition:transform 70ms linear, box-shadow 210ms ease-out}
+  .frame:hover,.frame:focus-visible{--pop:1.05; z-index:5; will-change:transform;
+    box-shadow:0 14px 30px rgba(0,0,0,.55)}
+  .tile.flagged .frame:hover,.tile.flagged .frame:focus-visible{
+    box-shadow:0 0 0 1px var(--warn), 0 14px 30px rgba(0,0,0,.55)}
   .frame:hover{filter:brightness(1.12)}
   .btn:hover{border-color:var(--brass); color:var(--brass)}
   .btn.go:hover{color:var(--go-fg); filter:brightness(1.08)}
   .step:hover{border-color:var(--brass); color:var(--brass)}
+}
+
+@media (hover:hover) and (prefers-reduced-motion:reduce){
+  .frame,.frame:hover,.frame:focus-visible{transform:none; transition:none;
+    will-change:auto; box-shadow:0 2px 8px rgba(0,0,0,.4)}
+  .tile.flagged .frame,.tile.flagged .frame:hover,
+  .tile.flagged .frame:focus-visible{box-shadow:0 0 0 1px var(--warn)}
+}
+@media (prefers-reduced-motion:reduce){
+  .box .flipper{transition:none}
 }
 
 @media (hover:none){
@@ -737,6 +762,8 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
     height:100vh; max-height:100vh;
     height:100dvh; max-height:100dvh}
   .box img,.box svg{width:min(260px,55%); margin:0 auto}
+  .box .flipscene{width:min(260px,55%); margin:0 auto}
+  .box .flipscene img,.box .flipscene svg{width:100%; margin:0}
   .meta{min-width:0; flex-basis:100%; display:flex; flex-direction:column}
   .meta h3{font-size:22px}
   .meta .text{font-size:14px; line-height:1.75}
@@ -1001,6 +1028,16 @@ function rbNormalize(c){
     text:c.text ?? null
   };
 }
+const RB_BACKS = {
+  black: "https://raw.githubusercontent.com/choowx2002/project_k_image/1b71a9a87690a852ead0bb48f0e7ad6023b140f6/others/back/black.jpg",
+  white: "https://raw.githubusercontent.com/choowx2002/project_k_image/1b71a9a87690a852ead0bb48f0e7ad6023b140f6/others/back/white.jpg",
+  blue:  "https://raw.githubusercontent.com/choowx2002/project_k_image/1b71a9a87690a852ead0bb48f0e7ad6023b140f6/others/back/blue.jpg",
+};
+const rbCardBack = c =>
+  (c.type === "Legend" || c.type === "Battlefield") ? RB_BACKS.black
+  : c.type === "Rune" ? RB_BACKS.white
+  : RB_BACKS.blue;
+
 const rbRefOf = c => c.riftboundId || c.name;
 const rbCardKeyRef = ref => CARD_INDEX.get(copyGroupRef(ref))?.key || copyGroupRef(ref);
 const rbCardLabelRef = (ref, fallback) =>
@@ -1061,6 +1098,8 @@ function pkNormalize(c){
     energy:0, might:null, power:null, signature:false, alternateArt:false,
   };
 }
+const pkCardBack = () => "https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg";
+
 const pkRefOf = c => c.pokemonId || c.name;
 const pkCardKeyRef = ref => { const e = pkIndexEntry(ref); return e ? nk(e.n) : String(ref).toLowerCase(); };
 const pkCardLabelRef = (ref, fallback) => pkIndexEntry(ref)?.n || fallback;
@@ -1478,6 +1517,7 @@ const GAMES = {
     searchMatch: rbSearchMatch,
     deckText: rbDeckText,
     validate: rbValidate,
+    cardBack: rbCardBack,
     legal: "Unofficial fan tool for personal use. Riftbound, League of Legends, and all card assets belong to Riot Games. Created under Riot Games' “Legal Jibber Jabber” policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.",
   },
 
@@ -1534,6 +1574,7 @@ const GAMES = {
     validate: pkValidate,
     blockAdd: pkBlockAdd,
     deckStats: pkDeckStats,
+    cardBack: pkCardBack,
     legal: "Card Haven is not affiliated with, endorsed, sponsored, or specifically approved by Nintendo, Creatures Inc., GAME FREAK inc., or The Pokémon Company. Pokémon and all related names and card images are trademarks and copyrights of their respective owners.",
   },
 };
@@ -2899,6 +2940,28 @@ function fallbackSvg(c){
     <rect width="74" height="104" fill="${base}" fill-opacity="0.16"/>${circles}</svg>`;
 }
  
+function backSvg(){
+  const p = GAME.artPlaceholder || {w:744, h:1039};
+  const cx = Math.round(p.w / 2), cy = Math.round(p.h / 2);
+  const pad = Math.round(p.w * 0.055);
+  const r = Math.round(p.w * 0.20);
+  return `<svg viewBox="0 0 ${p.w} ${p.h}" data-backsvg="1">
+    <rect width="${p.w}" height="${p.h}" fill="#14101F"/>
+    <rect x="${pad}" y="${pad}" width="${p.w - pad * 2}" height="${p.h - pad * 2}"
+      fill="none" stroke="var(--brass)" stroke-opacity="0.5" stroke-width="3"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+      stroke="var(--brass)" stroke-opacity="0.32" stroke-width="3"/>
+    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central"
+      font-family="ui-monospace,Menlo,monospace" font-size="${Math.round(r * 0.72)}"
+      letter-spacing="${Math.round(r * 0.06)}" fill="var(--brass)"
+      >${esc(GAME.mark || "")}</text>
+    <text x="${cx}" y="${cy + r + Math.round(p.h * 0.06)}" text-anchor="middle"
+      font-family="ui-monospace,Menlo,monospace" font-size="${Math.round(p.w * 0.04)}"
+      letter-spacing="${Math.round(p.w * 0.012)}" fill="var(--text2)" fill-opacity="0.75"
+      >${esc(String(GAME.label || "").toUpperCase())}</text>
+  </svg>`;
+}
+
 window.imgFail = function(img, name){
   const card = S.pool.find(c=>c.name===name) || {name, domains:[]};
   const inModal = !!img.closest("#modalBox");
@@ -3316,7 +3379,16 @@ function paintCard(c){
     ? `<img src="${esc(full)}" alt="${esc(c.name)}" referrerpolicy="no-referrer"
          data-card="${esc(c.name)}">`
     : fallbackSvg(c);
-  document.getElementById("modalBox").innerHTML = `${art}
+  const backUrl = GAME.cardBack ? GAME.cardBack(c) : null;
+  const back = backUrl
+    ? `<img src="${esc(backUrl)}" alt="" referrerpolicy="no-referrer" data-back="1">`
+    : backSvg();
+  document.getElementById("modalBox").innerHTML = `<div class="flipscene" data-a="flipCard">
+      <div class="flipper" id="cardFlipper">
+        <div class="face front">${art}</div>
+        <div class="face back">${back}</div>
+      </div>
+    </div>
     <div class="meta">
       <h3>${esc(c.name)}</h3>
       ${GAME.modalMeta(c)}
@@ -3329,11 +3401,16 @@ function paintCard(c){
         ${VIEW === "deck" && GAME.legend && c.supertype === "Champion"
           ? `<button class="btn" data-a="setChampion" data-a1="${esc(refOf(c))}">Set as Champion</button>`
           : ""}
+        <button class="btn" data-a="flipCard">Flip card</button>
         <button class="btn quiet" data-a="closeModal">Close</button>
       </div>
     </div>`;
 }
 window.closeModal = () => document.getElementById("modal").classList.remove("open");
+window.flipCard = () => {
+  const f = document.getElementById("cardFlipper");
+  if(f) f.classList.toggle("flipped");
+};
  
 document.getElementById("picker").addEventListener("change", e => {
   const f = e.target.files[0]; if(!f) return;
@@ -3425,6 +3502,7 @@ const ACTIONS = {
   copyText:      () => copyText(),
   wipe:          () => wipe(),
   closeModal:    () => closeModal(),
+  flipCard:      () => flipCard(),
   saveDeck:      () => saveDeckCloud(),
   newDeck:       () => newDeck(),
   duplicateDeck: () => duplicateDeck(),
@@ -3464,11 +3542,60 @@ document.addEventListener("click", e => {
 
 document.addEventListener("error", e => {
   const img = e.target;
-  if(img instanceof HTMLImageElement && img.dataset.card) imgFail(img, img.dataset.card);
+  if(!(img instanceof HTMLImageElement)) return;
+  if(img.dataset.back){ img.outerHTML = backSvg(); return; }
+  if(img.dataset.card) imgFail(img, img.dataset.card);
 }, true);
 document.addEventListener("load", e => {
   const img = e.target;
   if(img instanceof HTMLImageElement && img.dataset.card) imgLoaded(img, img.dataset.card);
+}, true);
+
+const TILT_DEG = 7;
+const tiltAllowed = () => {
+  try{
+    return matchMedia("(hover: hover)").matches
+      && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }catch{ return false; }
+};
+let tiltEl = null, tiltBox = null, tiltRaf = 0, tiltPx = 0, tiltPy = 0;
+
+function tiltPaint(){
+  tiltRaf = 0;
+  if(!tiltEl || !tiltBox) return;
+  const dx = (tiltPx - tiltBox.left) / tiltBox.width - 0.5;
+  const dy = (tiltPy - tiltBox.top) / tiltBox.height - 0.5;
+  tiltEl.style.setProperty("--ry", (dx * TILT_DEG * 2).toFixed(2) + "deg");
+  tiltEl.style.setProperty("--rx", (-dy * TILT_DEG * 2).toFixed(2) + "deg");
+}
+function tiltRest(){
+  if(!tiltEl) return;
+  tiltEl.classList.remove("tilt");
+  tiltEl.style.removeProperty("--rx");
+  tiltEl.style.removeProperty("--ry");
+  tiltEl = tiltBox = null;
+}
+document.addEventListener("pointerover", e => {
+  if(e.pointerType === "touch" || !tiltAllowed()) return;
+  const f = e.target.closest?.(".frame");
+  if(!f){ tiltRest(); return; }
+  if(f === tiltEl) return;
+  tiltRest();
+  tiltEl = f;
+  tiltBox = f.getBoundingClientRect();
+  f.classList.add("tilt");
+});
+document.addEventListener("pointermove", e => {
+  if(!tiltEl) return;
+  tiltPx = e.clientX; tiltPy = e.clientY;
+  if(!tiltRaf) tiltRaf = requestAnimationFrame(tiltPaint);
+});
+document.addEventListener("pointerout", e => {
+  if(tiltEl && e.target.closest?.(".frame") === tiltEl
+     && !tiltEl.contains(e.relatedTarget)) tiltRest();
+});
+document.addEventListener("scroll", () => {
+  if(tiltEl) tiltBox = tiltEl.getBoundingClientRect();
 }, true);
 
 document.getElementById("q").addEventListener("input", e => {

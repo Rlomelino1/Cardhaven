@@ -873,7 +873,7 @@ test.describe("a 404 that decodes as a card back", () => {
     await openApp(page);
     await page.waitForFunction(() => PIDX !== null);
     await page.evaluate(() => openCard(refOf(S.pool[0])));
-    await expect(page.locator("#modalBox img")).toBeVisible();
+    await expect(page.locator("#modalBox .face.front img")).toBeVisible();
     await page.waitForTimeout(400);
     expect(await page.locator("#modalBox .artmiss").count()).toBe(0);
   });

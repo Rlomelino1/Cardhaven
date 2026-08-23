@@ -99,7 +99,7 @@ axes, its `rules`, its localStorage key names, and a list of adapter hooks —
 `normalize`, `refOf`, `cardKeyRef`, `cardLabelRef`, `setCode`, `deckCode`, `numLabel`,
 `tileMeta`, `tileBadges`, `modalMeta`, `colTag`, `searchMatch`, `validate`, `blockAdd`,
 `deckStats`, `deckSections`, `rowBadges`, `deckRowCounts`, `deckText`, `parseDeckText`,
-plus the `artPlaceholder` and `legal` values.
+plus the `artPlaceholder`, `legal` and `cardBack` values.
 
 `ACTIVE_GAME` names the running game, `GAME` is the resolved entry, and `adoptGame()` is
 the single place a switch takes effect: it re-points the mutable aliases (`ZONES`,
@@ -261,6 +261,47 @@ two printings; first wins, and both are the same card by name and number. `sets.
 carries `ptcgoCode` for 149 of the 174 sets — "SVI" where the internal set id is "sv1" —
 and the rest fall back to the uppercased id, because without it a copied list names its
 sets in a way Pokémon TCG Live does not recognise.
+
+### Card motion: grid tilt and the modal flip
+
+Two effects, both of them opt-out rather than opt-in for the browser.
+
+**Grid hover tilt.** A hovered `.frame` lifts and tilts toward the cursor — the corner under
+the pointer presses in, the opposite corner rises, capped at 7° per axis. The transform is
+driven by two custom properties (`--rx`, `--ry`) that CSS reads, so the JavaScript only ever
+writes two numbers and never touches layout. Listeners are **delegated from `document`**, not
+attached per tile: shelves re-render constantly and can hold hundreds of frames, and delegation
+survives every re-render with nothing to rebind. The bounding rect is measured once on pointer
+enter and re-measured on scroll, and writes are gated behind `requestAnimationFrame` so
+intermediate pointer moves between frames are dropped. `will-change: transform` is set by the
+`:hover` rule alone — applying it globally would mean hundreds of permanent compositor layers,
+which costs more than it buys.
+
+The whole effect lives behind `@media (hover:hover)` and is switched off again under
+`prefers-reduced-motion: reduce`, in both the CSS and the JavaScript, leaving those users the
+brightness bump the grid always had. Keyboard focus gets the lift without the tilt, there being
+no pointer to track. Flagged tiles keep their warning ring while hovered, which needs an
+explicit rule because the lift's shadow would otherwise replace it.
+
+**Modal flip.** The card art in the modal is a standard 3D flip: a scene with `perspective`, a
+flipper with `preserve-3d` and a transform transition, and two faces with `backface-visibility:
+hidden`, the back pre-rotated 180°. Clicking either the art or the **Flip card** button toggles
+one class. Rotation is Y-axis only and there is no drag control — deliberately, so the card
+reads as turning on a spit rather than tumbling. Reduced motion keeps the control and drops the
+transition, so the faces swap instantly.
+
+**The back faces are registry data.** `cardBack(c)` is a function rather than a string because
+Riftbound has three backs keyed by card type — black for Legends and Battlefields, white for
+Runes, blue for everything in the main deck — while Pokémon has one for all cards. Both are
+hotlinked like the fronts and carry the same `referrerpolicy="no-referrer"`. They are fetched
+only when a modal opens, never on page load.
+
+Neither back host is a publisher CDN: Riftbound's are a pinned commit in a fan-maintained image
+repo and Pokémon's is a wiki archive. That is exactly why a failed back image is not left
+broken — it swaps silently to a generated SVG back built from the registry's own `mark` and
+`label`, with no user-facing notice, since a missing *back* tells the reader nothing useful. The
+same SVG serves any game that has no `cardBack` at all. The front face keeps its own separate
+error path, so the missing-art notice still fires for a front that genuinely has no image.
 
 ### Storage
 
