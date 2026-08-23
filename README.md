@@ -92,7 +92,7 @@ data/ogn-pool.json      352 Origins (OGN) printings with image URLs
 data/sfd-pool.json      288 Spiritforged (SFD) printings
 data/pokemon/           174 slim per-set pools + sets.json + search-index.json (~8.9 MB)
 scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon)
-vendor/neon/            the Neon SDK graph, vendored and served from this origin
+vendor/neon/            bundle.mjs (what the page loads) + the vendored module graph
 migrations/             schema + tests
 docs/                   decisions, open questions, and runbooks
 CLAUDE.md               working agreement and architecture notes

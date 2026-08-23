@@ -94,7 +94,8 @@ wire, and when:
 | File(s) | Size | Fetched |
 |---|---|---|
 | `index.html` | 216 KB | every load |
-| `vendor/neon/` | 665 KB across ~132 modules | every load (ESM graph) |
+| `vendor/neon/bundle.mjs` | 658 KB, 135 KB gzipped, one request | every load |
+| `vendor/neon/*.mjs` (132) | 976 KB | never — audit trail only |
 | `data/ogn-pool.json` + `data/sfd-pool.json` | 435 KB | every load **while Riftbound is the active game** |
 | `data/pokemon/sets.json` | 47 KB | on Pokémon activation |
 | `data/pokemon/search-index.json` | 2.07 MB | on Pokémon activation |
