@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-a+W5m7hHVJTZZ9jV4q5ri2BemdYMTyu6zWgeTqVYj4U=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-xcHBKUVABvPExLZmeXdHwAmIOUVmOvry4g2Rk7oE1Eg=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -586,10 +586,10 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
 .box .flipscene{width:420px; max-width:100%; perspective:1400px; cursor:grab;
   user-select:none; -webkit-user-select:none; touch-action:pan-y}
 .box .flipscene.grabbing{cursor:grabbing}
+#modalBox.flipping{overflow:hidden}
 .box .flipper.dragging{transition:none}
 .box .flipper{position:relative; transform-style:preserve-3d;
   transition:transform 620ms cubic-bezier(.2,.75,.25,1)}
-.box .flipper.flipped{transform:rotateY(180deg)}
 .box .face{backface-visibility:hidden; -webkit-backface-visibility:hidden}
 .box .face.back{position:absolute; inset:0; transform:rotateY(180deg)}
 .box .flipscene img,.box .flipscene svg{width:100%; max-width:none}
@@ -3359,6 +3359,7 @@ window.openCard = async id => {
 };
 
 function paintCard(c){
+  flipAngle = 0;
   const full = c.imageLarge || c.image;
   const art = full
     ? `<img src="${esc(full)}" alt="${esc(c.name)}" referrerpolicy="no-referrer"
@@ -3392,9 +3393,26 @@ function paintCard(c){
     </div>`;
 }
 window.closeModal = () => document.getElementById("modal").classList.remove("open");
-window.flipCard = () => {
+let flipAngle = 0, flipClipTimer = 0;
+
+function flipClip(hold){
+  const box = document.getElementById("modalBox");
+  if(!box) return;
+  box.classList.add("flipping");
+  clearTimeout(flipClipTimer);
+  if(!hold) flipClipTimer = setTimeout(() => box.classList.remove("flipping"), 900);
+}
+function flipShow(angle){
   const f = document.getElementById("cardFlipper");
-  if(f) f.classList.toggle("flipped");
+  if(!f) return;
+  flipAngle = angle;
+  f.style.transform = `rotateY(${angle}deg)`;
+  f.classList.toggle("flipped", (((Math.round(angle / 180) % 2) + 2) % 2) === 1);
+}
+window.flipCard = () => {
+  if(!document.getElementById("cardFlipper")) return;
+  flipClip(false);
+  flipShow(flipAngle + 180);
 };
 
 const FLIP_PULL = 0.6;
@@ -3417,12 +3435,15 @@ function dragStop(commit){
   const f = document.getElementById("cardFlipper");
   if(!drag || !f){ drag = null; return; }
   if(drag.raf) cancelAnimationFrame(drag.raf);
-  const turned = Math.abs(dragAngle()) >= 90;
+  const turn = dragAngle();
   const tapped = drag.moved < 6;
   drag.scene.classList.remove("grabbing");
-  if(commit && (tapped || turned)) f.classList.toggle("flipped");
   f.classList.remove("dragging");
-  f.style.transform = "";
+  flipClip(false);
+  if(!commit) flipShow(drag.base);
+  else if(tapped) flipShow(drag.base + 180);
+  else if(Math.abs(turn) >= 90) flipShow(drag.base + (turn < 0 ? -180 : 180));
+  else flipShow(drag.base);
   dragAte = !tapped;
   drag = null;
 }
@@ -3434,9 +3455,9 @@ document.addEventListener("pointerdown", e => {
   if(!scene || !f) return;
   drag = { id:e.pointerId, x0:e.clientX, dx:0, moved:0, raf:0, scene,
            w:scene.getBoundingClientRect().width || 1,
-           base:f.classList.contains("flipped") ? 180 : 0,
-           live:flipAnimates() };
+           base:flipAngle, live:flipAnimates() };
   scene.classList.add("grabbing");
+  flipClip(true);
   if(drag.live) f.classList.add("dragging");
   try{ scene.setPointerCapture(e.pointerId); }catch{}
   e.preventDefault();

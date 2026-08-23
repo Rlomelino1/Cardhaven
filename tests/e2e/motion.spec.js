@@ -291,7 +291,42 @@ test.describe("drag the card to flip it", () => {
     await drag(page, 0.45);
     await expect(page.locator("#cardFlipper")).toHaveClass(/flipped/);
     expect(await page.evaluate(
-      () => document.getElementById("cardFlipper").style.transform)).toBe("");
+      () => document.getElementById("cardFlipper").style.transform)).toBe("rotateY(180deg)");
+  });
+
+  test("the card settles in the direction it was dragged, from either face",
+    async ({ page }) => {
+      await openApp(page);
+      await openType(page, "Unit");
+      const at = () => page.evaluate(
+        () => document.getElementById("cardFlipper").style.transform);
+
+      await drag(page, -0.45);
+      expect(await at()).toBe("rotateY(-180deg)");
+      await drag(page, -0.45);
+      expect(await at()).toBe("rotateY(-360deg)");
+      await drag(page, 0.45);
+      expect(await at()).toBe("rotateY(-180deg)");
+      await drag(page, 0.45);
+      expect(await at()).toBe("rotateY(0deg)");
+    });
+
+  test("no scrollbar appears in the modal while the card turns", async ({ page }) => {
+    await page.setViewportSize({ width: 1400, height: 900 });
+    await openApp(page);
+    await openType(page, "Unit");
+    const bar = () => page.evaluate(() => {
+      const b = document.getElementById("modalBox");
+      return { visible: b.scrollHeight > b.clientHeight + 1 && !b.classList.contains("flipping"),
+               clipped: b.classList.contains("flipping") };
+    });
+    expect(await bar()).toEqual({ visible: false, clipped: false });
+    await page.click('.modalacts [data-a="flipCard"]');
+    await page.waitForTimeout(200);
+    expect((await bar()).visible).toBe(false);
+    expect((await bar()).clipped).toBe(true);
+    await page.waitForTimeout(1000);
+    expect(await bar()).toEqual({ visible: false, clipped: false });
   });
 
   test("released before halfway it springs back", async ({ page }) => {

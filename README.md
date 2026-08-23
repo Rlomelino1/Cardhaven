@@ -293,9 +293,22 @@ click on the art, and **dragging the art left or right**. The drag is the intere
 because it is *interactive* rather than a gesture that triggers an animation. While the pointer
 is down the transition is switched off and the rotation is written straight from the pointer
 offset, so the card turns exactly as far as the hand moves — a full 180° costs 60% of the card's
-width. On release, past halfway commits the flip and anything short of halfway returns; either
-way the inline rotation is dropped and the class-driven transition eases from wherever the card
-happened to be. So abandoning a drag genuinely almost-flips and falls back, rather than snapping.
+width. On release, past halfway commits the flip and anything short of halfway returns, easing
+from wherever the card happened to be. So abandoning a drag genuinely almost-flips and falls
+back, rather than snapping.
+
+**Rotation is an accumulating angle, not a boolean.** The first version pinned the resting state
+to a `.flipped` class carrying `rotateY(180deg)`, which meant a leftward drag could only settle
+by unwinding 315° back the other way — it visibly spun the wrong direction to get there. The
+angle is now kept as a running total and the card settles at `base ± 180` in whichever direction
+the hand went, so it always turns the way it was pushed. `.flipped` survives as a state marker
+for parity, not as the source of the transform.
+
+**The turn is clipped while it runs.** A card rotating under perspective projects a near edge
+taller than the card itself, which pushed a scrollbar into the modal whenever the box was
+already at its `90vh` cap. `#modalBox` takes `overflow:hidden` for the duration of the gesture
+and the settle, so the transient growth cannot produce a scrollbar; at rest the modal scrolls
+normally.
 
 The drag also has to not do three things: close the modal (the backdrop's click is swallowed
 once after any real drag), select the card as text (`user-select:none` plus a prevented
