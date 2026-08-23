@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-v4W+QOsFtKDlWHN2kx0f7dwd7BKKIymZowJUzX2HAoA=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-EPfkpXLjCubyNNgiN59Ele+yiCZabyRL0GdrIaOjMe8=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -1033,7 +1033,8 @@ function pkNormalize(c){
     regulationMark:c.regulationMark ?? null,
     legalities:(c.legalities && typeof c.legalities === "object") ? c.legalities : null,
     evolvesFrom: c.evolvesFrom ?? null,
-    costs: Array.isArray(c.costs) ? c.costs.map(String) : [],
+    costs: (Array.isArray(c.costs) ? c.costs : [])
+      .map(String).filter(t => PK_ENERGY_TYPES.includes(t)),
     basicEnergy: c.supertype === "Energy" && subtypes.includes("Basic"),
     specialEnergy: c.supertype === "Energy" && subtypes.includes("Special"),
     basicPokemon: c.supertype === "Pokémon" && subtypes.includes("Basic"),
@@ -1250,12 +1251,12 @@ function pkAlignment(){
 function pkAlignmentStrip(){
   const a = pkAlignment();
   if(!a.required.length && !a.provided.length && !a.anyColorless) return "";
-  const dot = t => `<i class="dsdot" style="background:var(--${t})" title="${esc(t)}"></i>`;
+  const dot = t => `<i class="dsdot" style="background:var(--${esc(t)})" title="${esc(t)}"></i>`;
   const any = `<i class="dsdot any" title="Colorless — any energy pays this"></i>`;
   const row = (label, dots, empty) => `<div class="dsrow"><span>${label}</span>
       <div class="dsdots">${dots || `<span class="dsnone">${empty}</span>`}</div></div>`;
   const flag = a.warn
-    ? `<div class="dsflag" title="No ${a.missing.join(" or ")} energy in the deck for attacks that cost it">!</div>`
+    ? `<div class="dsflag" title="No ${esc(a.missing.join(" or "))} energy in the deck for attacks that cost it">!</div>`
     : "";
   return `<div class="dsalign${a.warn ? " warn" : ""}">
     <div class="dsrows">

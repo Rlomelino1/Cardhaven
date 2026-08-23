@@ -75,6 +75,36 @@ test.describe("a hostile import cannot execute script", () => {
       document.getElementById("problems").innerText)).toContain("img src=x");
   });
 
+  test("a hostile attack cost cannot reach a style attribute", async ({ page }) => {
+    await openPokemon(page);
+    await upload(page, "evil.json", JSON.stringify({
+      kind: "pokemon",
+      name: "hostile",
+      zones: {
+        main: [{
+          name: "Not A Real Card",
+          supertype: "Pok\u00e9mon",
+          subtypes: ["Basic"],
+          costs: ['" onload="window.__pwn=1', "Water"],
+          qty: 1,
+        }],
+      },
+    }));
+    await page.waitForFunction(() => zoneCount("main") === 1);
+    const r = await page.evaluate(() => ({
+      costs: S.zones.main[0].costs,
+      styles: [...document.querySelectorAll(".dsdot")].map((el) => el.getAttribute("style")),
+      handlers: [...document.querySelectorAll("#deckPanel *, #zoneList *")]
+        .flatMap((el) => [...el.attributes].map((a) => a.name))
+        .filter((n) => n.startsWith("on")),
+    }));
+    expect(r.costs).toEqual(["Water"]);
+    for (const style of r.styles)
+      expect(style).toMatch(/^background:var\(--[A-Za-z]+\)$/);
+    expect(r.handlers).toEqual([]);
+    expect(await pwned(page)).toBeNull();
+  });
+
   test("a hostile decklist TEXT import cannot execute script", async ({ page }) => {
     await openPokemon(page);
     await upload(page, "list.txt",
