@@ -529,3 +529,34 @@ in a real browser. Most of the modal already matched; these are the gaps that we
   same job, and the picker already reads text.
 - Resolution on import is by **(set code, collector number), never the name** — names carry
   parentheses, digits and apostrophes.
+
+## Bundling the vendored SDK (post-stage-10)
+
+- **Bundled the 132-module vendored graph into `vendor/neon/bundle.mjs` and import only
+  that.** 232 KB over 132 requests becomes 135 KB in one; the auth module reports 3.6s
+  sooner on slow 3G over HTTP/2. Rejected leaving it as-is once the measurement was
+  redone honestly, and rejected `modulepreload` hints for the 132 files — that fetches
+  the graph *harder*, competing with the card pool for the one thing a visitor came for.
+- **Kept the 132 individual modules committed next to the bundle.** They are the audit
+  trail for a version bump, which one generated 670 KB file cannot show. Rejected
+  deleting them (loses reviewability, the stated reason vendoring exists) and rejected
+  keeping the page on them (the measured cost above).
+- **esbuild via `npx` at a pinned version inside `scripts/vendor-neon.mjs`.** Rejected
+  adding it to `package.json` (CI would install a bundler it never uses) and rejected
+  hand-rolling an ESM linker (that is a bundler, written worse). It is not a build step:
+  the output is committed and nothing runs esbuild to serve, test or deploy the page.
+  It replaces esm.sh's bundling pass with a pinned local one, so the transformation is
+  ours.
+- **Tree-shake from the four names `index.html` imports**, listed as `ENTRIES[].expose`.
+  Rejected `export *` from all three entries: it keeps only 5 more modules and still
+  drops every jose crypto entry point, so it buys no safety for 5.4 KB gzipped.
+- **Added `--bundle-only`** so the bundle can be rebuilt from the committed modules with
+  no network. Re-vendoring resolves the graph fresh and can pull newer transitive
+  builds, which would land an SDK change inside an unrelated diff.
+- **Left the app JS inline.** Splitting it into `app.js` was measured and is a small loss
+  (an extra round trip before any of the app can run) for no gain; the only benefit is
+  ending the CSP rehash chore, which `csp-hashes.mjs` and `csp.spec.js` already contain.
+- **Corrected an earlier measurement rather than building on it.** The 22s time-to-cards
+  that motivated this work was an artifact of a test server that did not gzip. With
+  compression it is ~4s on slow 3G, on HTTP/1.1 and HTTP/2 alike, and the module graph
+  barely affects it. Production ALPN was confirmed as h2 before re-measuring.

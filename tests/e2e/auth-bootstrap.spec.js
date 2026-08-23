@@ -6,18 +6,24 @@ import { openApp } from "./helpers.js";
    COL_READY, which index.html sets synchronously at boot, so it waited for
    nothing and the suite stayed green.
 
-   Delaying only the SDK's ENTRY module starts the whole graph late while still
-   loading it fast, which lands the signed-out callback in the middle of a test
-   the way a cold CI runner does. That callback sets MODE = "local" and calls
-   freshDeck() when it finds the app in cloud mode, so it silently wiped the deck
-   of every test that forces MODE = "cloud" — seen on CI as both a deck that
-   emptied itself and an unsaved-changes prompt that never appeared. */
+   Delaying the SDK lands the signed-out callback in the middle of a test the way
+   a cold CI runner does. That callback sets MODE = "local" and calls freshDeck()
+   when it finds the app in cloud mode, so it silently wiped the deck of every
+   test that forces MODE = "cloud" — seen on CI as both a deck that emptied
+   itself and an unsaved-changes prompt that never appeared.
+
+   The route is asserted to have fired. It names a vendored file, and a rename
+   would otherwise leave a route that matches nothing and a test that passes
+   while checking nothing — which is the same failure as the COL_READY wait. */
 test("a forced cloud deck survives a late auth bootstrap", async ({ page }) => {
-  await page.route("**/vendor/neon/_neondatabase_auth_0.5.0-beta.mjs", async (route) => {
+  let delayed = 0;
+  await page.route("**/vendor/neon/bundle.mjs", async (route) => {
+    delayed++;
     await new Promise((r) => setTimeout(r, 700));
     await route.continue();
   });
   await openApp(page);
+  expect(delayed, "the SDK delay never applied — has the vendored path moved?").toBe(1);
   await page.evaluate(() => {
     MODE = "cloud"; CLOUD_USER = { id: "u1" }; DECKS = []; BASELINE = null;
     freshDeck(); addCard("ogn-001-298", "main");

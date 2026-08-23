@@ -52,7 +52,8 @@ README.md               human-facing overview
 data/ogn-pool.json      352 Origins (OGN) printings with image URLs
 data/sfd-pool.json      288 Spiritforged (SFD) printings; added stage 8
 data/pokemon/           174 slim per-set pools + sets.json + search-index.json; stage 9
-vendor/neon/            the Neon SDK graph, vendored (served from this origin, not a CDN)
+vendor/neon/            bundle.mjs (the only file the page loads) plus the 132-module
+                        vendored graph it is built from, kept as the audit trail
 scripts/                build-pool-v2.mjs (Riftbound set); build-pokemon-pools.mjs
                         (every English Pokémon set); vendor-neon.mjs (re-vendor the
                         SDK); csp-hashes.mjs (rehash the inline scripts)
@@ -432,6 +433,24 @@ convention (`neon env pull` writes the first two):
   is a dedicated `./auth/vanilla` export — use it, not the React one. To bump versions,
   edit the pins in `scripts/vendor-neon.mjs`, run it, and commit the regenerated
   `vendor/neon/`. This is a maintenance tool, not a build step the app needs at runtime.
+- **It is also bundled, and the bundle is the only file the page loads.**
+  `index.html` imports `vendor/neon/bundle.mjs`; the 132 individual modules stay
+  committed beside it purely as the audit trail for a version bump. Measured over
+  HTTP/2 (what Pages serves): 232 KB over 132 requests, auth reporting at 10.6s on
+  slow 3G, becomes 135 KB in one request reporting at 7.0s. **First paint and
+  time-to-cards do not move** — the card pool wins that race either way — so the
+  win is entirely "how fast a signed-in user's decks appear". The names the bundle
+  exposes live in `ENTRIES[].expose` in the vendor script and must match
+  `index.html`'s import, or tree-shaking drops what the page then asks for. Rebuild
+  without touching the network via `node scripts/vendor-neon.mjs --bundle-only`.
+  esbuild is fetched by `npx` at a pinned version at re-vendor time — it is not a
+  runtime dependency, not in `package.json`, and nothing runs it to serve, test or
+  deploy the page. Full reasoning in `vendor/neon/README.md`.
+- **Don't measure load performance on a server that doesn't compress.** An earlier
+  pass put time-to-cards on slow 3G at 22s and concluded the module graph was the
+  bottleneck; the test server was serving `index.html` and the pools uncompressed.
+  With gzip it is ~4s, on HTTP/1.1 and HTTP/2 alike, and the graph barely touches
+  it. Serve gzip and confirm the protocol before believing any number.
 - **Pin exact versions.** These are pre-1.0 packages. The Data API itself is in beta.
   When something behaves unexpectedly, check the current Neon docs before assuming the
   bug is in our code.

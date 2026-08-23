@@ -177,9 +177,14 @@ test.describe("vendored SDK", () => {
     // window.cloud only exists once the whole vendored module graph has executed.
     await page.waitForFunction(() => typeof window.cloud !== "undefined", null, { timeout: 15000 });
     expect(esm).toEqual([]);
-    const n = await page.evaluate(() =>
-      performance.getEntriesByType("resource").filter(r => /\/vendor\/neon\//.test(r.name)).length);
-    expect(n).toBeGreaterThan(100);
+    /* One request, not the 132 the graph used to cost. Asserting the count is
+       exactly 1 is the point: it is what says the bundle is what loaded, rather
+       than the individual modules that are still committed beside it. */
+    const vendored = await page.evaluate(() =>
+      performance.getEntriesByType("resource")
+        .filter(r => /\/vendor\/neon\//.test(r.name))
+        .map(r => r.name.split("/vendor/neon/")[1]));
+    expect(vendored).toEqual(["bundle.mjs"]);
   });
 });
 
