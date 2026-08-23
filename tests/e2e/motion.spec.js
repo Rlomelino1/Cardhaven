@@ -56,18 +56,51 @@ test.describe("grid hover tilt", () => {
     expect(back.ry).toBe("");
   });
 
-  test("tilt never exceeds its cap", async ({ page }) => {
+  test("tilt never exceeds its cap, even at the scaled edge", async ({ page }) => {
     await openApp(page);
     const frame = page.locator("#results .frame").nth(2);
     await frame.hover();
+    await page.waitForFunction(() => {
+      const el = document.querySelector("#results .frame.tilt");
+      if (!el) return false;
+      const m = new DOMMatrix(getComputedStyle(el).transform);
+      return m.m11 > 1.045;
+    });
     for (const [fx, fy] of [[0, 0], [1, 0], [1, 1], [0, 1], [0.5, 0.5]]) {
       await hoverAt(page, frame, fx, fy);
       await page.waitForTimeout(60);
       const s = await frame.evaluate(frameState);
-      expect(Math.abs(parseFloat(s.rx || "0"))).toBeLessThanOrEqual(7.01);
-      expect(Math.abs(parseFloat(s.ry || "0"))).toBeLessThanOrEqual(7.01);
+      expect(Math.abs(parseFloat(s.rx || "0")),
+        `rx at (${fx},${fy})`).toBeLessThanOrEqual(7.01);
+      expect(Math.abs(parseFloat(s.ry || "0")),
+        `ry at (${fx},${fy})`).toBeLessThanOrEqual(7.01);
     }
   });
+
+  test("a pointer outside the measured box still clamps to the cap",
+    async ({ page }) => {
+      await openApp(page);
+      const r = await page.evaluate(() => {
+        const el = document.querySelector("#results .frame");
+        tiltEl = el;
+        tiltBox = el.getBoundingClientRect();
+        const read = (px, py) => {
+          tiltPx = px; tiltPy = py;
+          tiltPaint();
+          return { rx: parseFloat(el.style.getPropertyValue("--rx")),
+                   ry: parseFloat(el.style.getPropertyValue("--ry")) };
+        };
+        return {
+          farLow: read(tiltBox.left - 400, tiltBox.top - 400),
+          farHigh: read(tiltBox.right + 400, tiltBox.bottom + 400),
+          justOut: read(tiltBox.right + 1, tiltBox.top - 1),
+        };
+      });
+      expect(r.farLow).toEqual({ rx: 7, ry: -7 });
+      expect(r.farHigh).toEqual({ rx: -7, ry: 7 });
+      expect(Math.abs(r.justOut.rx)).toBeLessThanOrEqual(7);
+      expect(Math.abs(r.justOut.ry)).toBeLessThanOrEqual(7);
+    });
 
   test("the modal art is not a tilt target", async ({ page }) => {
     await openApp(page);

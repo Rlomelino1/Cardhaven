@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-A4ZQ0sOyPpQ0MBAdelTmXW6KRyVM9nXOLP7MPcfB5f0=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-s0b9HNSG7SFQNpuVmO/Y2gm9AGfTmIWT9utGqlGuGvw=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -3624,8 +3624,9 @@ let tiltEl = null, tiltBox = null, tiltRaf = 0, tiltPx = 0, tiltPy = 0;
 function tiltPaint(){
   tiltRaf = 0;
   if(!tiltEl || !tiltBox) return;
-  const dx = (tiltPx - tiltBox.left) / tiltBox.width - 0.5;
-  const dy = (tiltPy - tiltBox.top) / tiltBox.height - 0.5;
+  const off = v => Math.max(-0.5, Math.min(0.5, v));
+  const dx = off((tiltPx - tiltBox.left) / tiltBox.width - 0.5);
+  const dy = off((tiltPy - tiltBox.top) / tiltBox.height - 0.5);
   tiltEl.style.setProperty("--ry", (dx * TILT_DEG * 2).toFixed(2) + "deg");
   tiltEl.style.setProperty("--rx", (-dy * TILT_DEG * 2).toFixed(2) + "deg");
 }
