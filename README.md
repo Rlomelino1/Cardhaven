@@ -329,6 +329,14 @@ Runes, blue for everything in the main deck — while Pokémon has one for all c
 hotlinked like the fronts and carry the same `referrerpolicy="no-referrer"`. They are fetched
 only when a modal opens, never on page load.
 
+The two backs are not framed the same way, and the CSS has to know it. Riftbound's scans bleed
+to the edge, so they take the same 8px corner as everything else. Pokémon's Bulbagarden scan is
+a rounded card inscribed in a square image, with white pixels in the corners — measured at 28px
+on a 745×1040 file — so an 8px corner left four white notches showing. The Pokémon back alone is
+rounded to `4.2% / 3%`, which reproduces that 28px corner at any rendered size. It hangs off the
+`game-pokemon` body class rather than a new registry field, since it describes one image rather
+than a rule of the game. Pokémon *fronts* need nothing: their art bleeds to the edge.
+
 Neither back host is a publisher CDN: Riftbound's are a pinned commit in a fan-maintained image
 repo and Pokémon's is a wiki archive. That is exactly why a failed back image is not left
 broken — it swaps silently to a generated SVG back built from the registry's own `mark` and

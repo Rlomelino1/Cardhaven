@@ -204,6 +204,7 @@ test.describe("the back face comes from the registry", () => {
 
   test("a Pokemon card shows the Bulbagarden back", async ({ page }) => {
     await openPokemon(page);
+    await page.waitForFunction(() => S.pool.length > 0);
     await page.evaluate(() => openCard(refOf(S.pool[0])));
     await page.waitForSelector("#cardFlipper");
     expect(await page.getAttribute(".face.back img", "src"))
@@ -397,4 +398,24 @@ test.describe("drag the card to flip it", () => {
     await drag(page, 0.45);
     await expect(page.locator("#cardFlipper")).not.toHaveClass(/flipped/);
   });
+});
+
+test.describe("the Pokemon back has no white corners", () => {
+  const backRadius = (page) => page.evaluate(
+    () => getComputedStyle(document.querySelector(".face.back img")).borderRadius);
+
+  test("the Pokemon back is rounded to its own artwork", async ({ page }) => {
+    await openPokemon(page);
+    await page.waitForFunction(() => S.pool.length > 0);
+    await page.evaluate(() => openCard(refOf(S.pool[0])));
+    await page.waitForSelector("#cardFlipper");
+    expect(await backRadius(page)).toContain("%");
+  });
+
+  test("a Riftbound back keeps the plain corner, its art bleeding to the edge",
+    async ({ page }) => {
+      await openApp(page);
+      await openType(page, "Unit");
+      expect(await backRadius(page)).toBe("8px");
+    });
 });
