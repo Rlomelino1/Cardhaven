@@ -288,8 +288,8 @@ flipper with `preserve-3d` and a transform transition, and two faces with `backf
 hidden`, the back pre-rotated 180°. Rotation is Y-axis only, so the card reads as turning on a
 spit rather than tumbling.
 
-Three ways to turn it, all landing on the same one-class state: the **Flip card** button, a
-click on the art, and **dragging the art left or right**. The drag is the interesting one,
+Two ways to turn it: a click on the art, and **dragging the art left or right**. There is no
+flip button — the card is the control. The drag is the interesting one,
 because it is *interactive* rather than a gesture that triggers an animation. While the pointer
 is down the transition is switched off and the rotation is written straight from the pointer
 offset, so the card turns exactly as far as the hand moves — a full 180° costs 60% of the card's
@@ -316,8 +316,12 @@ default), or fight vertical scrolling on touch (`touch-action:pan-y`). The scene
 gesture, which is why it carries no `data-a` — leaving the delegated click handler in place
 alongside the pointer handler would have flipped twice and looked like nothing happened.
 
-Reduced motion keeps every control and drops the animation: the faces swap instantly and the
+Reduced motion keeps both controls and drops the animation: the faces swap instantly and the
 drag stops tracking, committing or cancelling on release instead.
+
+Note the accessibility consequence of having no button: flipping is pointer-only, so there is
+no keyboard or assistive-technology path to the back face. The card art is an image, not a
+focusable control.
 
 **The back faces are registry data.** `cardBack(c)` is a function rather than a string because
 Riftbound has three backs keyed by card type — black for Legends and Battlefields, white for

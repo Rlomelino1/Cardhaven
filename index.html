@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-xcHBKUVABvPExLZmeXdHwAmIOUVmOvry4g2Rk7oE1Eg=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-A4ZQ0sOyPpQ0MBAdelTmXW6KRyVM9nXOLP7MPcfB5f0=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -3387,7 +3387,6 @@ function paintCard(c){
         ${VIEW === "deck" && GAME.legend && c.supertype === "Champion"
           ? `<button class="btn" data-a="setChampion" data-a1="${esc(refOf(c))}">Set as Champion</button>`
           : ""}
-        <button class="btn" data-a="flipCard">Flip card</button>
         <button class="btn quiet" data-a="closeModal">Close</button>
       </div>
     </div>`;
@@ -3409,12 +3408,6 @@ function flipShow(angle){
   f.style.transform = `rotateY(${angle}deg)`;
   f.classList.toggle("flipped", (((Math.round(angle / 180) % 2) + 2) % 2) === 1);
 }
-window.flipCard = () => {
-  if(!document.getElementById("cardFlipper")) return;
-  flipClip(false);
-  flipShow(flipAngle + 180);
-};
-
 const FLIP_PULL = 0.6;
 const flipAnimates = () => {
   try{ return !matchMedia("(prefers-reduced-motion: reduce)").matches; }
@@ -3571,7 +3564,6 @@ const ACTIONS = {
   copyText:      () => copyText(),
   wipe:          () => wipe(),
   closeModal:    () => closeModal(),
-  flipCard:      () => flipCard(),
   saveDeck:      () => saveDeckCloud(),
   newDeck:       () => newDeck(),
   duplicateDeck: () => duplicateDeck(),

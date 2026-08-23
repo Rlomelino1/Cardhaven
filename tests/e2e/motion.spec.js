@@ -109,24 +109,37 @@ test.describe("reduced motion", () => {
     expect(await page.evaluate(
       () => getComputedStyle(document.getElementById("cardFlipper")).transitionDuration))
       .toBe("0s");
-    await page.click('.modalacts [data-a="flipCard"]');
+    await page.click(".flipscene");
     await expect(page.locator("#cardFlipper")).toHaveClass(/flipped/);
     await ctx.close();
   });
 });
 
 test.describe("modal flip", () => {
-  test("the button flips and unflips", async ({ page }) => {
+  test("a click flips and unflips", async ({ page }) => {
     await openApp(page);
     await openType(page, "Unit");
     await expect(page.locator("#cardFlipper")).not.toHaveClass(/flipped/);
-    await page.click('.modalacts [data-a="flipCard"]');
+    await page.click(".flipscene");
     await expect(page.locator("#cardFlipper")).toHaveClass(/flipped/);
-    await page.click('.modalacts [data-a="flipCard"]');
+    await page.click(".flipscene");
     await expect(page.locator("#cardFlipper")).not.toHaveClass(/flipped/);
   });
 
-  test("clicking the card art flips it too", async ({ page }) => {
+  test("there is no flip button left to click", async ({ page }) => {
+    await openApp(page);
+    await openType(page, "Unit");
+    const r = await page.evaluate(() => ({
+      byAction: document.querySelectorAll('[data-a="flipCard"]').length,
+      action: typeof window.flipCard,
+      acts: document.querySelector(".modalacts").innerText.trim(),
+    }));
+    expect(r.byAction).toBe(0);
+    expect(r.action).toBe("undefined");
+    expect(r.acts).not.toContain("Flip");
+  });
+
+  test("clicking the card art flips it", async ({ page }) => {
     await openApp(page);
     await openType(page, "Unit");
     await page.click(".flipscene");
@@ -157,7 +170,7 @@ test.describe("modal flip", () => {
   test("a reopened card starts front-facing", async ({ page }) => {
     await openApp(page);
     await openType(page, "Unit");
-    await page.click('.modalacts [data-a="flipCard"]');
+    await page.click(".flipscene");
     await expect(page.locator("#cardFlipper")).toHaveClass(/flipped/);
     await page.evaluate(() => closeModal());
     await openType(page, "Unit");
@@ -225,7 +238,7 @@ test.describe("a failed back image falls back to the generated one", () => {
     expect(r.text).toEqual(["RB", "RIFTBOUND"]);
     expect(r.notice).toBe(false);
     expect(r.img).toBe(false);
-    await page.click('.modalacts [data-a="flipCard"]');
+    await page.click(".flipscene");
     await expect(page.locator("#cardFlipper")).toHaveClass(/flipped/);
   });
 });
@@ -321,7 +334,7 @@ test.describe("drag the card to flip it", () => {
                clipped: b.classList.contains("flipping") };
     });
     expect(await bar()).toEqual({ visible: false, clipped: false });
-    await page.click('.modalacts [data-a="flipCard"]');
+    await page.click(".flipscene");
     await page.waitForTimeout(200);
     expect((await bar()).visible).toBe(false);
     expect((await bar()).clipped).toBe(true);
@@ -376,10 +389,10 @@ test.describe("drag the card to flip it", () => {
     await expect(page.locator("#cardFlipper")).toHaveClass(/flipped/);
   });
 
-  test("the button and a drag agree on state", async ({ page }) => {
+  test("a click and a drag agree on state", async ({ page }) => {
     await openApp(page);
     await openType(page, "Unit");
-    await page.click('.modalacts [data-a="flipCard"]');
+    await page.click(".flipscene");
     await expect(page.locator("#cardFlipper")).toHaveClass(/flipped/);
     await drag(page, 0.45);
     await expect(page.locator("#cardFlipper")).not.toHaveClass(/flipped/);
