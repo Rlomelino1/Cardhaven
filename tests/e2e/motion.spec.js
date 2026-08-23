@@ -452,3 +452,107 @@ test.describe("the Pokemon back has no white corners", () => {
       expect(await backRadius(page)).toBe("8px");
     });
 });
+
+test.describe("battlefields are printed landscape", () => {
+  const openType2 = async (page, type) => {
+    await page.evaluate((t) => openCard(refOf(S.pool.find((c) => c.type === t))), type);
+    await page.waitForSelector("#cardFlipper");
+  };
+
+  test("only battlefields are marked landscape", async ({ page }) => {
+    await openApp(page);
+    const r = await page.evaluate(() => {
+      const bf = S.pool.filter((c) => c.type === "Battlefield");
+      const other = S.pool.filter((c) => c.type !== "Battlefield");
+      return { bf: bf.length, allBf: bf.every((c) => GAME.landscape(c)),
+               anyOther: other.some((c) => GAME.landscape(c)) };
+    });
+    expect(r.bf).toBeGreaterThan(0);
+    expect(r.allBf).toBe(true);
+    expect(r.anyOther).toBe(false);
+  });
+
+  test("the tile keeps a portrait slot and letterboxes the art", async ({ page }) => {
+    await openApp(page);
+    await page.evaluate(() => { S.typeFilter = ["Battlefield"]; render(); });
+    await page.waitForFunction(
+      () => document.querySelectorAll("#results .frame.land").length > 0);
+    const r = await page.evaluate(() => {
+      const f = document.querySelector("#results .frame.land");
+      const box = f.getBoundingClientRect();
+      return { fit: getComputedStyle(f.querySelector("img")).objectFit,
+               portraitSlot: box.height > box.width,
+               plain: document.querySelectorAll("#results .frame:not(.land)").length };
+    });
+    expect(r.fit).toBe("contain");
+    expect(r.portraitSlot).toBe(true);
+    expect(r.plain).toBe(0);
+  });
+
+  test("a non-landscape card gets neither the class nor contain", async ({ page }) => {
+    await openApp(page);
+    await page.evaluate(() => { S.typeFilter = ["Unit"]; render(); });
+    await page.waitForFunction(() => document.querySelectorAll("#results .frame").length > 0);
+    const r = await page.evaluate(() => {
+      const f = document.querySelector("#results .frame");
+      return { land: f.classList.contains("land"),
+               fit: getComputedStyle(f.querySelector("img")).objectFit };
+    });
+    expect(r.land).toBe(false);
+    expect(r.fit).not.toBe("contain");
+  });
+
+  test("the modal scene is landscape and the back turns to fill it", async ({ page }) => {
+    await openApp(page);
+    await openType2(page, "Battlefield");
+    const r = await page.evaluate(() => {
+      const scene = document.querySelector(".flipscene");
+      const s = scene.getBoundingClientRect();
+      const img = document.querySelector(".face.back img");
+      const painted = img.getBoundingClientRect();
+      return {
+        land: scene.classList.contains("land"),
+        sceneLandscape: s.width > s.height,
+        dataBack: img.dataset.back,
+        preRotate: [Math.round(img.offsetWidth), Math.round(img.offsetHeight)],
+        painted: [Math.round(painted.width), Math.round(painted.height)],
+        face: [Math.round(s.width), Math.round(s.height)],
+      };
+    });
+    expect(r.land).toBe(true);
+    expect(r.sceneLandscape).toBe(true);
+    expect(r.dataBack).toBe("land");
+    expect(r.preRotate[1]).toBeGreaterThan(r.preRotate[0]);
+    expect(r.painted[0]).toBeGreaterThan(r.painted[1]);
+    expect(Math.abs(r.painted[0] - r.face[0])).toBeLessThanOrEqual(2);
+    expect(Math.abs(r.painted[1] - r.face[1])).toBeLessThanOrEqual(2);
+  });
+
+  test("a portrait card's back is not rotated", async ({ page }) => {
+    await openApp(page);
+    await openType2(page, "Unit");
+    const r = await page.evaluate(() => {
+      const img = document.querySelector(".face.back img");
+      return { land: document.querySelector(".flipscene").classList.contains("land"),
+               dataBack: img.dataset.back,
+               transform: getComputedStyle(img).transform };
+    });
+    expect(r.land).toBe(false);
+    expect(r.dataBack).toBe("1");
+    expect(r.transform).toBe("none");
+  });
+
+  test("the generated back follows the orientation when the image fails",
+    async ({ page }) => {
+      await page.route("**/others/back/*.jpg", (route) => route.abort());
+      await openApp(page);
+      await openType2(page, "Battlefield");
+      await page.waitForSelector(".face.back svg[data-backsvg]");
+      const box = await page.evaluate(() => {
+        const vb = document.querySelector(".face.back svg").getAttribute("viewBox")
+          .split(" ").map(Number);
+        return { w: vb[2], h: vb[3] };
+      });
+      expect(box.w).toBeGreaterThan(box.h);
+    });
+});
