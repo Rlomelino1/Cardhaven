@@ -158,12 +158,19 @@ The SQL tests need a database credential from `.env` and stay local; run them wi
 
 ## Legal
 
-Riftbound Deckbuilder was created under Riot Games' "Legal Jibber Jabber" policy using
-assets owned by Riot Games. Riot Games does not endorse or sponsor this project.
+These are the notices the app itself carries. The active game's notice is in the
+footer, and **View all legal notices** in the footer shows every game's at once.
+
+Card Haven is an unofficial fan tool for personal use. All card images, names, and game
+content are property of their respective owners.
+
+Unofficial fan tool for personal use. Riftbound, League of Legends, and all card assets
+belong to Riot Games. Created under Riot Games' “Legal Jibber Jabber” policy using assets
+owned by Riot Games. Riot Games does not endorse or sponsor this project.
 
 Card Haven is not affiliated with, endorsed, sponsored, or specifically approved by
-Nintendo, Creatures Inc., GAME FREAK inc., or The Pokémon Company. Pokémon and all
-related names and card images are trademarks and copyrights of their respective owners.
+Nintendo, Creatures Inc., GAME FREAK inc., or The Pokémon Company. Pokémon and all related
+names and card images are trademarks and copyrights of their respective owners.
 
 No card images are redistributed here; every one is hotlinked and served by someone else.
 Card fronts come from the publishers' own CDNs — `cmsassets.rgpub.io` for Riftbound,
