@@ -99,13 +99,23 @@ axes, its `rules`, its localStorage key names, and a list of adapter hooks —
 `normalize`, `refOf`, `cardKeyRef`, `cardLabelRef`, `setCode`, `deckCode`, `numLabel`,
 `tileMeta`, `tileBadges`, `modalMeta`, `colTag`, `searchMatch`, `validate`, `blockAdd`,
 `deckStats`, `deckSections`, `rowBadges`, `deckRowCounts`, `deckText`, `parseDeckText`,
-plus an `artPlaceholder` value.
+plus the `artPlaceholder` and `legal` values.
 
 `ACTIVE_GAME` names the running game, `GAME` is the resolved entry, and `adoptGame()` is
 the single place a switch takes effect: it re-points the mutable aliases (`ZONES`,
 `DOMAINS`, `TYPES`, `RARITY_ORDER`, `DOMAIN_INK`, `RARITY_DOT`) so no call site ever asks
 which game is running. Adding a game is one registry entry plus one vendor script; there
 is no plugin system and no schema generalisation beyond the hooks.
+
+**The legal disclaimers are registry data too**, which is what keeps the footer from
+growing a permanent paragraph per game. Each entry carries a `legal` string; `adoptGame()`
+writes the active game's into the footer with `textContent`, so only the disclaimer that
+belongs to the assets actually on screen is shown. One generic line is always visible
+beside it, and it opens a **Legal notices** modal that iterates `GAME_IDS` at open time
+and lists every entry that has a `legal` field. A future game's notice therefore appears
+in both places as soon as its registry entry has the string, with no markup to touch.
+`PLANNED_GAMES` entries deliberately have none: they are label-only placeholders with no
+assets on the site yet.
 
 Two constraints are easy to trip over. Adapter functions must be declared **above** the
 registry, because the `GAMES` object literal evaluates its hook references at load time
