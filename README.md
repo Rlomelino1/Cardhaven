@@ -331,11 +331,19 @@ only when a modal opens, never on page load.
 
 The two backs are not framed the same way, and the CSS has to know it. Riftbound's scans bleed
 to the edge, so they take the same 8px corner as everything else. Pokémon's Bulbagarden scan is
-a rounded card inscribed in a square image, with white pixels in the corners — measured at 28px
-on a 745×1040 file — so an 8px corner left four white notches showing. The Pokémon back alone is
-rounded to `4.2% / 3%`, which reproduces that 28px corner at any rendered size. It hangs off the
-`game-pokemon` body class rather than a new registry field, since it describes one image rather
-than a rule of the game. Pokémon *fronts* need nothing: their art bleeds to the edge.
+a rounded card inscribed in a square image, with white pixels in the corners, so an 8px corner
+left four white notches showing. The Pokémon back alone is rounded to `5% / 3.6%`, which
+reproduces the card's own ~34px corner at any rendered size. It hangs off the `game-pokemon` body
+class rather than a new registry field, since it describes one image rather than a rule of the
+game. Pokémon *fronts* need nothing: their art bleeds to the edge.
+
+Getting that radius right took measuring the **rendered** pixels rather than the source file. A
+first pass sampled the source for pixels brighter than 225, found the white ran 28px along each
+edge, and set the radius from that — which still left a one-pixel pale arc at every corner,
+because the boundary is anti-aliased and its fringe sits below that threshold. Fitting a circle
+to the arc's actual rendered coordinates gives ~19.5px at a 420px render, i.e. ~34px in the
+source. The lesson is the general one: when a fix is judged by what lands on screen, measure what
+landed on screen.
 
 Neither back host is a publisher CDN: Riftbound's are a pinned commit in a fan-maintained image
 repo and Pokémon's is a wiki archive. That is exactly why a failed back image is not left
