@@ -1,19 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { openApp } from "./helpers.js";
 
-/* Stage 8: two sets in one pool, the set-scope display filter, and the
-   cross-set card identity that the 3-copy limit depends on.
+const OGN_VAYNE = "ogn-035-298";
+const SFD_VAYNE = "sfd-223-221";
 
-   The reprint fixture is REAL data, not a construction. Spiritforged reprints
-   thirteen Origins cards as overnumbered Showcase printings; Vayne - Hunter is
-   one of them, and it is a Unit, so it belongs in a main deck where the copy
-   limit actually bites. Both refs are asserted to exist before they are used,
-   so a pool regeneration that dropped them fails loudly here instead of
-   quietly turning this file into a no-op. */
-const OGN_VAYNE = "ogn-035-298";   // Vayne - Hunter
-const SFD_VAYNE = "sfd-223-221";   // Vayne - Hunter (Overnumbered), Showcase
-
-// zones: { main: [[ref, qty], ...], ... }
 const setZones = (page, zones) => page.evaluate((zones) => {
   freshDeck();
   for (const [z, pairs] of Object.entries(zones))
@@ -28,8 +18,6 @@ test.describe("merged pool", () => {
     const r = await page.evaluate(() => ({
       total: S.pool.length,
       sets: poolSets().map(s => ({ code: s.code, name: s.name, n: setCardsOf(s.code).length })),
-      // Refs are identity for decks AND collections. A collision across sets
-      // would silently merge two different cards' storage.
       uniqueRefs: new Set(S.pool.map(refOf)).size,
       missingRef: S.pool.filter(c => !c.riftboundId).length,
     }));
@@ -38,7 +26,7 @@ test.describe("merged pool", () => {
       { code: "SFD", name: "Spiritforged", n: 288 },
     ]);
     expect(r.total).toBe(640);
-    expect(r.uniqueRefs).toBe(640);   // no ref collides across sets
+    expect(r.uniqueRefs).toBe(640);
     expect(r.missingRef).toBe(0);
   });
 
@@ -51,8 +39,6 @@ test.describe("merged pool", () => {
   });
 
   test("a set that fails to load fails the whole load, naming the set", async ({ page }) => {
-    // Partial pools are worse than none: every card of the missing set would
-    // read as an unresolved deck entry and as a hole in the collection.
     await page.route("**/data/sfd-pool.json", route => route.fulfill({ status: 503, body: "nope" }));
     await page.goto("/");
     await expect(page.locator("#onboardMsg")).toContainText("Spiritforged");
@@ -70,7 +56,6 @@ test.describe("cross-set card identity", () => {
         found: !!x && !!y,
         names: [x?.name, y?.name],
         sets: [x?.set, y?.set],
-        // same card by the rules (TR 601.2.a), different printings by ref
         sameKey: cardKeyRef(a) === cardKeyRef(b),
         differentRefs: a !== b,
         idGroupsDiffer: copyGroupRef(a) !== copyGroupRef(b),
@@ -80,8 +65,8 @@ test.describe("cross-set card identity", () => {
     expect(r.sets).toEqual(["OGN", "SFD"]);
     expect(r.names[0]).toBe("Vayne - Hunter");
     expect(r.names[1]).toBe("Vayne - Hunter (Overnumbered)");
-    expect(r.idGroupsDiffer).toBe(true);   // layer 1 alone would miss this
-    expect(r.sameKey).toBe(true);          // layer 2 catches it
+    expect(r.idGroupsDiffer).toBe(true);
+    expect(r.sameKey).toBe(true);
     expect(r.differentRefs).toBe(true);
   });
 
@@ -89,7 +74,7 @@ test.describe("cross-set card identity", () => {
     await openApp(page);
     const problems = await setZones(page, { main: [[OGN_VAYNE, 2], [SFD_VAYNE, 2]] });
     expect(problems).toMatch(/Over 3 copies/);
-    expect(problems).toMatch(/Vayne - Hunter \(4\)/);   // labelled by the base printing
+    expect(problems).toMatch(/Vayne - Hunter \(4\)/);
   });
 
   test("2 + 1 across two sets (3 total) is legal", async ({ page }) => {
@@ -107,9 +92,6 @@ test.describe("cross-set card identity", () => {
   });
 
   test("a set's own overnumbered Showcase shares the base card's limit", async ({ page }) => {
-    // Within Spiritforged, an overnumbered Showcase gets its OWN collector
-    // number rather than a suffix on the base card's, so the id strip alone
-    // does not group it. sfd-049 / sfd-224* are one Unit: Aphelios - Exalted.
     await openApp(page);
     const problems = await setZones(page,
       { main: [["sfd-049-221", 3], ["sfd-224*-221", 1]] });
@@ -117,9 +99,6 @@ test.describe("cross-set card identity", () => {
   });
 
   test("battlefield uniqueness groups a reprint with its original", async ({ page }) => {
-    // No battlefield is reprinted across OGN and SFD today, so this is a
-    // synthetic fixture. The rule is stable regardless; the real-data guard is
-    // the pool-integrity test below.
     await openApp(page);
     const problems = await page.evaluate(() => {
       S.pool.push(
@@ -140,11 +119,6 @@ test.describe("cross-set card identity", () => {
 
   test("pool integrity: every card the grouping merges is functionally one card",
     async ({ page }) => {
-      // The grouping is name-based, and name-based grouping is only correct
-      // while two different cards never share a name. That is a property of the
-      // DATA, so it is asserted against the real pool: the day a set ships two
-      // distinct cards under one name, this goes red and the design gets
-      // revisited instead of silently mis-counting a deck.
       await openApp(page);
       const bad = await page.evaluate(() => {
         const byKey = new Map();
@@ -153,9 +127,6 @@ test.describe("cross-set card identity", () => {
           if (!byKey.has(k)) byKey.set(k, []);
           byKey.get(k).push(c);
         }
-        // Gameplay identity only. Riftcodex's metadata drifts between printings
-        // (a Showcase reprint may drop `supertype`, and legend text gets
-        // errata'd), which is not evidence of a different card.
         const shape = c => JSON.stringify({
           type: c.type, energy: c.energy, might: c.might, power: c.power,
           domains: [...c.domains].sort(),
@@ -167,18 +138,11 @@ test.describe("cross-set card identity", () => {
         return { collisions: out, keys: byKey.size, printings: S.pool.length };
       });
       expect(bad.collisions).toEqual([]);
-      // 640 printings collapse to 520 distinct cards for legality purposes.
       expect(bad.printings).toBe(640);
       expect(bad.keys).toBe(520);
     });
 
   test("no two Riftbound printings share an exact name", async ({ page }) => {
-    // addCard() merges a click into an existing deck row by REF. It used to
-    // merge by name, which was interchangeable here and wrong for a game that
-    // reprints one name across sets. This asserts the property that made the
-    // two interchangeable, so the day a Riftbound set ships two printings under
-    // one identical name, the reasoning behind that change gets revisited
-    // rather than quietly stopping being true.
     await openApp(page);
     const shared = await page.evaluate(() => {
       const byName = new Map();
@@ -197,17 +161,14 @@ test.describe("cross-set card identity", () => {
     async ({ page }) => {
       await openApp(page, { hash: "#collection" });
       const q = await page.evaluate(([a, b]) => {
-        colBump(a, 1); colBump(a, 1);   // OGN printing -> 2
-        colBump(b, 1);                  // SFD reprint  -> 1
+        colBump(a, 1); colBump(a, 1);
+        colBump(b, 1);
         return { ogn: qtyOf(a), sfd: qtyOf(b), keys: Object.keys(COL).length };
       }, [OGN_VAYNE, SFD_VAYNE]);
       expect(q).toEqual({ ogn: 2, sfd: 1, keys: 2 });
     });
 });
 
-/* The All sets chip is a toggle: pressing it while it is already on backs out of
-   all-mode. So say the intent — be in all-mode — rather than pressing a button
-   whose meaning depends on where you already are. */
 const allSets = page => page.evaluate(() => {
   if (!S.setScopeAll) toggleSetScope("all");
   return S.setScopeAll;
@@ -249,7 +210,7 @@ test.describe("deck builder set scope", () => {
     }));
     expect(after.count).toBe(before.count);
     expect(after.rows).toBe(before.rows);
-    expect(after.over).toBe(true);              // still flagged, still illegal
+    expect(after.over).toBe(true);
     expect(before.over).toBe(true);
     expect(after.names.join(" ")).toContain("Vayne - Hunter (Overnumbered)");
   });
@@ -263,7 +224,6 @@ test.describe("deck builder set scope", () => {
     await expect(note).toHaveCount(1);
     await expect(note).toHaveText(
       /2 cards in this zone sit outside the current set scope — still legal, just not browsable right now\./);
-    // It is the last line in the notice area, after the legality messages.
     const last = await page.evaluate(() =>
       document.querySelector("#problems li:last-child").className);
     expect(last).toBe("scopenote");
@@ -272,15 +232,12 @@ test.describe("deck builder set scope", () => {
   test("the scope selection survives a reload", async ({ page }) => {
     await openApp(page);
     await deselectSfd(page);
-    await openApp(page);   // same context, so localStorage persists
+    await openApp(page);
     expect(await page.evaluate(() => S.setScope)).toEqual(["OGN"]);
     await expect(page.locator("#resultCount")).toHaveText(/352 cards in scope/);
   });
 
   test("the All sets chip reports the act, not the sum of the picks", async ({ page }) => {
-    /* Ticking every set by hand is not the same act as asking for all sets, so
-       the chip lights only in all-mode. It also means more than the enumeration
-       does: all-mode covers sets that ship later, an enumerated pick does not. */
     const state = () => page.evaluate(() => ({
       lit: document.querySelector("#setChips .setchip").classList.contains("on"),
       all: S.setScopeAll,
@@ -288,22 +245,18 @@ test.describe("deck builder set scope", () => {
       stored: JSON.parse(localStorage.getItem(setScopeKey()) || "null"),
     }));
     await openApp(page);
-    // Fresh: nothing has been picked, so the app really is showing every set.
     expect(await state()).toMatchObject({ lit: true, all: true });
 
     await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
     expect(await state()).toMatchObject({ lit: false, all: false, scope: ["OGN"] });
 
-    // Back to every set, by hand. The chip must NOT light.
     await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
     expect(await state()).toMatchObject({
       lit: false, all: false, scope: ["OGN", "SFD"], stored: ["OGN", "SFD"] });
-    await openApp(page);   // and it survives a reload as a hand-picked scope
+    await openApp(page);
     expect(await state()).toMatchObject({ lit: false, all: false });
 
-    // Asking for all sets does light it, and persists as the mode.
     await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
-    // Stored as the mode plus the scope to back out to.
     expect(await state()).toMatchObject({
       lit: true, all: true, stored: { all: true, prev: ["OGN", "SFD"] } });
     await openApp(page);
@@ -318,20 +271,16 @@ test.describe("deck builder set scope", () => {
       lit: document.querySelector("#setChips .setchip").classList.contains("on"),
     }));
     await openApp(page);
-    // Get onto a real hand-picked scope first.
     await page.locator("#setChips .setchip", { hasText: "Origins" }).click();
     expect(await state()).toMatchObject({ all: false, scope: ["SFD"] });
 
     await chip.click();
     expect(await state()).toMatchObject({
       all: true, lit: true, scope: ["OGN", "SFD"], prev: ["SFD"] });
-    // ...and pressing it again returns you to exactly that scope.
     await chip.click();
     expect(await state()).toMatchObject({
       all: false, lit: false, scope: ["SFD"], prev: null });
 
-    // The round trip survives a reload, because the scope to come back to is
-    // stored with the preference.
     await chip.click();
     await openApp(page);
     expect(await state()).toMatchObject({ all: true, prev: ["SFD"] });
@@ -342,8 +291,6 @@ test.describe("deck builder set scope", () => {
   test("backing out with nothing to return to lands on the game's first set",
     async ({ page }) => {
       const chip = page.locator("#setChips .setchip", { hasText: "All sets" });
-      // A fresh browser starts in all-mode having never picked anything, so
-      // there is no previous scope — the first set beats an empty browser.
       await openApp(page);
       expect(await page.evaluate(() => ({
         all: S.setScopeAll, prev: S.setScopePrev }))).toEqual({ all: true, prev: null });
@@ -371,20 +318,16 @@ test.describe("deck builder set scope", () => {
         adoptPool();
         return S.setScope;
       });
-      // A fresh browser is already in all-mode, so pressing the chip here would
-      // back OUT of it. Assert the starting state instead of clicking into it.
       expect(await page.evaluate(() => S.setScopeAll)).toBe(true);
       expect(await withNewSet()).toEqual(["OGN", "SFD", "NEW"]);
 
       await openApp(page);
-      // Hand-picked: the scope is what was picked, and stays that way.
       await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
       await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
       expect(await withNewSet()).toEqual(["OGN", "SFD"]);
     });
 
   test("a legacy stored array still reads as a hand-picked scope", async ({ page }) => {
-    // Every browser that has ever set a scope holds an array, never "all".
     await page.addInitScript(() =>
       localStorage.setItem("riftbound.setScope", JSON.stringify(["OGN", "SFD"])));
     await openApp(page);
@@ -396,16 +339,11 @@ test.describe("deck builder set scope", () => {
   });
 
   test("the last set standing cannot be deselected", async ({ page }) => {
-    /* Something has to stay in scope. This used to snap to EVERY set, which
-       turned one stray click into a scope nobody asked for; now the click does
-       nothing whatsoever — including not disturbing all-mode or the remembered
-       scope, which is why the guard runs before either is written. */
     await openApp(page);
     await allSets(page);
     await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
     expect(await page.evaluate(() => S.setScope)).toEqual(["OGN"]);
 
-    // Click the only remaining set, three times.
     const lone = page.locator("#setChips .setchip", { hasText: "Origins" });
     for (let i = 0; i < 3; i++) await lone.click();
     expect(await page.evaluate(() => ({
@@ -413,12 +351,9 @@ test.describe("deck builder set scope", () => {
       lit: document.querySelectorAll("#setChips .setchip.on").length,
       stored: JSON.parse(localStorage.getItem(setScopeKey())),
     }))).toEqual({ scope: ["OGN"], lit: 1, stored: ["OGN"] });
-    // It says why on hover, so a click that does nothing doesn't read as dead.
     await expect(lone).toHaveAttribute("title", /at least one set/i);
-    // The other set can still be brought back...
     await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
     expect(await page.evaluate(() => S.setScope.length)).toBe(2);
-    // ...and with two selected, neither is pinned.
     expect(await page.locator("#setChips .setchip[title]").count()).toBe(0);
   });
 
@@ -428,8 +363,6 @@ test.describe("deck builder set scope", () => {
     await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
     expect(await page.evaluate(() => ({ all: S.setScopeAll, prev: S.setScopePrev })))
       .toEqual({ all: true, prev: ["OGN"] });
-    // Leaving all-mode by clicking a set drops to the other one, and that is a
-    // fresh choice: no remembered scope left over.
     await page.locator("#setChips .setchip", { hasText: "Origins" }).click();
     expect(await page.evaluate(() => ({
       all: S.setScopeAll, prev: S.setScopePrev, scope: S.setScope,
@@ -455,7 +388,6 @@ test.describe("import / export across sets", () => {
       expect(json.zones.main.map(c => c.riftboundId).sort())
         .toEqual([OGN_VAYNE, SFD_VAYNE].sort());
 
-      // Narrow the browser to Origins, then import the file back.
       await allSets(page);
       await page.evaluate(() => toggleSetScope("SFD"));
       await page.evaluate(() => { freshDeck(); render(); });
@@ -472,22 +404,15 @@ test.describe("import / export across sets", () => {
       expect(after.name).toBe("Two sets");
       expect(after.unresolved).toBe(0);
       expect(after.main).toEqual([[OGN_VAYNE, 2], [SFD_VAYNE, 1]].sort());
-      // The out-of-scope card is still in the deck and still drawn in the panel.
       expect(after.rows.join(" ")).toContain("Vayne - Hunter (Overnumbered)");
       expect(after.scope).toEqual(["OGN"]);
     });
 });
 
 test.describe("per-set collection", () => {
-  /* Seed the signed-out map before the app boots — this is exactly the shape a
-     pre-stage-8 browser holds, so it doubles as the backwards-compatibility
-     test. */
   const seed = async (page, map) => {
     await openApp(page);
     await page.evaluate(m => localStorage.setItem("rb.collection", JSON.stringify(m)), map);
-    // A full reload, not a hash change: the map is read once at startup, and
-    // navigating "/" -> "/#collection" is same-document, so the script that
-    // reads it would never run again.
     await page.reload();
     await page.waitForFunction(() => typeof POOL_READY !== "undefined" && POOL_READY,
       null, { timeout: 15_000 });
@@ -518,8 +443,8 @@ test.describe("per-set collection", () => {
   test("a mixed-set map reports each set separately and both together",
     async ({ page }) => {
       await seed(page, {
-        "ogn-001-298": 3, "ogn-002-298": 1,     // Origins: 2 printings, 4 copies
-        "sfd-001-221": 2, "sfd-002-221": 2, "sfd-003-221": 1,  // SFD: 3 printings, 5 copies
+        "ogn-001-298": 3, "ogn-002-298": 1,
+        "sfd-001-221": 2, "sfd-002-221": 2, "sfd-003-221": 1,
       });
       const read = () => page.evaluate(() => ({
         name: document.getElementById("colSetName").textContent,
@@ -551,9 +476,7 @@ test.describe("per-set collection", () => {
       expect(sfd.copies).toMatch(/^5\/864 copies · 0 playsets$/);
       expect(sfd.missing).toBe("285");
       expect(sfd.count).toBe("288 printings");
-      expect(sfd.gridSets).toEqual(["sfd"]);   // no Origins card leaks in
-      // Tabs are computed on this set's slice: 288 all, 285 missing,
-      // 3 partial (2+2+1 copies, none at a playset), 0 playsets.
+      expect(sfd.gridSets).toEqual(["sfd"]);
       expect(sfd.tabs).toEqual(["All288", "Missing285", "Partial3", "Playset0"]);
 
       await page.evaluate(() => setColSet("OGN"));
@@ -567,7 +490,7 @@ test.describe("per-set collection", () => {
     const r = await page.evaluate(() => {
       setColSet("SFD");
       const ph = document.getElementById("colQ").placeholder;
-      COLF.q = "001";        // matches a collector number in BOTH sets
+      COLF.q = "001";
       renderCollection();
       const refs = [...document.querySelectorAll("#colGrid .ctile")].map(t => t.dataset.ref);
       return { ph, refs };
@@ -579,7 +502,6 @@ test.describe("per-set collection", () => {
 
   test("Mark set owned and Clear touch only the active set's refs", async ({ page }) => {
     await seed(page, { "ogn-001-298": 3, "sfd-001-221": 2 });
-    // ask() resolves through the modal; answer it by clicking the confirm button.
     const confirmWith = async (label, fn) => {
       const done = page.evaluate(fn);
       await page.locator("#askActs .btn", { hasText: label }).click();
@@ -592,10 +514,10 @@ test.describe("per-set collection", () => {
       ogn: Object.keys(COL).filter(k => k.startsWith("ogn-")).length,
       sfd: Object.keys(COL).filter(k => k.startsWith("sfd-")).length,
       ognKept: COL["ogn-001-298"],
-      sfdKept: COL["sfd-001-221"],   // an existing qty above 1 is not reduced
+      sfdKept: COL["sfd-001-221"],
     }));
     expect(r.sfd).toBe(288);
-    expect(r.ogn).toBe(1);           // Origins untouched
+    expect(r.ogn).toBe(1);
     expect(r.ognKept).toBe(3);
     expect(r.sfdKept).toBe(2);
 
@@ -605,8 +527,8 @@ test.describe("per-set collection", () => {
       sfd: Object.keys(COL).filter(k => k.startsWith("sfd-")).length,
       ognKept: COL["ogn-001-298"],
     }));
-    expect(r.sfd).toBe(0);           // Spiritforged wiped
-    expect(r.ogn).toBe(1);           // Origins still there
+    expect(r.sfd).toBe(0);
+    expect(r.ogn).toBe(1);
     expect(r.ognKept).toBe(3);
   });
 
@@ -645,13 +567,10 @@ test.describe("the game switcher", () => {
     await openApp(page);
     await page.click("#gameBtn");
     const rows = page.locator("#gameMenu .gmrow.planned");
-    // Two now: Pokemon graduated from a planned row to a registry entry in
-    // stage 9, which is exactly the move this test exists to notice.
     await expect(rows).toHaveCount(2);
     await expect(rows.first().locator(".gmstate")).toHaveText("Planned");
     await expect(rows.first().locator(".gmsub")).toHaveText("Not yet on Card Haven");
     const r = await page.evaluate(() => ({
-      // no buttons, no links, no handlers — nothing to click
       interactive: document.querySelectorAll("#gameMenu .planned a, #gameMenu .planned button").length,
       registryGames: Object.keys(GAMES),
     }));

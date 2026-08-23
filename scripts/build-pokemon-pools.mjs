@@ -1,39 +1,4 @@
 #!/usr/bin/env node
-/**
- * build-pokemon-pools.mjs — vendor every English Pokémon TCG set into slim
- * per-set pool files, a set manifest, and one global search index.
- *
- * Requires Node 18+. No dependencies. Safe to re-run: a set whose pool file
- * already exists is skipped unless --force or --set names it.
- *
- *   node scripts/build-pokemon-pools.mjs             # every English set
- *   node scripts/build-pokemon-pools.mjs --set sv1   # rebuild one set
- *   node scripts/build-pokemon-pools.mjs --force     # refetch everything
- *   node scripts/build-pokemon-pools.mjs --raw       # print one raw record
- *   node scripts/build-pokemon-pools.mjs --index     # rebuild manifest+index
- *                                                    # from the pools on disk
- *
- * Source: the PokemonTCG/pokemon-tcg-data GitHub repo — plain JSON, no API
- * key, actively maintained. The live pokemontcg.io API is deliberately NOT
- * used: it is unreliable and buys nothing here.
- *
- * Output, all under data/pokemon/ :
- *   {setId}-pool.json   slim per-set pool, minified
- *   sets.json           set manifest, newest release first, pretty-printed
- *   search-index.json   every card as {id,n,s,num,img[,b]}, minified
- *
- * ---------------------------------------------------------------------------
- * Two image hosts, not one
- * ---------------------------------------------------------------------------
- * Most sets serve art from images.pokemontcg.io as "{set}/{number}.png" and
- * "{set}/{number}_hires.png". The four Mega Evolution sets serve from
- * images.scrydex.com under a completely different path shape
- * ("pokemon/me5-1/large"), for card art AND for set symbols and logos. So the
- * URLs are copied verbatim from the source and never reconstructed from a
- * pattern — the pattern is wrong for 4 sets out of 174, and would be wrong
- * again the next time the upstream repo changes hosts. Both hosts have to be
- * in the app's CSP img-src.
- */
 
 import { mkdir, readFile, writeFile, readdir } from "node:fs/promises";
 
@@ -61,30 +26,6 @@ const getJson = async (url) => {
   return res.json();
 };
 
-/* -------------------------------- mapping -------------------------------- */
-/* Everything the app never reads is dropped: abilities, weaknesses, retreat
-   cost, flavour text, pokedex numbers, level, and the whole
-   `tcgplayer`/`cardmarket` pricing tree. Attacks are reduced to the one thing
-   the deck panel asks of them — which energy types they cost — rather than
-   vendored whole. Kept:
-     - supertype/subtypes  verbatim — they drive the Energy copy-limit
-                           exemption, the supertype filter chips, and the
-                           ACE SPEC / Radiant single-card deck rules
-     - number              a STRING; Pokémon collector numbers include GG69,
-                           TG12, SV107, and "1" must not become 1
-     - legalities          stored, never enforced (out of scope this stage)
-     - evolvesFrom         a NAME, not an id — evolution is a name reference
-                           upstream, which is also the axis the deck panel
-                           groups on
-     - costs               the deduped union of every attack cost symbol on the
-                           card. The panel only ever asks "which types does
-                           this attacker need", so per-attack structure is
-                           needless; one flat array answers it. "Free" is
-                           dropped: a zero-cost attack requires nothing, and
-                           keeping the token would draw a dot for it.
-   Absent fields are omitted rather than written as null: at 20k cards the
-   nulls alone would be hundreds of KB, and the client already reads every
-   optional field with `?? null`. */
 const str = (v) => (v === undefined || v === null ? null : String(v));
 
 const toCard = (c) => {
@@ -114,10 +55,6 @@ const toCard = (c) => {
   return out;
 };
 
-/* Basic Energy is exempt from the 4-copy limit. The deck panel has to know
-   that for a card it may only ever see through the search index (a 60-card
-   deck spans many sets; only the open set's full pool is loaded), so the flag
-   rides on the index entry. Sparse — a few hundred cards out of 20k. */
 const isBasicEnergy = (c) =>
   c.supertype === "Energy" && Array.isArray(c.subtypes) && c.subtypes.includes("Basic");
 
@@ -125,11 +62,6 @@ const toSet = (s) => ({
   id: String(s.id),
   name: String(s.name),
   series: String(s.series ?? "Other"),
-  /* The code printed on the card and the one Pokémon TCG Live expects in a
-     decklist — "SVI" where our set id is "sv1". Present for 149 of the 174
-     sets; the rest have never had one, and the client falls back to the id.
-     ~2.8 KB across the whole manifest, and without it an export pastes into
-     PTCGL as a set code it does not recognise. */
   ptcgoCode: str(s.ptcgoCode),
   releaseDate: String(s.releaseDate ?? ""),
   total: Number(s.total ?? s.printedTotal ?? 0),
@@ -137,12 +69,9 @@ const toSet = (s) => ({
   logoUrl: str(s.images?.logo),
 });
 
-/* Newest first. releaseDate is "YYYY/MM/DD" throughout, so a string compare is
-   a date compare; ties (same-day releases happen) fall back to the id. */
 const byNewest = (a, b) =>
   String(b.releaseDate).localeCompare(String(a.releaseDate)) || a.id.localeCompare(b.id);
 
-/* --------------------------------- fetch --------------------------------- */
 const kb = (n) => `${(n / 1024).toFixed(0)} KB`;
 const mb = (n) => `${(n / 1048576).toFixed(2)} MB`;
 
@@ -186,7 +115,6 @@ async function main() {
     let cards = null;
 
     if (!INDEX_ONLY && (FORCE || ONE_SET || !onDisk.has(set.id))) {
-      // Volunteer-run infrastructure, 174 requests in a row: stay polite.
       if (fetched) await sleep(250);
       const raw = await getJson(`${RAW_BASE}/cards/en/${set.id}.json`);
       if (!Array.isArray(raw) || !raw.length) throw new Error(`${set.id}: no cards`);
@@ -199,8 +127,6 @@ async function main() {
     } else {
       cards = await readPool(set.id);
       if (!cards) {
-        // --index over a set that was never fetched. Say so rather than
-        // writing an index with a silent hole in it.
         throw new Error(`${set.id}: no pool file on disk — run without --index first`);
       }
       skipped++;
@@ -216,8 +142,6 @@ async function main() {
     }
   }
 
-  // A single-set rebuild must not truncate the manifest or the index, so fold
-  // the sets it did not touch back in from disk.
   if (ONE_SET) {
     for (const set of sets) {
       if (set.id === ONE_SET) continue;
@@ -232,9 +156,6 @@ async function main() {
     }
   }
 
-  // `cards` is what the repo actually holds for the set; `total` is what the
-  // set officially contains. They differ for a handful of sets, and the client
-  // shows progress against the file, so both travel.
   const manifest = sets
     .filter((s) => counts.has(s.id))
     .map((s) => ({ ...s, cards: counts.get(s.id) }));

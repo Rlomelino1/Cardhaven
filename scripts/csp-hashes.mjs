@@ -1,34 +1,4 @@
 #!/usr/bin/env node
-/**
- * csp-hashes.mjs — recompute the sha256 of every inline <script> in index.html
- * and write them into the page's own Content-Security-Policy.
- *
- *   node scripts/csp-hashes.mjs           # report; non-zero exit if stale
- *   node scripts/csp-hashes.mjs --write   # update the meta tag in place
- *
- * WHY THIS EXISTS
- * ---------------
- * The app is one self-contained HTML file, so its JavaScript is inline. A CSP
- * that keeps `script-src 'unsafe-inline'` to allow that also allows any script
- * an attacker manages to inject, which makes the policy decorative: one missed
- * esc() becomes an XSS. Pinning a hash per inline script lets the policy drop
- * 'unsafe-inline' entirely — the app's own scripts are named, and nothing else
- * inline can run, event handlers included.
- *
- * THE COST, STATED PLAINLY
- * ------------------------
- * Every edit to any inline script changes its hash, and a stale hash is not a
- * warning — it is a blank page. Three things keep that from reaching anyone:
- *   - .gitattributes pins index.html to LF, so the bytes a browser receives are
- *     the same on Windows, on CI and on Pages. Without it a hash can only match
- *     one of the three;
- *   - tests/e2e/csp.spec.js recomputes the hashes and fails if they have moved,
- *     and `main` will not accept a red e2e;
- *   - this script prints exactly what to do about it.
- *
- * This is not a build step: the output is a static string committed to the file,
- * and nothing is generated at runtime or at deploy time.
- */
 
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -45,14 +15,6 @@ if (html.includes("\r\n")) {
   process.exit(2);
 }
 
-/* The browser hashes the element's text content exactly — every byte between
-   the tags, leading and trailing newlines included.
-
-   HTML comments are blanked FIRST. A comment that merely mentions a script tag
-   is not a script element, and matching one shifts every hash after it — which
-   means a blank page, discovered in production. This bit me while writing the
-   comment above the CSP itself. Blanked rather than deleted so byte offsets, and
-   therefore anything else read from this string, stay put. */
 const scannable = html.replace(/<!--[\s\S]*?-->/g, (c) => c.replace(/[^\n]/g, " "));
 const scripts = [...scannable.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
   .map((m) => m[1]);
@@ -69,9 +31,6 @@ const srcRe = /script-src ([^;]*)/;
 const current = srcRe.exec(policy);
 if (!current) { console.error("no script-src in the CSP"); process.exit(2); }
 
-/* 'self' stays: the inline module imports the vendored Neon SDK from this
-   origin, and those fetches are script-src too. What goes away is
-   'unsafe-inline', which is the whole point. */
 const wanted = `script-src ${hashes.join(" ")} 'self'`;
 const already = current[0].trim() === wanted;
 
