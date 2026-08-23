@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-p4WWMI4MqiL1Btm7JVXX121Zx6WVcx58TRpnFaDmMN4=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-a+W5m7hHVJTZZ9jV4q5ri2BemdYMTyu6zWgeTqVYj4U=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -583,7 +583,10 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
   display:flex; gap:24px; max-width:980px; width:100%; flex-wrap:wrap;
   align-items:flex-start; max-height:90vh; overflow:auto}
 .box img,.box svg{width:420px; max-width:100%; border-radius:8px; display:block}
-.box .flipscene{width:420px; max-width:100%; perspective:1400px; cursor:pointer}
+.box .flipscene{width:420px; max-width:100%; perspective:1400px; cursor:grab;
+  user-select:none; -webkit-user-select:none; touch-action:pan-y}
+.box .flipscene.grabbing{cursor:grabbing}
+.box .flipper.dragging{transition:none}
 .box .flipper{position:relative; transform-style:preserve-3d;
   transition:transform 620ms cubic-bezier(.2,.75,.25,1)}
 .box .flipper.flipped{transform:rotateY(180deg)}
@@ -1010,7 +1013,6 @@ const PK_ZONES = {
   main:{label:"Deck", short:"Deck", target:60, rule:"exact"}
 };
 
-const LS_VARIANTS = "rb.variants";
 const LS_COLLECTION = "rb.collection";
 const LS_GAME = "ch.game";
 
@@ -1488,7 +1490,6 @@ const GAMES = {
     axis: RB_DOMAINS, axisLabel: "domains", axisInk: RB_DOMAIN_INK,
     types: RB_TYPES,
     rarityOrder: RB_RARITY_ORDER, rarityDot: RB_RARITY_DOT,
-    variantsToggle: true,
     chaseRarities: ["Epic","Showcase"], chaseLabel: "Epic or Showcase",
     energyCurve: true,
     legend: true,
@@ -1535,7 +1536,6 @@ const GAMES = {
     axis: PK_ENERGY_TYPES, axisLabel: "types", axisInk: PK_TYPE_INK,
     types: PK_SUPERTYPES,
     rarityOrder: PK_RARITY_ORDER, rarityDot: PK_RARITY_DOT,
-    variantsToggle: false,
     chaseRarities: ["Double Rare","Ultra Rare","Rare Ultra","Illustration Rare",
       "Special Illustration Rare","Hyper Rare","ACE SPEC Rare"],
     chaseLabel: "Double Rare or better",
@@ -1623,7 +1623,7 @@ let S = {
   zones:{main:[],runes:[],battlefields:[],sideboard:[]},
   unresolved:[],
   deckId:null, savedAt:null,
-  q:"", domainFilter:[], typeFilter:[], rarityFilter:[], variants:true, limit:48,
+  q:"", domainFilter:[], typeFilter:[], rarityFilter:[], limit:48,
   setScope: [],
   setScopeAll: true,
   setScopePrev: null,
@@ -1875,11 +1875,6 @@ function load(){
     if(!raw) return false;
     const saved = JSON.parse(raw);
     delete saved.pool;
-    if(typeof saved.variants === "boolean" &&
-       localStorage.getItem(LS_VARIANTS) === null){
-      S.variants = saved.variants;
-      try{ localStorage.setItem(LS_VARIANTS, String(saved.variants)); }catch{}
-    }
     if(saved.schema === 2 && saved.deck){
       S.deckName = String(saved.deckName || "Untitled deck");
       S.savedAt = saved.savedAt || null;
@@ -3080,10 +3075,7 @@ function render(){
       style="--c:var(--${d});--dt:${DOMAIN_INK[d]}" data-a="toggleFilter" data-a1="domainFilter" data-a2="${esc(d)}">${d}</button>`).join("");
   document.getElementById("typeRow").innerHTML = TYPES.map(t=>
     `<button class="chip${S.typeFilter.includes(t)?" on":""}"
-      data-a="toggleFilter" data-a1="typeFilter" data-a2="${esc(t)}">${esc(t)}</button>`).join("") +
-    (GAME.variantsToggle
-      ? `<button class="chip${S.variants?" on":""}" data-a="toggleVariants">Variants</button>`
-      : "");
+      data-a="toggleFilter" data-a1="typeFilter" data-a2="${esc(t)}">${esc(t)}</button>`).join("");
   const rarities = [...new Set(S.pool.map(c=>c.rarity).filter(Boolean))]
     .sort((a,b)=>{
       const ia = RARITY_ORDER.indexOf(a), ib = RARITY_ORDER.indexOf(b);
@@ -3095,11 +3087,9 @@ function render(){
         data-a="toggleFilter" data-a1="rarityFilter" data-a2="${esc(r)}">${esc(r)}</button>`).join("");
  
   const term = S.q.trim().toLowerCase();
-  const wantsVariantRarity = S.rarityFilter.some(r => r === "Showcase");
   const chipsOn = S.rarityFilter.length || S.domainFilter.length || S.typeFilter.length;
   const crossSet = GAME.lazySets && !!term && !chipsOn;
   const res = crossSet ? pkIndexMatches(term) : scopedPool().filter(c=>{
-    if(!S.variants && !wantsVariantRarity && (c.alternateArt || c.rarity==="Showcase")) return false;
     if(S.rarityFilter.length && !S.rarityFilter.includes(c.rarity)) return false;
     if(S.domainFilter.length && !c.domains.some(d=>S.domainFilter.includes(d))) return false;
     if(S.typeFilter.length && !S.typeFilter.includes(c.type)) return false;
@@ -3111,7 +3101,7 @@ function render(){
   SHELF_COLS = shelfCols();
   S.limit = Math.max(page, Math.min(S.limit, Math.max(page, res.length)));
 
-  const narrowed = !!term || chipsOn || (GAME.variantsToggle && !S.variants);
+  const narrowed = !!term || chipsOn;
   const scopeTotal = scopedPool().length;
   document.getElementById("resultCount").textContent =
     crossSet ? `${res.length} card${res.length===1?"":"s"} · all ${poolSets().length} sets`
@@ -3257,11 +3247,6 @@ window.toggleFilter = (k,v) => {
   S[k] = S[k].includes(v) ? S[k].filter(x=>x!==v) : [...S[k], v];
   S.limit = pageSize(); render();
 };
-window.toggleVariants = () => {
-  S.variants = !S.variants; S.limit = pageSize();
-  try{ localStorage.setItem(LS_VARIANTS, String(S.variants)); }catch{}
-  render();
-};
 window.clearLegend = () => { S.legend = null; touch(); render(); };
 window.dropUnresolved = () => { S.unresolved = []; touch(); render(); };
 
@@ -3383,7 +3368,7 @@ function paintCard(c){
   const back = backUrl
     ? `<img src="${esc(backUrl)}" alt="" referrerpolicy="no-referrer" data-back="1">`
     : backSvg();
-  document.getElementById("modalBox").innerHTML = `<div class="flipscene" data-a="flipCard">
+  document.getElementById("modalBox").innerHTML = `<div class="flipscene">
       <div class="flipper" id="cardFlipper">
         <div class="face front">${art}</div>
         <div class="face back">${back}</div>
@@ -3411,6 +3396,69 @@ window.flipCard = () => {
   const f = document.getElementById("cardFlipper");
   if(f) f.classList.toggle("flipped");
 };
+
+const FLIP_PULL = 0.6;
+const flipAnimates = () => {
+  try{ return !matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  catch{ return true; }
+};
+let drag = null, dragAte = false;
+
+function dragAngle(){
+  const turn = (drag.dx / (drag.w * FLIP_PULL)) * 180;
+  return Math.max(-180, Math.min(180, turn));
+}
+function dragPaint(){
+  drag.raf = 0;
+  const f = document.getElementById("cardFlipper");
+  if(f && drag) f.style.transform = `rotateY(${(drag.base + dragAngle()).toFixed(2)}deg)`;
+}
+function dragStop(commit){
+  const f = document.getElementById("cardFlipper");
+  if(!drag || !f){ drag = null; return; }
+  if(drag.raf) cancelAnimationFrame(drag.raf);
+  const turned = Math.abs(dragAngle()) >= 90;
+  const tapped = drag.moved < 6;
+  drag.scene.classList.remove("grabbing");
+  if(commit && (tapped || turned)) f.classList.toggle("flipped");
+  f.classList.remove("dragging");
+  f.style.transform = "";
+  dragAte = !tapped;
+  drag = null;
+}
+
+document.addEventListener("pointerdown", e => {
+  if(e.button !== 0) return;
+  const scene = e.target.closest?.(".flipscene");
+  const f = document.getElementById("cardFlipper");
+  if(!scene || !f) return;
+  drag = { id:e.pointerId, x0:e.clientX, dx:0, moved:0, raf:0, scene,
+           w:scene.getBoundingClientRect().width || 1,
+           base:f.classList.contains("flipped") ? 180 : 0,
+           live:flipAnimates() };
+  scene.classList.add("grabbing");
+  if(drag.live) f.classList.add("dragging");
+  try{ scene.setPointerCapture(e.pointerId); }catch{}
+  e.preventDefault();
+});
+document.addEventListener("pointermove", e => {
+  if(!drag || e.pointerId !== drag.id) return;
+  drag.dx = e.clientX - drag.x0;
+  drag.moved = Math.max(drag.moved, Math.abs(drag.dx));
+  if(drag.live && !drag.raf) drag.raf = requestAnimationFrame(dragPaint);
+});
+document.addEventListener("pointerup", e => {
+  if(drag && e.pointerId === drag.id) dragStop(true);
+});
+document.addEventListener("pointercancel", e => {
+  if(drag && e.pointerId === drag.id) dragStop(false);
+});
+document.addEventListener("click", e => {
+  if(!dragAte) return;
+  dragAte = false;
+  e.stopPropagation();
+  e.preventDefault();
+}, true);
  
 document.getElementById("picker").addEventListener("change", e => {
   const f = e.target.files[0]; if(!f) return;
@@ -3519,7 +3567,6 @@ const ACTIONS = {
   bump:          (a, b, c) => bump(a, b, Number(c)),
   setZoneTab:    a => setZoneTab(a),
   toggleFilter:  (a, b) => toggleFilter(a, b),
-  toggleVariants: () => toggleVariants(),
   clearLegend:   () => clearLegend(),
   dropUnresolved: () => dropUnresolved(),
   setLegend:     a => { addCard(a, "legend"); closeModal(); },
@@ -3812,10 +3859,6 @@ window.toggleSetGroup = series => {
   renderSetPickList();
 };
 
-try{
-  const v = localStorage.getItem(LS_VARIANTS);
-  if(v !== null) S.variants = v === "true";
-}catch{}
 ACTIVE_GAME = readActiveGame();
 adoptGame();
 S.zones = emptyZones();

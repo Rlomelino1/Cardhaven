@@ -285,10 +285,26 @@ explicit rule because the lift's shadow would otherwise replace it.
 
 **Modal flip.** The card art in the modal is a standard 3D flip: a scene with `perspective`, a
 flipper with `preserve-3d` and a transform transition, and two faces with `backface-visibility:
-hidden`, the back pre-rotated 180°. Clicking either the art or the **Flip card** button toggles
-one class. Rotation is Y-axis only and there is no drag control — deliberately, so the card
-reads as turning on a spit rather than tumbling. Reduced motion keeps the control and drops the
-transition, so the faces swap instantly.
+hidden`, the back pre-rotated 180°. Rotation is Y-axis only, so the card reads as turning on a
+spit rather than tumbling.
+
+Three ways to turn it, all landing on the same one-class state: the **Flip card** button, a
+click on the art, and **dragging the art left or right**. The drag is the interesting one,
+because it is *interactive* rather than a gesture that triggers an animation. While the pointer
+is down the transition is switched off and the rotation is written straight from the pointer
+offset, so the card turns exactly as far as the hand moves — a full 180° costs 60% of the card's
+width. On release, past halfway commits the flip and anything short of halfway returns; either
+way the inline rotation is dropped and the class-driven transition eases from wherever the card
+happened to be. So abandoning a drag genuinely almost-flips and falls back, rather than snapping.
+
+The drag also has to not do three things: close the modal (the backdrop's click is swallowed
+once after any real drag), select the card as text (`user-select:none` plus a prevented
+default), or fight vertical scrolling on touch (`touch-action:pan-y`). The scene owns the whole
+gesture, which is why it carries no `data-a` — leaving the delegated click handler in place
+alongside the pointer handler would have flipped twice and looked like nothing happened.
+
+Reduced motion keeps every control and drops the animation: the faces swap instantly and the
+drag stops tracking, committing or cancelling on release instead.
 
 **The back faces are registry data.** `cardBack(c)` is a function rather than a string because
 Riftbound has three backs keyed by card type — black for Legends and Battlefields, white for

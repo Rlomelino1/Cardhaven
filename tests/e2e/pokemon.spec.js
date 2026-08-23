@@ -374,11 +374,9 @@ test.describe("browsing and search", () => {
     await expect(page.locator(".curve")).toBeHidden();
     await expect(page.locator("#zoneTabs")).toBeHidden();
     const r = await page.evaluate(() => ({
-      variantsChip: document.getElementById("typeRow").innerText.includes("Variants"),
       zones: Object.keys(ZONES),
       checks: document.getElementById("checks").innerText.replace(/\n/g, " "),
     }));
-    expect(r.variantsChip).toBe(false);
     expect(r.zones).toEqual(["main"]);
     expect(r.checks).toContain("0/60");
   });

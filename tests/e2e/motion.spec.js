@@ -248,3 +248,105 @@ test.describe("regressions", () => {
       () => !!document.querySelector(".face.front svg"))).toBe(true);
   });
 });
+
+test.describe("drag the card to flip it", () => {
+  const scene = (page) => page.evaluate(() => {
+    const r = document.querySelector(".flipscene").getBoundingClientRect();
+    return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, w: r.width };
+  });
+
+  const angle = (page) => page.evaluate(() => {
+    const m = new DOMMatrix(
+      getComputedStyle(document.getElementById("cardFlipper")).transform);
+    return Math.atan2(-m.m31, m.m11) * 180 / Math.PI;
+  });
+
+  const drag = async (page, fraction, { release = true } = {}) => {
+    const { cx, cy, w } = await scene(page);
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    for (let i = 1; i <= 6; i++)
+      await page.mouse.move(cx + (w * fraction * i) / 6, cy);
+    const mid = await page.evaluate(() => ({
+      inline: document.getElementById("cardFlipper").style.transform,
+      dragging: document.getElementById("cardFlipper").classList.contains("dragging"),
+    }));
+    if (release) await page.mouse.up();
+    return mid;
+  };
+
+  test("the card follows the pointer while dragging", async ({ page }) => {
+    await openApp(page);
+    await openType(page, "Unit");
+    const mid = await drag(page, 0.25, { release: false });
+    expect(mid.dragging).toBe(true);
+    expect(mid.inline).toMatch(/^rotateY\(-?\d/);
+    expect(Math.abs(Math.round(await angle(page)))).toBeGreaterThan(30);
+    await page.mouse.up();
+  });
+
+  test("released past halfway it completes the flip", async ({ page }) => {
+    await openApp(page);
+    await openType(page, "Unit");
+    await drag(page, 0.45);
+    await expect(page.locator("#cardFlipper")).toHaveClass(/flipped/);
+    expect(await page.evaluate(
+      () => document.getElementById("cardFlipper").style.transform)).toBe("");
+  });
+
+  test("released before halfway it springs back", async ({ page }) => {
+    await openApp(page);
+    await openType(page, "Unit");
+    await drag(page, 0.2);
+    await expect(page.locator("#cardFlipper")).not.toHaveClass(/flipped/);
+  });
+
+  test("dragging left flips it too", async ({ page }) => {
+    await openApp(page);
+    await openType(page, "Unit");
+    const mid = await drag(page, -0.45, { release: false });
+    expect(mid.inline).toContain("-");
+    await page.mouse.up();
+    await expect(page.locator("#cardFlipper")).toHaveClass(/flipped/);
+  });
+
+  test("a drag that is abandoned eases back rather than jumping", async ({ page }) => {
+    await openApp(page);
+    await openType(page, "Unit");
+    await drag(page, 0.25);
+    const seen = [];
+    for (let i = 0; i < 6; i++) {
+      seen.push(Math.round(await angle(page)));
+      await page.waitForTimeout(70);
+    }
+    expect(new Set(seen).size).toBeGreaterThan(2);
+    expect(Math.abs(seen[seen.length - 1])).toBeLessThan(Math.abs(seen[0]));
+  });
+
+  test("a drag does not close the modal or select text", async ({ page }) => {
+    await openApp(page);
+    await openType(page, "Unit");
+    await drag(page, 0.9);
+    await expect(page.locator("#modal.open")).toBeVisible();
+    expect(await page.evaluate(() => String(getSelection()))).toBe("");
+  });
+
+  test("a plain click still flips, and the scene owns it alone", async ({ page }) => {
+    await openApp(page);
+    await openType(page, "Unit");
+    expect(await page.evaluate(
+      () => document.querySelector(".flipscene").dataset.a)).toBeUndefined();
+    const { cx, cy } = await scene(page);
+    await page.mouse.click(cx, cy);
+    await expect(page.locator("#cardFlipper")).toHaveClass(/flipped/);
+  });
+
+  test("the button and a drag agree on state", async ({ page }) => {
+    await openApp(page);
+    await openType(page, "Unit");
+    await page.click('.modalacts [data-a="flipCard"]');
+    await expect(page.locator("#cardFlipper")).toHaveClass(/flipped/);
+    await drag(page, 0.45);
+    await expect(page.locator("#cardFlipper")).not.toHaveClass(/flipped/);
+  });
+});
