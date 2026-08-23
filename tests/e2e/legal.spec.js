@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { openApp, openPokemon } from "./helpers.js";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
 const RIOT = "Riot Games does not endorse";
 const FREAK = "GAME FREAK";
@@ -114,4 +117,47 @@ test.describe("the legal notices modal", () => {
     expect(r.on).toEqual([]);
     expect(r.background).toBe("rgba(0, 0, 0, 0)");
   });
+});
+
+test.describe("the README quotes the notices the app actually carries", () => {
+  const readme = () => readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "..", "..", "README.md"), "utf8");
+  const flat = (t) => t.split(/\s+/).join(" ").trim();
+
+  test("every registry notice appears verbatim, and the generic line too",
+    async ({ page }) => {
+      await openApp(page);
+      const shown = await page.evaluate(() => ({
+        games: GAME_IDS.filter((id) => GAMES[id].legal).map((id) => GAMES[id].legal),
+        generic: document.querySelectorAll("footer .legal")[1].textContent
+          .replace("View all legal notices", ""),
+      }));
+      const doc = flat(readme().split("## Legal")[1] || "");
+      expect(shown.games.length).toBeGreaterThan(1);
+      for (const notice of shown.games)
+        expect(doc, `a registry notice is missing from README.md`).toContain(flat(notice));
+      expect(doc, "the always-visible footer line is missing from README.md")
+        .toContain(flat(shown.generic));
+    });
+
+  test("the README does not carry a superseded product name in its notices",
+    async ({ page }) => {
+      await openApp(page);
+      const legalSection = readme().split("## Legal")[1] || "";
+      expect(legalSection).not.toContain("Riftbound Deckbuilder");
+    });
+
+  test("the hosts the README names are exactly the CSP's image hosts",
+    async ({ page }) => {
+      await openApp(page);
+      const hosts = await page.evaluate(() => {
+        const csp = document.querySelector('meta[http-equiv="Content-Security-Policy"]').content;
+        return /img-src ([^;]+)/.exec(csp)[1].trim().split(/\s+/)
+          .filter((h) => h.startsWith("https://")).map((h) => h.replace("https://", ""));
+      });
+      const legalSection = readme().split("## Legal")[1] || "";
+      for (const h of hosts)
+        expect(legalSection, `${h} is in the CSP but not named in the Legal section`)
+          .toContain(h);
+    });
 });
