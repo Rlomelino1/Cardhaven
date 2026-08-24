@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openApp, openPokemon } from "./helpers.js";
+import { openApp, openPokemon, RB_POOL, RB_CODES } from "./helpers.js";
 
 const PIKACHU_BASE1 = "base1-58";
 const PIKACHU_BASE2 = "base2-60";
@@ -639,13 +639,13 @@ test.describe("the game switcher", () => {
       persisted: localStorage.getItem("ch.game"),
       label: document.getElementById("gameLabel").textContent,
     }));
-    expect(rb).toMatchObject({ game: "riftbound", pool: 640, cap: 3,
+    expect(rb).toMatchObject({ game: "riftbound", pool: RB_POOL, cap: 3,
       deckKey: "riftbound-deckbuilder-v1" });
     expect(rb.zones).toEqual(["main", "runes", "battlefields", "sideboard"]);
     expect(pk).toMatchObject({ game: "pokemon", cap: 4, deckKey: "pokemon.deck",
       moduleGame: "pokemon", persisted: "pokemon", label: "Pokémon TCG" });
     expect(pk.zones).toEqual(["main"]);
-    expect(pk.pool).toBeLessThan(640);
+    expect(pk.pool).toBeLessThan(RB_POOL);
     await page.click("#gameBtn");
     await page.click("#gameMenu .gmrow[data-a1='riftbound']");
     await page.waitForFunction(() => ACTIVE_GAME === "riftbound" && POOL_READY, null,
@@ -654,9 +654,9 @@ test.describe("the game switcher", () => {
       game: ACTIVE_GAME, pool: S.pool.length,
       sets: poolSets().map(s => s.code), scope: S.setScope,
     }));
-    expect(back).toMatchObject({ game: "riftbound", pool: 640 });
-    expect(back.sets).toEqual(["OGN", "SFD"]);
-    expect(back.scope).toEqual(["OGN", "SFD"]);
+    expect(back).toMatchObject({ game: "riftbound", pool: RB_POOL });
+    expect(back.sets).toEqual(RB_CODES);
+    expect(back.scope).toEqual(RB_CODES);
   });
 
   test("the switch is persisted, so a reload lands on the same game", async ({ page }) => {

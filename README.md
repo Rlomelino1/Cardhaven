@@ -23,16 +23,18 @@ running.
 
 - **Riftbound deckbuilder** — zone sizes, domain identity, Signature limits, and the
   3-copy limit counted across every printing of a card, main deck and sideboard
-  combined. Origins and Spiritforged both load into one pool; set chips scope the card
-  browser without touching the deck, and a reprint shares one copy limit with its
-  original.
+  combined. All eight sets — Origins, Spiritforged, Unleashed, Vendetta, Proving
+  Grounds and the three promo sets, 1,304 printings — load into one pool; set chips
+  scope the card browser without touching the deck, and a reprint shares one copy limit
+  with its original.
 - **Pokémon deckbuilder** — exactly 60 cards, at most 4 with the same *name* across
   every printing in every set, Basic Energy exempt. All 174 English sets, 20,444
   printings; a set's cards load when you open that set, and search spans all of them.
 - **Collection tracker**, per printing, per game, with a per-set progress view and a
   "what am I missing" diff. A base card and its Showcase printing are separate
   collectibles — which is the whole point of collecting the Showcase — and so are an
-  Origins card and its Spiritforged reprint. Caps follow the game: 3 and 4.
+  Origins card and its Spiritforged reprint, or a card and its Organized Play promo.
+  Caps follow the game: 3 and 4.
 - **Accounts**, so decks and collection are on the phone as well as the desktop.
 - **Export/import** as JSON, for both decks and collection; it's the backup path. An
   export names its game, and importing one into the other game is refused rather than
@@ -60,7 +62,12 @@ node scripts/build-pool-v2.mjs --set <code>     # writes <code>-pool.json
 
 Move it to `data/`, add one entry to the `GAMES.riftbound.sets` list at the top of
 `index.html` (`{ code, name, pool }`), and commit both. Nothing in the app switches on a
-set code.
+set code. Every set Riftcodex publishes is already in, so this is for a new release.
+
+A card's ref is `{set}-{number}{variant}-{source}`, and the trailing segment matters: a
+promo set reprints cards from several sets and keeps each one's *source* collector
+number, so `opp-001-298` and `opp-001-219` are different cards. The copy-limit grouping
+keys on all three parts for that reason.
 
 ### Adding or refreshing Pokémon sets
 
@@ -111,8 +118,9 @@ error:
 ```
 index.html              the app — must stay at the root; Pages deploys from main:/
 .nojekyll               stops Pages running Jekyll on the repo
-data/ogn-pool.json      352 Origins (OGN) printings with image URLs
-data/sfd-pool.json      288 Spiritforged (SFD) printings
+data/{set}-pool.json    the 8 Riftbound sets, 1,304 printings with image URLs
+                        (OGN 352, SFD 288, UNL 280, VEN 227, OPP 117, OGS 24, PR 13,
+                        JDG 3)
 data/pokemon/           174 slim per-set pools + sets.json + search-index.json (~8.9 MB)
 scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon)
 vendor/neon/            bundle.mjs (what the page loads) + the vendored module graph
@@ -155,6 +163,8 @@ The SQL tests need a database credential from `.env` and stay local; run them wi
 | 7 · Showcase / base-card 3-copy limit | done |
 | 8 · Multi-set (Origins + Spiritforged) + the multi-game frame | done |
 | 9 · Pokémon TCG — all 174 English sets, per-game rules, per-game collection | done |
+| 10 · The Pokémon deck panel — stats, single-card rules, PTCGL decklist round-trip | done |
+| 11 · The six remaining Riftbound sets — Unleashed, Vendetta, Proving Grounds, promos | done |
 
 ## Legal
 

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-R55RrVAolr39wlI9Jau7MkBAd9CLErzjzyC16/xgs28=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-54b9bHCnRgTM8sMmSdpHR7IFXMK3jZf8qsP/vASJ9N4=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech 'self'; img-src https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -1493,8 +1493,14 @@ const GAMES = {
     mark: "RB",
     lazySets: false,
     sets: [
-      { code:"OGN", name:"Origins",      pool:"./data/ogn-pool.json" },
-      { code:"SFD", name:"Spiritforged", pool:"./data/sfd-pool.json" },
+      { code:"OGN", name:"Origins",         pool:"./data/ogn-pool.json" },
+      { code:"SFD", name:"Spiritforged",    pool:"./data/sfd-pool.json" },
+      { code:"UNL", name:"Unleashed",       pool:"./data/unl-pool.json" },
+      { code:"VEN", name:"Vendetta",        pool:"./data/ven-pool.json" },
+      { code:"OGS", name:"Proving Grounds", pool:"./data/ogs-pool.json" },
+      { code:"OPP", name:"Organized Play",  pool:"./data/opp-pool.json" },
+      { code:"PR",  name:"Promos",          pool:"./data/pr-pool.json"  },
+      { code:"JDG", name:"Judge Promos",    pool:"./data/jdg-pool.json" },
     ],
     zones: RB_ZONES,
     axis: RB_DOMAINS, axisLabel: "domains", axisInk: RB_DOMAIN_INK,
@@ -1733,7 +1739,7 @@ function copyCap(card){
 function copyGroupRef(ref){
   const p = String(ref).split("-");
   const num = p.length === 3 && (p[1] || "").match(/^\d+/);
-  return num ? `${p[0]}-${num[0]}` : String(ref).toLowerCase();
+  return num ? `${p[0]}-${num[0]}-${p[2]}` : String(ref).toLowerCase();
 }
 const copyGroup = c => copyGroupRef(refOf(c));
 const isBasePrinting = ref => /^\d+$/.test(String(ref).split("-")[1] || "");

@@ -86,25 +86,41 @@ try {
   const raw = [...unwrap(first)];
   process.stderr.write(`page 1 → ${raw.length} cards\n`);
  
-  for (let page = 2; page <= 25; page++) {
+  const total = Number(first?.total ?? 0);
+  const pages = Number(first?.pages ?? 1);
+ 
+  for (let page = 2; page <= pages; page++) {
     await sleep(400);
     const json = await getPage(page);
     const batch = unwrap(json);
     process.stderr.write(`page ${page} → ${batch.length} cards\n`);
     if (!batch.length) break;
     raw.push(...batch);
-    if (batch.length < 100) break;
   }
  
-  const cards = raw.map(toCard).filter((c) => c.name);
+  if (total && raw.length !== total) {
+    throw new Error(
+      `fetched ${raw.length} rows but the API reports ${total} for ${SET}`
+    );
+  }
  
-  const seen = new Set();
-  const unique = cards.filter((c) => {
-    const k = c.riftboundId ?? `${c.name}|${c.number}`;
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+  const stamp = (c) => Date.parse(c?.metadata?.updated_on ?? "") || 0;
+  const filled = (c) =>
+    (c?.metadata?.clean_name ? 1 : 0) + (c?.tcgplayer_id ? 1 : 0);
+  const supersedes = (cur, next) =>
+    stamp(next) !== stamp(cur)
+      ? stamp(next) > stamp(cur)
+      : filled(next) > filled(cur);
+ 
+  const byKey = new Map();
+  for (const c of raw) {
+    const k = c.riftbound_id ?? `${c.name}|${c.collector_number}`;
+    const cur = byKey.get(k);
+    if (!cur || supersedes(cur, c)) byKey.set(k, c);
+  }
+ 
+  const superseded = raw.length - byKey.size;
+  const unique = [...byKey.values()].map(toCard).filter((c) => c.name);
  
   const file = `${SET}-pool.json`;
   await fs.writeFile(file, JSON.stringify(unique, null, 2));
@@ -115,6 +131,7 @@ try {
  
   console.log(`\nWrote ${file}`);
   console.log(`  cards        ${unique.length}`);
+  console.log(`  rows         ${raw.length} (${superseded} superseded)`);
   console.log(`  with image   ${withImage}`);
   console.log(`  with domain  ${withDomain}`);
   console.log(`  signature    ${sigs}`);
