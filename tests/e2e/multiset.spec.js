@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { openApp } from "./helpers.js";
+import { openApp, RB_SETS, RB_CODES, RB_POOL, rbWithout, rbCardsWithout }
+  from "./helpers.js";
 
 const OGN_VAYNE = "ogn-035-298";
 const SFD_VAYNE = "sfd-223-221";
@@ -13,7 +14,7 @@ const setZones = (page, zones) => page.evaluate((zones) => {
 }, zones);
 
 test.describe("merged pool", () => {
-  test("both sets load in parallel into one pool", async ({ page }) => {
+  test("every set loads in parallel into one pool", async ({ page }) => {
     await openApp(page);
     const r = await page.evaluate(() => ({
       total: S.pool.length,
@@ -21,12 +22,9 @@ test.describe("merged pool", () => {
       uniqueRefs: new Set(S.pool.map(refOf)).size,
       missingRef: S.pool.filter(c => !c.riftboundId).length,
     }));
-    expect(r.sets).toEqual([
-      { code: "OGN", name: "Origins", n: 352 },
-      { code: "SFD", name: "Spiritforged", n: 288 },
-    ]);
-    expect(r.total).toBe(640);
-    expect(r.uniqueRefs).toBe(640);
+    expect(r.sets).toEqual(RB_SETS);
+    expect(r.total).toBe(RB_POOL);
+    expect(r.uniqueRefs).toBe(RB_POOL);
     expect(r.missingRef).toBe(0);
   });
 
@@ -117,6 +115,36 @@ test.describe("cross-set card identity", () => {
     expect(problems).toMatch(/Testing Grounds/);
   });
 
+  test("a promo set reusing a collector number keeps each source set's card apart",
+    async ({ page }) => {
+      await openApp(page);
+      const r = await page.evaluate(() => {
+        const refs = ["opp-001-298", "opp-001-219", "opp-001-024"];
+        const cards = refs.map(findCard);
+        return {
+          found: cards.filter(Boolean).length,
+          groups: cards.map(c => copyGroup(c)),
+          names: cards.map(c => c.name),
+          keys: [...new Set(cards.map(c => cardKey(c)))].length,
+        };
+      });
+      expect(r.found).toBe(3);
+      expect(new Set(r.groups).size).toBe(3);
+      expect(new Set(r.names).size).toBe(3);
+      expect(r.keys).toBe(3);
+    });
+
+  test("a promo reprint shares one copy limit with the card it reprints",
+    async ({ page }) => {
+      await openApp(page);
+      const same = await page.evaluate(() =>
+        cardKey(findCard("ogn-001-298")) === cardKey(findCard("opp-001-298")));
+      expect(same).toBe(true);
+      const problems = await setZones(page,
+        { main: [["ogn-001-298", 3], ["opp-001-298", 1]] });
+      expect(problems).toMatch(/Blazing Scorcher \(4\)/);
+    });
+
   test("pool integrity: every card the grouping merges is functionally one card",
     async ({ page }) => {
       await openApp(page);
@@ -138,23 +166,35 @@ test.describe("cross-set card identity", () => {
         return { collisions: out, keys: byKey.size, printings: S.pool.length };
       });
       expect(bad.collisions).toEqual([]);
-      expect(bad.printings).toBe(640);
-      expect(bad.keys).toBe(520);
+      expect(bad.printings).toBe(RB_POOL);
+      expect(bad.keys).toBe(946);
     });
 
-  test("no two Riftbound printings share an exact name", async ({ page }) => {
+  test("printings that share a name are always the same card", async ({ page }) => {
     await openApp(page);
-    const shared = await page.evaluate(() => {
+    const r = await page.evaluate(() => {
       const byName = new Map();
       for (const c of S.pool) {
         const k = c.name.toLowerCase();
         if (!byName.has(k)) byName.set(k, []);
-        byName.get(k).push(refOf(c));
+        byName.get(k).push(c);
       }
-      return [...byName].filter(([, refs]) => refs.length > 1)
-        .map(([n, refs]) => n + ": " + refs.join(","));
+      const shape = c => JSON.stringify({
+        type: c.type, energy: c.energy, might: c.might, power: c.power,
+        domains: [...c.domains].sort(),
+      });
+      const conflicts = [];
+      let reprints = 0;
+      for (const [n, list] of byName) {
+        if (list.length < 2) continue;
+        reprints++;
+        if (new Set(list.map(shape)).size > 1)
+          conflicts.push(n + ": " + list.map(c => refOf(c)).join(","));
+      }
+      return { conflicts, reprints };
     });
-    expect(shared).toEqual([]);
+    expect(r.conflicts).toEqual([]);
+    expect(r.reprints).toBeGreaterThan(0);
   });
 
   test("the collection keeps a reprint and its original as distinct printings",
@@ -182,15 +222,20 @@ test.describe("deck builder set scope", () => {
 
   test("chips scope the browser and the readouts", async ({ page }) => {
     await openApp(page);
-    await expect(page.locator("#setScopeCount")).toHaveText(/2 sets · 640 cards in scope/i);
-    await expect(page.locator("#resultCount")).toHaveText(/640 cards in scope/);
+    await expect(page.locator("#setScopeCount")).toHaveText(
+      new RegExp(RB_CODES.length + " sets · " + RB_POOL + " cards in scope", "i"));
+    await expect(page.locator("#resultCount")).toHaveText(
+      new RegExp(RB_POOL + " cards in scope"));
 
-    expect(await deselectSfd(page)).toEqual(["OGN"]);
-    await expect(page.locator("#setScopeCount")).toHaveText(/1 set · 352 cards in scope/i);
-    await expect(page.locator("#resultCount")).toHaveText(/352 cards in scope/);
+    expect(await deselectSfd(page)).toEqual(rbWithout("SFD"));
+    const left = rbCardsWithout("SFD");
+    await expect(page.locator("#setScopeCount")).toHaveText(
+      new RegExp((RB_CODES.length - 1) + " sets · " + left + " cards in scope", "i"));
+    await expect(page.locator("#resultCount")).toHaveText(
+      new RegExp(left + " cards in scope"));
     const sets = await page.evaluate(() =>
       [...new Set([...document.querySelectorAll("#results .setbadge")].map(b => b.textContent))]);
-    expect(sets).toEqual(["OGN"]);
+    expect(sets).not.toContain("SFD");
   });
 
   test("scope never touches the deck panel, the counts, or legality", async ({ page }) => {
@@ -233,8 +278,9 @@ test.describe("deck builder set scope", () => {
     await openApp(page);
     await deselectSfd(page);
     await openApp(page);
-    expect(await page.evaluate(() => S.setScope)).toEqual(["OGN"]);
-    await expect(page.locator("#resultCount")).toHaveText(/352 cards in scope/);
+    expect(await page.evaluate(() => S.setScope)).toEqual(rbWithout("SFD"));
+    await expect(page.locator("#resultCount")).toHaveText(
+      new RegExp(rbCardsWithout("SFD") + " cards in scope"));
   });
 
   test("the All sets chip reports the act, not the sum of the picks", async ({ page }) => {
@@ -248,17 +294,19 @@ test.describe("deck builder set scope", () => {
     expect(await state()).toMatchObject({ lit: true, all: true });
 
     await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
-    expect(await state()).toMatchObject({ lit: false, all: false, scope: ["OGN"] });
+    expect(await state()).toMatchObject({
+      lit: false, all: false, scope: rbWithout("SFD") });
 
     await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    const readded = [...rbWithout("SFD"), "SFD"];
     expect(await state()).toMatchObject({
-      lit: false, all: false, scope: ["OGN", "SFD"], stored: ["OGN", "SFD"] });
+      lit: false, all: false, scope: readded, stored: readded });
     await openApp(page);
     expect(await state()).toMatchObject({ lit: false, all: false });
 
     await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
     expect(await state()).toMatchObject({
-      lit: true, all: true, stored: { all: true, prev: ["OGN", "SFD"] } });
+      lit: true, all: true, stored: { all: true, prev: readded } });
     await openApp(page);
     expect(await state()).toMatchObject({ lit: true, all: true });
   });
@@ -271,21 +319,22 @@ test.describe("deck builder set scope", () => {
       lit: document.querySelector("#setChips .setchip").classList.contains("on"),
     }));
     await openApp(page);
-    await page.locator("#setChips .setchip", { hasText: "Origins" }).click();
-    expect(await state()).toMatchObject({ all: false, scope: ["SFD"] });
+    await page.locator("#setChips .setchip")
+      .filter({ hasText: /^Origins/ }).click();
+    expect(await state()).toMatchObject({ all: false, scope: rbWithout("OGN") });
 
     await chip.click();
     expect(await state()).toMatchObject({
-      all: true, lit: true, scope: ["OGN", "SFD"], prev: ["SFD"] });
+      all: true, lit: true, scope: RB_CODES, prev: rbWithout("OGN") });
     await chip.click();
     expect(await state()).toMatchObject({
-      all: false, lit: false, scope: ["SFD"], prev: null });
+      all: false, lit: false, scope: rbWithout("OGN"), prev: null });
 
     await chip.click();
     await openApp(page);
-    expect(await state()).toMatchObject({ all: true, prev: ["SFD"] });
+    expect(await state()).toMatchObject({ all: true, prev: rbWithout("OGN") });
     await chip.click();
-    expect(await state()).toMatchObject({ all: false, scope: ["SFD"] });
+    expect(await state()).toMatchObject({ all: false, scope: rbWithout("OGN") });
   });
 
   test("backing out with nothing to return to lands on the game's first set",
@@ -319,12 +368,12 @@ test.describe("deck builder set scope", () => {
         return S.setScope;
       });
       expect(await page.evaluate(() => S.setScopeAll)).toBe(true);
-      expect(await withNewSet()).toEqual(["OGN", "SFD", "NEW"]);
+      expect(await withNewSet()).toEqual([...RB_CODES, "NEW"]);
 
       await openApp(page);
       await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
       await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
-      expect(await withNewSet()).toEqual(["OGN", "SFD"]);
+      expect(await withNewSet()).toEqual([...rbWithout("SFD"), "SFD"]);
     });
 
   test("a legacy stored array still reads as a hand-picked scope", async ({ page }) => {
@@ -341,10 +390,12 @@ test.describe("deck builder set scope", () => {
   test("the last set standing cannot be deselected", async ({ page }) => {
     await openApp(page);
     await allSets(page);
-    await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
+    for (const code of rbWithout("OGN"))
+      await page.evaluate(c => toggleSetScope(c), code);
     expect(await page.evaluate(() => S.setScope)).toEqual(["OGN"]);
 
-    const lone = page.locator("#setChips .setchip", { hasText: "Origins" });
+    const lone = page.locator("#setChips .setchip")
+      .filter({ hasText: /^Origins/ });
     for (let i = 0; i < 3; i++) await lone.click();
     expect(await page.evaluate(() => ({
       scope: S.setScope,
@@ -362,11 +413,12 @@ test.describe("deck builder set scope", () => {
     await page.locator("#setChips .setchip", { hasText: "Spiritforged" }).click();
     await page.locator("#setChips .setchip", { hasText: "All sets" }).click();
     expect(await page.evaluate(() => ({ all: S.setScopeAll, prev: S.setScopePrev })))
-      .toEqual({ all: true, prev: ["OGN"] });
-    await page.locator("#setChips .setchip", { hasText: "Origins" }).click();
+      .toEqual({ all: true, prev: rbWithout("SFD") });
+    await page.locator("#setChips .setchip")
+      .filter({ hasText: /^Origins/ }).click();
     expect(await page.evaluate(() => ({
       all: S.setScopeAll, prev: S.setScopePrev, scope: S.setScope,
-    }))).toEqual({ all: false, prev: null, scope: ["SFD"] });
+    }))).toEqual({ all: false, prev: null, scope: rbWithout("OGN") });
   });
 });
 
@@ -405,7 +457,7 @@ test.describe("import / export across sets", () => {
       expect(after.unresolved).toBe(0);
       expect(after.main).toEqual([[OGN_VAYNE, 2], [SFD_VAYNE, 1]].sort());
       expect(after.rows.join(" ")).toContain("Vayne - Hunter (Overnumbered)");
-      expect(after.scope).toEqual(["OGN"]);
+      expect(after.scope).toEqual(rbWithout("SFD"));
     });
 });
 
@@ -462,11 +514,14 @@ test.describe("per-set collection", () => {
       }));
 
       const all = await read();
+      const owned = { OGN: 2, SFD: 3 };
       expect(all.name).toBe("All sets");
-      expect(all.cards).toBe("5 of 640 cards");
-      expect(all.copies).toMatch(/^9\/1920 copies · 1 playset$/);
-      expect(all.chips).toEqual(["All sets 640", "Origins 2/352", "Spiritforged 3/288"]);
-      expect(all.count).toBe("640 printings");
+      expect(all.cards).toBe(`5 of ${RB_POOL} cards`);
+      expect(all.copies).toMatch(
+        new RegExp(`^9/${RB_POOL * 3} copies · 1 playset$`));
+      expect(all.chips).toEqual([`All sets ${RB_POOL}`,
+        ...RB_SETS.map(s => `${s.name} ${owned[s.code] || 0}/${s.n}`)]);
+      expect(all.count).toBe(`${RB_POOL} printings`);
 
       await page.evaluate(() => setColSet("SFD"));
       const sfd = await read();
@@ -559,7 +614,8 @@ test.describe("the game switcher", () => {
     await expect(page.locator("#ctxLabel")).toHaveText("Deckbuilder");
     await page.click("#gameBtn");
     await expect(page.locator("#gameMenu .gmrow.active .gmname")).toHaveText("Riftbound");
-    await expect(page.locator("#gameMenu .gmrow.active .gmsub")).toHaveText("2 sets · 640 cards");
+    await expect(page.locator("#gameMenu .gmrow.active .gmsub"))
+      .toHaveText(`${RB_CODES.length} sets · ${RB_POOL.toLocaleString("en-US")} cards`);
     await expect(page.locator("#gameMenu .gmfoot")).toHaveText("Decks and collection stay per game.");
   });
 
@@ -584,7 +640,7 @@ test.describe("the game switcher", () => {
     await page.evaluate(() => { colBump("ogn-001-298", 2); colBump("sfd-001-221", 1); });
     await page.click("#gameBtn");
     await expect(page.locator("#gameMenu .gmrow.active .gmsub"))
-      .toHaveText("2 sets · 2 printings logged");
+      .toHaveText(`${RB_CODES.length} sets · 2 printings logged`);
     await expect(page.locator("#gameMenu .gmfoot"))
       .toHaveText("Each game keeps its own collection and decks.");
   });

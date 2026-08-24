@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openApp, openPokemon } from "./helpers.js";
+import { openApp, openPokemon, RB_POOL } from "./helpers.js";
 
 const upload = (page, name, body) =>
   page.setInputFiles("#picker", {
@@ -205,7 +205,7 @@ test.describe("a hostile import cannot corrupt state", () => {
     expect(stored).not.toContain("Fake Card");
     expect(stored).not.toContain("evil.example");
     await openApp(page);
-    expect(await page.evaluate(() => S.pool.length)).toBe(640);
+    expect(await page.evaluate(() => S.pool.length)).toBe(RB_POOL);
   });
 });
 

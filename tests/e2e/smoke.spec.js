@@ -1,23 +1,26 @@
 import { test, expect } from "@playwright/test";
-import { openApp } from "./helpers.js";
+import { openApp, RB_POOL } from "./helpers.js";
 
 test.describe("boot and browse", () => {
   test("app boots, pool loads, cards render", async ({ page }) => {
     await openApp(page);
     await expect(page.locator("#onboard")).toBeHidden();
     await expect(page.locator("#browser")).toBeVisible();
-    await expect(page.locator("#resultCount")).toHaveText(/640 cards in scope/);
+    await expect(page.locator("#resultCount")).toHaveText(
+      new RegExp(RB_POOL + " cards in scope"));
     expect(await page.locator("#results .tile").count()).toBeGreaterThan(0);
-    expect(await page.evaluate(() => S.pool.length)).toBe(640);
-    expect(await page.evaluate(() => S.pool.filter(c => c.image).length)).toBe(640);
+    expect(await page.evaluate(() => S.pool.length)).toBe(RB_POOL);
+    expect(await page.evaluate(() => S.pool.filter(c => c.image).length)).toBe(RB_POOL);
   });
 
   test("search narrows the grid, and the readout keeps the scope it narrowed", async ({ page }) => {
     await openApp(page);
     await page.fill("#q", "kai");
-    await expect(page.locator("#resultCount")).not.toHaveText(/640 cards in scope/);
+    await expect(page.locator("#resultCount")).not.toHaveText(
+      new RegExp(RB_POOL + " cards in scope"));
     const n = await page.evaluate(() => S.pool.filter(c => c.name.toLowerCase().includes("kai")).length);
-    await expect(page.locator("#resultCount")).toHaveText(new RegExp(`^${n} of 640 in scope$`, "i"));
+    await expect(page.locator("#resultCount")).toHaveText(
+      new RegExp("^" + n + " of " + RB_POOL + " in scope$", "i"));
   });
 
   test("a domain filter changes the result count", async ({ page }) => {
@@ -399,7 +402,7 @@ test.describe("the browse page ends on a full row", () => {
       await openApp(page);
       await page.locator("#showAll").click();
       const r = await shelf(page);
-      expect(r.tiles).toBe(640);
+      expect(r.tiles).toBe(RB_POOL);
       await expect(page.locator("#more")).toBeHidden();
       await page.locator("#showLess").click();
       const back = await shelf(page);

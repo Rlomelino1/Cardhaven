@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { openApp } from "./helpers.js";
+import { openApp, RB_POOL } from "./helpers.js";
 
 const INDEX = new URL("../../index.html", import.meta.url);
 
@@ -46,7 +46,7 @@ test.describe("the CSP forbids inline script, and says so accurately", () => {
       if (/Content Security Policy/i.test(m.text())) violations.push(m.text());
     });
     await openApp(page);
-    expect(await page.evaluate(() => S.pool.length)).toBe(640);
+    expect(await page.evaluate(() => S.pool.length)).toBe(RB_POOL);
     await page.waitForFunction(() => typeof window.cloud !== "undefined", null, { timeout: 15000 });
     expect(violations, "the app's own code was blocked").toEqual([]);
   });
