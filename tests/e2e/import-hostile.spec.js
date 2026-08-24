@@ -216,6 +216,7 @@ test.describe("what an imported image URL can reach", () => {
       document.querySelector('meta[http-equiv="Content-Security-Policy"]').content);
     const img = /img-src ([^;]+)/.exec(csp)[1].trim().split(/\s+/);
     expect(img.sort()).toEqual([
+      "'self'",
       "data:",
       "https://archives.bulbagarden.net",
       "https://cmsassets.rgpub.io",
