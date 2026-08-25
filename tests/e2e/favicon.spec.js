@@ -20,6 +20,12 @@ test.describe("favicon assets are served", () => {
     expect(res.status()).toBe(200);
     expect(res.headers()["content-type"]).toContain("image/png");
   });
+
+  test("/icon-192.png is served as PNG", async ({ page }) => {
+    const res = await page.request.get("/icon-192.png");
+    expect(res.status()).toBe(200);
+    expect(res.headers()["content-type"]).toContain("image/png");
+  });
 });
 
 test.describe("favicon links in the head", () => {
@@ -42,5 +48,12 @@ test.describe("favicon links in the head", () => {
     const ico = page.locator('head link[rel="icon"][sizes="32x32"]');
     await expect(ico).toHaveCount(1);
     await expect(ico).toHaveAttribute("href", "/favicon.ico");
+  });
+
+  test("the 192x192 icon link points at /icon-192.png", async ({ page }) => {
+    await openApp(page);
+    const png192 = page.locator('head link[rel="icon"][sizes="192x192"]');
+    await expect(png192).toHaveCount(1);
+    await expect(png192).toHaveAttribute("href", "/icon-192.png");
   });
 });
