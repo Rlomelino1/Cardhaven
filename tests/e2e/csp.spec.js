@@ -9,8 +9,9 @@ const readIndex = async () => {
   const html = await readFile(INDEX, "utf8");
   const policy = /<meta http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(html)?.[1];
   const scannable = html.replace(/<!--[\s\S]*?-->/g, (c) => c.replace(/[^\n]/g, " "));
-  const scripts = [...scannable.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
-    .map((m) => m[1]);
+  const scripts = [...scannable.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+    .filter((m) => !/\ssrc=/.test(m[1] ?? ""))   // external scripts are covered by 'self'
+    .map((m) => m[2]);
   return { html, policy, scripts };
 };
 

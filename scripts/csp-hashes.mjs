@@ -16,8 +16,9 @@ if (html.includes("\r\n")) {
 }
 
 const scannable = html.replace(/<!--[\s\S]*?-->/g, (c) => c.replace(/[^\n]/g, " "));
-const scripts = [...scannable.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
-  .map((m) => m[1]);
+const scripts = [...scannable.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+  .filter((m) => !/\ssrc=/.test(m[1] ?? ""))   // external scripts are covered by 'self'
+  .map((m) => m[2]);
 
 const sha = (s) => "'sha256-" + createHash("sha256").update(s, "utf8").digest("base64") + "'";
 const hashes = scripts.map(sha);

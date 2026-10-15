@@ -124,6 +124,8 @@ data/{set}-pool.json    the 8 Riftbound sets, 1,304 printings with image URLs
 data/pokemon/           174 slim per-set pools + sets.json + search-index.json (~8.9 MB)
 scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon)
 vendor/neon/            bundle.mjs (what the page loads) + the vendored module graph
+vendor/goatcounter/     count.js, cookie-free page counts (see its README)
+privacy.html            the privacy page, linked from the footer
 migrations/             schema + tests
 tests/                  Playwright e2e suite and a static server
 ```
