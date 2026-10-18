@@ -4,25 +4,27 @@ import { createHash } from "node:crypto";
 import { openApp, RB_POOL } from "./helpers.js";
 
 const INDEX = new URL("../../index.html", import.meta.url);
+const PRIVACY = new URL("../../privacy.html", import.meta.url);
 
-const readIndex = async () => {
-  const html = await readFile(INDEX, "utf8");
+const readPage = async (file = INDEX) => {
+  const html = await readFile(file, "utf8");
   const policy = /<meta http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(html)?.[1];
   const scannable = html.replace(/<!--[\s\S]*?-->/g, (c) => c.replace(/[^\n]/g, " "));
-  const scripts = [...scannable.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
-    .map((m) => m[1]);
+  const scripts = [...scannable.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+    .filter((m) => !/\ssrc=/.test(m[1] ?? ""))   // external scripts are covered by 'self'
+    .map((m) => m[2]);
   return { html, policy, scripts };
 };
 
 test.describe("the CSP forbids inline script, and says so accurately", () => {
   test("index.html has no CRLF, or the served bytes would not match the hashes",
     async () => {
-      const { html } = await readIndex();
+      const { html } = await readPage();
       expect(html.includes("\r\n"), "index.html contains CRLF").toBe(false);
     });
 
   test("every inline script is named by a current sha256", async () => {
-    const { policy, scripts } = await readIndex();
+    const { policy, scripts } = await readPage();
     const src = /script-src ([^;]*)/.exec(policy)[1].trim().split(/\s+/);
     const wanted = scripts.map((s) =>
       "'sha256-" + createHash("sha256").update(s, "utf8").digest("base64") + "'");
@@ -33,8 +35,17 @@ test.describe("the CSP forbids inline script, and says so accurately", () => {
     expect(src.filter((s) => !s.startsWith("'sha256-"))).toEqual(["'self'"]);
   });
 
+  test("the privacy page's inline script is named too, and the page stays LF",
+    async () => {
+      const { html, policy, scripts } = await readPage(PRIVACY);
+      expect(html.includes("\r\n"), "privacy.html contains CRLF").toBe(false);
+      const src = /script-src ([^;]*)/.exec(policy)[1].trim().split(/\s+/);
+      expect(src).toEqual([...scripts.map((s) =>
+        "'sha256-" + createHash("sha256").update(s, "utf8").digest("base64") + "'"), "'self'"]);
+    });
+
   test("'unsafe-inline' is gone from script-src", async () => {
-    const { policy } = await readIndex();
+    const { policy } = await readPage();
     const src = /script-src ([^;]*)/.exec(policy)[1];
     expect(src).not.toContain("unsafe-inline");
     expect(/style-src ([^;]*)/.exec(policy)[1]).toContain("unsafe-inline");
