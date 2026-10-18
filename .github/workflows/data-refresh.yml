@@ -1,0 +1,82 @@
+# Refreshes the card data every Thursday at 14:00 UTC and opens a pull request
+# when anything changed. Nothing reaches the site until that PR is merged, so the
+# usual review and the `e2e` gate still decide what ships.
+#
+# scripts/refresh-data.mjs does the work (both games, new sets included) and
+# writes the PR description. Run it from the Actions tab with "Run workflow" to
+# refresh outside the schedule.
+#
+# Things this relies on:
+#   - Settings > Actions > General > "Allow GitHub Actions to create and approve
+#     pull requests" must be on, or `gh pr create` is refused.
+#   - A PR opened with the workflow token does not start other workflows, so CI
+#     never runs on it by itself. The last step dispatches ci.yml on the branch,
+#     which puts the `e2e` check on the PR's head commit like any other PR.
+#   - Each run replaces the data-refresh branch. Merge or close the PR before the
+#     next Thursday; edits pushed to it by hand are overwritten.
+#   - GitHub may start scheduled runs late when it is busy, and pauses schedules
+#     in repositories with no activity for 60 days.
+
+name: Card data refresh
+
+on:
+  schedule:
+    - cron: "0 14 * * 4"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: data-refresh
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BRANCH: data-refresh
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Refresh both games
+        run: node scripts/refresh-data.mjs --summary "$RUNNER_TEMP/summary.md"
+      - name: Open or update the pull request
+        run: |
+          if [ -z "$(git status --porcelain -- data index.html)" ]; then
+            echo "The card data is already current."
+            exit 0
+          fi
+          day=$(date -u +%Y-%m-%d)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add -A data index.html
+          git commit -q -m "Refresh card data ($day)"
+          git push -q --force origin "$BRANCH"
+
+          {
+            echo "The weekly refresh found changes in the card data. Merging publishes them."
+            echo
+            cat "$RUNNER_TEMP/summary.md"
+            echo
+            echo "Opened by the Card data refresh workflow. The next run replaces this branch, so merge or close this PR before then."
+          } > "$RUNNER_TEMP/body.md"
+
+          title="Card data refresh ($day)"
+          pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --title "$title" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh pr create --base main --head "$BRANCH" --title "$title" --body-file "$RUNNER_TEMP/body.md"
+          fi
+      - name: Run CI on the pull request
+        run: |
+          if git rev-parse -q --verify "refs/heads/$BRANCH" >/dev/null; then
+            gh workflow run ci.yml --ref "$BRANCH"
+          fi

@@ -84,6 +84,16 @@ node scripts/build-pokemon-pools.mjs --raw       # print one raw record
 Sets already on disk are skipped unless `--force` or `--set` names them. Commit the
 regenerated `data/pokemon/`.
 
+### Weekly refresh
+
+`.github/workflows/data-refresh.yml` runs `node scripts/refresh-data.mjs` every Thursday
+at 14:00 UTC. It rebuilds every Riftbound and Pokémon pool, adds new Riftbound sets to
+`GAMES.riftbound.sets` (and redoes the CSP hashes), and opens a "Card data refresh" PR
+listing what changed when anything did. Merge it to publish. "Run workflow" on the
+Actions tab refreshes outside the schedule, and running the script locally does the same
+refresh without the PR. The repository setting *Allow GitHub Actions to create and
+approve pull requests* has to stay on for it to open the PR.
+
 ### Adding a game
 
 One entry in the `GAMES` registry plus one vendor script that transforms the source into
@@ -122,7 +132,8 @@ data/{set}-pool.json    the 8 Riftbound sets, 1,304 printings with image URLs
                         (OGN 352, SFD 288, UNL 280, VEN 227, OPP 117, OGS 24, PR 13,
                         JDG 3)
 data/pokemon/           174 slim per-set pools + sets.json + search-index.json (~8.9 MB)
-scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon)
+scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon) ·
+                        refresh-data.mjs (both, weekly)
 vendor/neon/            bundle.mjs (what the page loads) + the vendored module graph
 vendor/goatcounter/     count.js, cookie-free page counts (see its README)
 privacy.html            the privacy page, linked from the footer
