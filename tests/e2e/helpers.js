@@ -1,13 +1,11 @@
-export const RB_SETS = [
-  { code: "OGN", name: "Origins",         n: 352 },
-  { code: "SFD", name: "Spiritforged",    n: 288 },
-  { code: "UNL", name: "Unleashed",       n: 280 },
-  { code: "VEN", name: "Vendetta",        n: 227 },
-  { code: "OGS", name: "Proving Grounds", n: 24 },
-  { code: "OPP", name: "Organized Play",  n: 117 },
-  { code: "PR",  name: "Promos",          n: 13 },
-  { code: "JDG", name: "Judge Promos",    n: 3 },
-];
+import { readFileSync } from "node:fs";
+
+// The Riftbound sets and their sizes come from index.html and the committed pools, so
+// the weekly data refresh can add cards or sets without editing tests.
+const repo = (f) => readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
+export const RB_SETS = [...repo("index.html")
+  .matchAll(/\{ code:"([A-Z0-9]+)",\s*name:"([^"]*)",\s*pool:"\.\/(data\/[^"]+)"/g)]
+  .map(([, code, name, pool]) => ({ code, name, n: JSON.parse(repo(pool)).length }));
 export const RB_CODES = RB_SETS.map(s => s.code);
 export const RB_POOL = RB_SETS.reduce((n, s) => n + s.n, 0);
 export const rbWithout = code => RB_CODES.filter(c => c !== code);
