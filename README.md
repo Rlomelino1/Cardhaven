@@ -104,14 +104,14 @@ nothing.
 
 ### Maintenance notes
 
-Two rules about `index.html`, because breaking either serves a blank page rather than an
-error:
+Two rules about `index.html` (and `privacy.html`, which carries the same theme script),
+because breaking either serves a blank page rather than an error:
 
 - **Edit an inline script, then rehash it:** `node scripts/csp-hashes.mjs --write`. The
   Content-Security-Policy names each inline script by sha256, so a stale hash stops the
   page running. `npm test` catches it, and `main` will not merge a red suite.
-- **`index.html` stays LF**, pinned by `.gitattributes`. A hash can only match one line
-  ending, and Pages serves the LF that git stores.
+- **`index.html` and `privacy.html` stay LF**, pinned by `.gitattributes`. A hash can only
+  match one line ending, and Pages serves the LF that git stores.
 
 ## Layout
 
@@ -124,6 +124,8 @@ data/{set}-pool.json    the 8 Riftbound sets, 1,304 printings with image URLs
 data/pokemon/           174 slim per-set pools + sets.json + search-index.json (~8.9 MB)
 scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon)
 vendor/neon/            bundle.mjs (what the page loads) + the vendored module graph
+vendor/goatcounter/     count.js, cookie-free page counts (see its README)
+privacy.html            the privacy page, linked from the footer
 migrations/             schema + tests
 tests/                  Playwright e2e suite and a static server
 ```

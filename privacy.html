@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'self'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<title>Privacy — Card Haven</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="description" content="What Card Haven stores, what it counts, and what it never does with your data.">
+<link rel="canonical" href="https://cardhavenapp.com/privacy.html">
+<script>
+try{ if(localStorage.getItem("rb.theme")==="paper")
+  document.documentElement.classList.add("paper"); }catch(e){}
+</script>
+<style>
+:root{
+  --ink:#141024; --panel:#1F1936; --edge:#312A4C;
+  --text:#EAE7F4; --text2:#C9C2DA; --mute:#948CAB;
+  --brass:#C9A227; --teal:#3FA7A0;
+}
+:root.paper{
+  --ink:#F2EDE3; --panel:#FBF8F1; --edge:#DCD5C5;
+  --text:#211D15; --text2:#3D372B; --mute:#867D69;
+  --brass:#8C6D1F; --teal:#2E7D77;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ink); color:var(--text2); padding:22px 18px 48px;
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.65}
+:focus-visible{outline:2px solid var(--brass); outline-offset:2px}
+main{max-width:68ch; margin:0 auto}
+.top{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+  flex-wrap:wrap; background:var(--panel); border:1px solid var(--edge);
+  border-radius:4px; padding:10px 14px; margin-bottom:28px}
+.wordmark{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:21px; font-weight:700; color:var(--text); text-decoration:none}
+a{color:var(--brass)}
+a:hover{color:var(--text)}
+h1{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  color:var(--text); font-size:30px; margin:0 0 4px}
+.eyebrow{margin:0 0 22px; font-family:ui-monospace,Menlo,monospace; font-size:11px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--teal)}
+h2{color:var(--text); font-size:17px; margin:30px 0 8px}
+p,li{font-size:15px}
+ul{padding-left:20px}
+li{margin:4px 0}
+.short{background:var(--panel); border:1px solid var(--edge); border-left:3px solid var(--brass);
+  border-radius:4px; padding:12px 16px}
+.short p{margin:0}
+footer{margin-top:40px; font-size:12px; color:var(--mute)}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a class="wordmark" href="/">Card Haven</a>
+    <a href="/">Back to the deck builder</a>
+  </div>
+
+  <h1>Privacy</h1>
+  <p class="eyebrow">Last updated October 15, 2026</p>
+
+  <div class="short">
+    <p>Card Haven is a free fan project. It keeps only what it needs to save your decks and
+    collection, counts page visits without cookies or identifiers, shows no ads, and never
+    sells or shares your data.</p>
+  </div>
+
+  <h2>Without an account</h2>
+  <p>Everything you do stays in your own browser. Your decks, your collection, the game you
+  picked and your theme are saved in your browser's local storage on that device and are
+  never sent to us. Clearing this site's data in your browser removes them.</p>
+
+  <h2>With an account</h2>
+  <p>Signing in lets your decks and collection follow you between devices. For that we store:</p>
+  <ul>
+    <li><strong>Your email address</strong>, and a display name if you give one. If you sign in
+    with Google, Google shares your name, email address and profile picture with us.</li>
+    <li><strong>Your password</strong>, only in hashed form, if you use email sign-in. We never
+    see it in plain text.</li>
+    <li><strong>Your decks and your collection.</strong> We also keep earlier copies of your
+    collection when a change would remove a large part of it, so an accident can be undone.</li>
+  </ul>
+  <p>We use your email only to send sign-in, verification and password-reset codes. No
+  newsletters, no marketing.</p>
+  <p>Accounts and saved data are hosted by <a href="https://neon.com/privacy-policy"
+  rel="noopener">Neon</a>, which also keeps your sign-in session while you are signed in.
+  Each account can read and change only its own data.</p>
+
+  <h2>Visit counts</h2>
+  <p>We use <a href="https://www.goatcounter.com/help/privacy" rel="noopener">GoatCounter</a>
+  to count how many people visit and which pages they view. For each page view it receives
+  the page address, the page title, the site you came from, your screen width, and the
+  browser and country that can be worked out from the request. It uses no cookies, stores
+  nothing on your device, does not store your IP address, and cannot follow you across other
+  sites. We only ever see totals.</p>
+
+  <h2>Card images and hosting</h2>
+  <p>Card images are loaded directly from the publishers and community archives that host
+  them (Riot Games, the Pokémon TCG API, Scrydex, GitHub and Bulbagarden). Like any website,
+  those services and our host, <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+  rel="noopener">GitHub Pages</a>, receive your IP address when your browser requests a file.
+  Card Haven tells your browser not to send them which page you were on.</p>
+
+  <h2>What we never do</h2>
+  <ul>
+    <li>Sell, rent or share your data with anyone.</li>
+    <li>Show ads or use advertising or tracking cookies.</li>
+    <li>Build a profile of you or follow you across other sites.</li>
+  </ul>
+
+  <h2>Your choices</h2>
+  <p>You can export your decks and collection at any time from the app. To have your account
+  and everything saved with it deleted, or to ask what we hold about you, open an issue on
+  <a href="https://github.com/Rlomelino1/Cardhaven/issues" rel="noopener">GitHub</a>
+  and we will take care of it.</p>
+
+  <h2>Changes</h2>
+  <p>If this changes, this page changes with it, and the date at the top will say when.</p>
+
+  <footer>
+    Card Haven is an unofficial fan tool and is not affiliated with Riot Games, Nintendo,
+    Creatures Inc., GAME FREAK inc. or The Pokémon Company.
+  </footer>
+</main>
+</body>
+</html>
