@@ -5,7 +5,7 @@
 
 It is served from our own origin so the Content-Security-Policy can keep
 `script-src` at hashes plus `'self'`, with no third-party script host. The only
-outside host involved is the counting endpoint, `https://cardhaven.goatcounter.com`,
+outside host involved is the counting endpoint, `https://rlomelino.goatcounter.com`,
 which the CSP allows in `connect-src` only. The script sends with `sendBeacon`; its
 image fallback is deliberately left blocked so `img-src` stays limited to card hosts.
 
