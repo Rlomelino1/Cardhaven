@@ -25,6 +25,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The weekly data refresh (data-refresh.yml) opens its PR with the workflow
+  # token, which cannot trigger `pull_request`, so it starts this run by hand.
+  workflow_dispatch:
 
 # The suite blocks esm.sh and serves the repo locally, so it needs no secrets and
 # no external network beyond installing dependencies and the browser.
