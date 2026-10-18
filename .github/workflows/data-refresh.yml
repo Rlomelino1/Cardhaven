@@ -53,8 +53,9 @@ jobs:
             exit 0
           fi
           day=$(date -u +%Y-%m-%d)
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Commit as the repository owner so the history keeps a single contributor.
+          git config user.name "Rlomelino1"
+          git config user.email "103586613+Rlomelino1@users.noreply.github.com"
           git checkout -B "$BRANCH"
           git add -A data index.html
           git commit -q -m "Refresh card data ($day)"
