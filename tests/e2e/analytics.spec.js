@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { openApp } from "./helpers.js";
 
-const ENDPOINT = "https://cardhaven.goatcounter.com/count";
-const HOST = /^https:\/\/cardhaven\.goatcounter\.com\//;
+const ENDPOINT = "https://rlomelino.goatcounter.com/count";
+const HOST = /^https:\/\/rlomelino\.goatcounter\.com\//;
 
 const cspOf = (page) => page.evaluate(() =>
   document.querySelector('meta[http-equiv="Content-Security-Policy"]').content);
@@ -22,7 +22,7 @@ test.describe("GoatCounter page counts", () => {
     await openApp(page);
     const csp = await cspOf(page);
     const dir = (name) => new RegExp(`${name} ([^;]*)`).exec(csp)[1].split(/\s+/);
-    expect(dir("connect-src")).toContain("https://cardhaven.goatcounter.com");
+    expect(dir("connect-src")).toContain("https://rlomelino.goatcounter.com");
     expect(dir("img-src").join(" ")).not.toContain("goatcounter");
     expect(dir("script-src").join(" ")).not.toContain("goatcounter");
   });
