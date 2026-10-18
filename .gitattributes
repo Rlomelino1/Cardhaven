@@ -7,3 +7,6 @@
 # scripts/csp-hashes.mjs recomputes the hashes; tests/e2e/csp.spec.js fails if
 # they have drifted, which is what stops a stale hash reaching production.
 index.html text eol=lf
+
+# privacy.html carries the same kind of hashed inline script, so it is pinned too.
+privacy.html text eol=lf
