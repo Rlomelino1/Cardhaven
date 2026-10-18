@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-ClAqt+k7Ejf6Ytwm+8BIa2+87bBdeIC0x2M/0ce+Azo=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-LksW9jR5Jqsq+JbSn7D4q86BQnsoctkfWd2/6nz7+0g=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -1308,8 +1308,10 @@ const pkOfSupertype = st => S.zones.main.filter(c => c.supertype === st);
 function pkPills(){
   const n = zoneCount("main");
   const target = GAME.rules.deckSizeExact;
-  const pill = (ok, text) =>
-    `<span class="dspill ${ok ? "ok" : "bad"}"><span class="mark">${ok ? "&#10003;" : "&#10007;"}</span>${text}</span>`;
+  // An empty deck has nothing to pass or fail yet, so its pills start neutral.
+  const pill = (ok, text) => !n
+    ? `<span class="dspill"><span class="mark">&#9675;</span>${text}</span>`
+    : `<span class="dspill ${ok ? "ok" : "bad"}"><span class="mark">${ok ? "&#10003;" : "&#10007;"}</span>${text}</span>`;
   const out = [pill(n === target, `${target} cards`)];
   if(!DECK_DETAIL_PENDING){
     out.push(pill(S.zones.main.some(c => c.basicPokemon), "Basic Pokémon"));
@@ -3141,7 +3143,7 @@ function render(){
   const found = GAME.validate();
   probs.push(...found.filter(p => typeof p === "string"));
   const todos = found.filter(p => typeof p !== "string").map(p => p.todo);
-  const fresh = POOL_READY && !S.legend && !S.unresolved.length
+  const fresh = POOL_READY && !S.legend && !S.champion && !S.unresolved.length
     && Object.keys(S.zones).every(z => !zoneCount(z));
   const todoNote = fresh && GAME.welcome
     ? `<li class="welcome">${GAME.welcome()}</li>`

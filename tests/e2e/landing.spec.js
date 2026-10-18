@@ -38,6 +38,14 @@ test.describe("an empty deck is a start, not a list of failures", () => {
     expect(await page.evaluate(() => VIEW)).toBe("collection");
   });
 
+  test("the Pokemon panel's pills start neutral, not failed", async ({ page }) => {
+    await openPokemon(page);
+    const pills = await page.evaluate(() => [...document.querySelectorAll(".dspill")]
+      .map((p) => p.className));
+    expect(pills.length).toBeGreaterThan(0);
+    expect(pills.every((c) => c === "dspill")).toBe(true);
+  });
+
   test("Pokemon opens on its own welcome line", async ({ page }) => {
     await openPokemon(page);
     const r = await items(page);
