@@ -76,6 +76,14 @@ test.describe("the privacy page", () => {
     expect(violations).toEqual([]);
   });
 
+  test("it follows the Paper theme the app saved", async ({ page }) => {
+    await page.goto("/privacy.html");
+    await expect(page.locator("html")).not.toHaveClass(/paper/);
+    await page.evaluate(() => localStorage.setItem("rb.theme", "paper"));
+    await page.reload();
+    await expect(page.locator("html")).toHaveClass(/paper/);
+  });
+
   test("the sitemap lists it", async ({ page }) => {
     const res = await page.request.get("/sitemap.xml");
     expect(await res.text()).toContain("<loc>https://cardhavenapp.com/privacy.html</loc>");
