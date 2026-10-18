@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-54b9bHCnRgTM8sMmSdpHR7IFXMK3jZf8qsP/vASJ9N4=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-LksW9jR5Jqsq+JbSn7D4q86BQnsoctkfWd2/6nz7+0g=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com https://archives.bulbagarden.net data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -152,8 +152,12 @@ button.gmrow{cursor:pointer}
   padding:2px 5px; line-height:1.1}
 .dset{font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:.1em;
   color:var(--mute); flex:none}
-#problems li.scopenote{border-left-color:var(--mute); background:var(--hover-wash);
+#problems li.scopenote,#problems li.todo{border-left-color:var(--mute); background:var(--hover-wash);
   color:var(--text2)}
+#problems li.welcome{border-left-color:var(--brass); background:var(--note-wash);
+  color:var(--text2)}
+#problems li.welcome b{color:var(--text)}
+.welcomeacts{display:flex; gap:7px; flex-wrap:wrap; margin-top:9px}
 
 .setpickwrap{position:relative}
 .setpickwrap[hidden]{display:none}
@@ -773,6 +777,11 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   .gamemenu,.deckmenu,.setpick{left:0; right:0; width:auto; max-width:none}
   .setbar{padding:8px 10px; gap:8px}
   .setcount{margin-left:0; flex:1 1 100%}
+  .browsecol,.controls,.searchrow,.setbar{min-width:0}
+  .setchips,.controls .row{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
+    flex:1 1 100%; min-width:0}
+  .setchips::-webkit-scrollbar,.controls .row::-webkit-scrollbar{display:none}
+  .setchip,.controls .row .chip,.controls .row .lbl{flex:none}
   .gamebtn{font-size:12.5px}
   .shelf{grid-template-columns:repeat(auto-fill,minmax(94px,1fr)); gap:8px}
   .curve{min-height:72px}
@@ -1187,16 +1196,20 @@ const pkSearchMatch = (c, term) =>
   || (c.artist||"").toLowerCase().includes(term)
   || String(c.pokemonId||"").toLowerCase().includes(term);
 
+// A deck that is still being built is not a deck that breaks a rule: counts it has not
+// reached yet are todos, shown calmly; everything else is a real problem, shown in red.
+const todo = text => ({todo:text});
+
 function rbValidate(){
   const probs = [];
   if(POOL_READY){
     const m = zoneCount("main");
-    if(m < 40) probs.push(`Main deck needs ${40-m} more card${40-m===1?"":"s"}.`);
+    if(m < 40) probs.push(todo(`Main deck needs ${40-m} more card${40-m===1?"":"s"}.`));
     const r = zoneCount("runes");
-    if(r < 12) probs.push(`Rune deck is ${12-r} short of 12.`);
+    if(r < 12) probs.push(todo(`Rune deck needs ${12-r} more rune${12-r===1?"":"s"}.`));
     else if(r > 12) probs.push(`Rune deck is ${r-12} over 12.`);
     const b = zoneCount("battlefields");
-    if(b < 3) probs.push(`Add ${3-b} more battlefield${3-b===1?"":"s"}.`);
+    if(b < 3) probs.push(todo(`Add ${3-b} more battlefield${3-b===1?"":"s"}.`));
     else if(b > 3) probs.push(`Battlefields are ${b-3} over 3.`);
     const bfCopies = new Map();
     for(const c of S.zones.battlefields){
@@ -1208,7 +1221,7 @@ function rbValidate(){
     if(dupBf.length) probs.push(`Battlefields must all be different — duplicate: ${dupBf.map(e=>esc(e.label)).join(", ")}.`);
     const sb = zoneCount("sideboard");
     if(sb !== 0 && sb !== 8) probs.push(`Sideboard must be empty or exactly 8 cards — it has ${sb}.`);
-    if(!S.legend) probs.push(`No Legend set — filter to Legend and pick one to lock your domains.`);
+    if(!S.legend) probs.push(todo(`No Legend set — filter to Legend and pick one to lock your domains.`));
   }
   const everywhere = [...S.zones.main, ...S.zones.runes, ...S.zones.sideboard];
   const off = everywhere.filter(offDomain);
@@ -1295,8 +1308,10 @@ const pkOfSupertype = st => S.zones.main.filter(c => c.supertype === st);
 function pkPills(){
   const n = zoneCount("main");
   const target = GAME.rules.deckSizeExact;
-  const pill = (ok, text) =>
-    `<span class="dspill ${ok ? "ok" : "bad"}"><span class="mark">${ok ? "&#10003;" : "&#10007;"}</span>${text}</span>`;
+  // An empty deck has nothing to pass or fail yet, so its pills start neutral.
+  const pill = (ok, text) => !n
+    ? `<span class="dspill"><span class="mark">&#9675;</span>${text}</span>`
+    : `<span class="dspill ${ok ? "ok" : "bad"}"><span class="mark">${ok ? "&#10003;" : "&#10007;"}</span>${text}</span>`;
   const out = [pill(n === target, `${target} cards`)];
   if(!DECK_DETAIL_PENDING){
     out.push(pill(S.zones.main.some(c => c.basicPokemon), "Basic Pokémon"));
@@ -1493,7 +1508,7 @@ function pkValidate(){
   const limit = GAME.rules.copyLimit;
   if(POOL_READY){
     const n = zoneCount("main");
-    if(n < target) probs.push(`Deck needs ${target-n} more card${target-n===1?"":"s"} — a deck is exactly ${target}.`);
+    if(n < target) probs.push(todo(`Deck needs ${target-n} more card${target-n===1?"":"s"} — a deck is exactly ${target}.`));
     else if(n > target) probs.push(`Deck is ${n-target} card${n-target===1?"":"s"} over ${target}.`);
   }
   const byName = new Map();
@@ -1572,6 +1587,10 @@ const GAMES = {
     searchMatch: rbSearchMatch,
     deckText: rbDeckText,
     validate: rbValidate,
+    welcome: () => `<b>Start a deck.</b> Pick a Legend to set your domains, then add cards from the grid below.
+      <span class="welcomeacts">${S.typeFilter.includes("Legend") ? ""
+        : `<button class="btn go" data-a="toggleFilter" data-a1="typeFilter" data-a2="Legend">Show Legends</button>`}
+      <button class="btn quiet" data-a="goView" data-a1="collection">Track my collection</button></span>`,
     cardBack: rbCardBack,
     landscape: rbLandscape,
     legal: "Unofficial fan tool for personal use. Riftbound, League of Legends, and all card assets belong to Riot Games. Created under Riot Games' “Legal Jibber Jabber” policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.",
@@ -1627,6 +1646,8 @@ const GAMES = {
     deckText: pkDeckText,
     parseDeckText: pkParseDeckText,
     validate: pkValidate,
+    welcome: () => `<b>Start a deck.</b> Add 60 cards, at most 4 with the same name. Search below, or pick a set to browse.
+      <span class="welcomeacts"><button class="btn quiet" data-a="goView" data-a1="collection">Track my collection</button></span>`,
     blockAdd: pkBlockAdd,
     deckStats: pkDeckStats,
     cardBack: pkCardBack,
@@ -3119,14 +3140,21 @@ function render(){
       + `. They stay in the deck when you save. `
       + `<button class="btn sm quiet" data-a="dropUnresolved">Remove them</button>`);
   }
-  probs.push(...GAME.validate());
+  const found = GAME.validate();
+  probs.push(...found.filter(p => typeof p === "string"));
+  const todos = found.filter(p => typeof p !== "string").map(p => p.todo);
+  const fresh = POOL_READY && !S.legend && !S.champion && !S.unresolved.length
+    && Object.keys(S.zones).every(z => !zoneCount(z));
+  const todoNote = fresh && GAME.welcome
+    ? `<li class="welcome">${GAME.welcome()}</li>`
+    : todos.length ? `<li class="todo">${todos.join(" ")}</li>` : "";
   const outOfScope = GAME.lazySets ? 0
     : S.zones[ZONE_TAB].filter(c => !inScope(c)).reduce((n,c) => n + c.qty, 0);
   const scopeNote = outOfScope
     ? `<li class="scopenote">${outOfScope} card${outOfScope===1?"":"s"} in this zone sit${outOfScope===1?"s":""} outside the current set scope — still legal, just not browsable right now.</li>`
     : "";
   document.getElementById("problems").innerHTML =
-    probs.map(p=>`<li>${p}</li>`).join("") + scopeNote;
+    probs.map(p=>`<li>${p}</li>`).join("") + todoNote + scopeNote;
  
   document.getElementById("domainRow").innerHTML = DOMAINS.map(d=>
     `<button class="chip dchip${S.domainFilter.includes(d)?" on":""}"
