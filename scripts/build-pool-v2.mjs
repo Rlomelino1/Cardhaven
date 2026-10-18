@@ -61,7 +61,9 @@ const fs = await import("node:fs/promises");
  
 const getPage = async (page) => {
   const url = `${BASE}/cards?set_id=${SET}&size=100&page=${page}&sort=collector_number`;
-  const res = await fetch(url, { headers: { accept: "application/json" } });
+  const res = await fetch(url, {
+    headers: { accept: "application/json", "user-agent": "CardHaven-data-refresh (+https://cardhavenapp.com)" },
+  });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} on ${url}`);
   return res.json();
 };

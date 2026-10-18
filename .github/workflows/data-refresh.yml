@@ -80,3 +80,11 @@ jobs:
           if git rev-parse -q --verify "refs/heads/$BRANCH" >/dev/null; then
             gh workflow run ci.yml --ref "$BRANCH"
           fi
+      # A skipped Riftbound refresh still lets the Pokémon PR through, but fails the
+      # run afterwards so GitHub's failure email says the Riftbound data is stale.
+      - name: Flag a skipped Riftbound refresh
+        run: |
+          if grep -q "Not refreshed this time" "$RUNNER_TEMP/summary.md"; then
+            echo "::error::Riftbound was not refreshed. See the summary above."
+            exit 1
+          fi

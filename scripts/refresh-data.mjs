@@ -21,6 +21,7 @@ const SUMMARY = args.includes("--summary") ? args[args.indexOf("--summary") + 1]
 const ROOT = new URL("../", import.meta.url);
 const at = (p) => new URL(p, ROOT);
 const RIFTCODEX = "https://api.riftcodex.com";
+const USER_AGENT = "CardHaven-data-refresh (+https://cardhavenapp.com)";
 
 const run = (script, scriptArgs, cwd = ROOT) => {
   const r = spawnSync(process.execPath, [new URL(script, at("scripts/")).pathname, ...scriptArgs],
@@ -37,47 +38,56 @@ const plural = (n, one, many = `${one}s`) => `${n.toLocaleString("en-US")} ${n =
 const delta = (before, after) => (after > before ? `+${after - before}` : `${after - before}`);
 
 // ---- Riftbound ----
+// Riftcodex sits behind Cloudflare, which can refuse requests from CI runners. A refusal
+// skips Riftbound for this run rather than holding back the Pokémon refresh, and the
+// summary says so.
 
-const setsRes = await fetch(`${RIFTCODEX}/sets`, { headers: { accept: "application/json" } });
-if (!setsRes.ok) throw new Error(`${setsRes.status} ${setsRes.statusText} on ${RIFTCODEX}/sets`);
-const rbSets = (await setsRes.json()).items ?? [];
-if (!rbSets.length) throw new Error("Riftcodex listed no sets");
-
-let html = await readFile(at("index.html"), "utf8");
-const listed = new Set([...html.matchAll(/\{ code:"([A-Z0-9]+)",\s*name:"[^"]*",\s*pool:"\.\/data\//g)]
-  .map((m) => m[1]));
-if (!listed.size) throw new Error("found no GAMES.riftbound.sets entries in index.html");
-
-const rbBefore = new Map();
-for (const s of rbSets) {
-  const code = s.set_id.toLowerCase();
-  rbBefore.set(s.set_id, (await readJson(`data/${code}-pool.json`))?.length ?? null);
-  process.stderr.write(`riftbound ${s.set_id}\n`);
-  run("build-pool-v2.mjs", ["--set", code], at("data/"));
-}
-
-const added = rbSets.filter((s) => !listed.has(s.set_id))
-  .sort((a, b) => String(a.published_on).localeCompare(String(b.published_on)));
-if (added.length) {
-  const newestListed = rbSets.filter((s) => listed.has(s.set_id))
-    .sort((a, b) => String(b.published_on).localeCompare(String(a.published_on)))[0];
-  const anchor = new RegExp(`^.*\\{ code:"${newestListed.set_id}",.*\\n`, "m");
-  const entry = (s) => {
-    const code = `code:"${s.set_id}",`.padEnd(12);
-    const name = `name:"${s.name.replace(/"/g, "")}",`.padEnd(23);
-    return `      { ${code}${name} pool:"./data/${s.set_id.toLowerCase()}-pool.json" },\n`;
-  };
-  html = html.replace(anchor, (line) => line + added.map(entry).join(""));
-  await writeFile(at("index.html"), html);
-  run("csp-hashes.mjs", ["--write"]);
-}
-
+let rbSets = [], added = [], rbError = null;
 const rbLines = [];
-for (const s of rbSets) {
-  const before = rbBefore.get(s.set_id);
-  const after = (await readJson(`data/${s.set_id.toLowerCase()}-pool.json`))?.length ?? 0;
-  if (before === null || added.includes(s)) rbLines.push(`- **${s.name}** (${s.set_id}) is new: ${plural(after, "card")}`);
-  else if (before !== after) rbLines.push(`- ${s.name} (${s.set_id}): ${delta(before, after)} cards, now ${after}`);
+try {
+  const setsRes = await fetch(`${RIFTCODEX}/sets`, { headers: { accept: "application/json", "user-agent": USER_AGENT } });
+  if (!setsRes.ok) throw new Error(`${setsRes.status} ${setsRes.statusText} on ${RIFTCODEX}/sets`);
+  rbSets = (await setsRes.json()).items ?? [];
+  if (!rbSets.length) throw new Error("Riftcodex listed no sets");
+
+  let html = await readFile(at("index.html"), "utf8");
+  const listed = new Set([...html.matchAll(/\{ code:"([A-Z0-9]+)",\s*name:"[^"]*",\s*pool:"\.\/data\//g)]
+    .map((m) => m[1]));
+  if (!listed.size) throw new Error("found no GAMES.riftbound.sets entries in index.html");
+
+  const rbBefore = new Map();
+  for (const s of rbSets) {
+    const code = s.set_id.toLowerCase();
+    rbBefore.set(s.set_id, (await readJson(`data/${code}-pool.json`))?.length ?? null);
+    process.stderr.write(`riftbound ${s.set_id}\n`);
+    run("build-pool-v2.mjs", ["--set", code], at("data/"));
+  }
+
+  added = rbSets.filter((s) => !listed.has(s.set_id))
+    .sort((a, b) => String(a.published_on).localeCompare(String(b.published_on)));
+  if (added.length) {
+    const newestListed = rbSets.filter((s) => listed.has(s.set_id))
+      .sort((a, b) => String(b.published_on).localeCompare(String(a.published_on)))[0];
+    const anchor = new RegExp(`^.*\\{ code:"${newestListed.set_id}",.*\\n`, "m");
+    const entry = (s) => {
+      const code = `code:"${s.set_id}",`.padEnd(12);
+      const name = `name:"${s.name.replace(/"/g, "")}",`.padEnd(23);
+      return `      { ${code}${name} pool:"./data/${s.set_id.toLowerCase()}-pool.json" },\n`;
+    };
+    html = html.replace(anchor, (line) => line + added.map(entry).join(""));
+    await writeFile(at("index.html"), html);
+    run("csp-hashes.mjs", ["--write"]);
+  }
+
+  for (const s of rbSets) {
+    const before = rbBefore.get(s.set_id);
+    const after = (await readJson(`data/${s.set_id.toLowerCase()}-pool.json`))?.length ?? 0;
+    if (before === null || added.includes(s)) rbLines.push(`- **${s.name}** (${s.set_id}) is new: ${plural(after, "card")}`);
+    else if (before !== after) rbLines.push(`- ${s.name} (${s.set_id}): ${delta(before, after)} cards, now ${after}`);
+  }
+} catch (err) {
+  rbError = err.message;
+  process.stderr.write(`riftbound skipped: ${rbError}\n`);
 }
 
 // ---- Pokémon ----
@@ -116,7 +126,11 @@ const notes = added.length
 const warning = blocked.length
   ? `\n**Images will not load** for cards hosted on ${blocked.join(", ")}: the CSP's img-src in index.html does not allow ${blocked.length === 1 ? "it" : "them"}. Add ${blocked.length === 1 ? "it" : "them"} there before merging.\n`
   : "";
-const summary = `${warning}${section("Riftbound", rbLines)}\n${section("Pokémon", pkLines)}${notes}`;
+const rbSection = rbError
+  ? `### Riftbound\n\nNot refreshed this time: ${rbError}. Pokémon was still refreshed.\n`
+  : section("Riftbound", rbLines);
+const summary = `${warning}${rbSection}\n${section("Pokémon", pkLines)}${notes}`;
 
 console.log(summary);
 if (SUMMARY) await writeFile(SUMMARY, summary);
+if (rbError) console.log(`::warning::Riftbound was not refreshed: ${rbError}`);
