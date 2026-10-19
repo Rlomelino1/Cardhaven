@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-oR0Yibwz0Sfij2nJHjE2lbSRrp7HtOXNIV/Nl3hCBao=' 'sha256-gPgXWTlQU41JBTnAQoXV8BOUTiI3Y2oyC2ZmNjU/zfY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-oR0Yibwz0Sfij2nJHjE2lbSRrp7HtOXNIV/Nl3hCBao=' 'sha256-SA71vOr0k/BSxhWQ2UQ40QtjMjkLwNvw9EVP9D+O7YA=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -567,6 +567,7 @@ body.game-pokemon .crlabel{width:170px}
   border-radius:2px; padding:8px 12px; font-size:12px; cursor:pointer}
 .btn.go{background:var(--go-bg); border-color:var(--go-bg); color:var(--go-fg); font-weight:600}
 .btn.danger{border-color:var(--warn); color:var(--warn)}
+.btn.go.danger{background:var(--warn); border-color:var(--warn); color:var(--ink)}
 .btn.sm{padding:3px 7px; font-size:10px}
 .btn.quiet{color:var(--mute)}
 #more,#showAll,#showLess{margin-top:14px}
@@ -660,6 +661,9 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 .acct .btn{font-size:12px; padding:7px 13px}
 .acct .who{color:var(--text); font-size:13px; max-width:16ch; overflow:hidden;
   text-overflow:ellipsis; white-space:nowrap}
+.acct .me{display:flex; align-items:center; gap:9px; background:transparent; border:0;
+  padding:0; font:inherit; cursor:pointer}
+@media (hover:hover){ .acct .me:hover .who{text-decoration:underline} }
 .avatar{width:27px; height:27px; border-radius:50%; background:var(--brass);
   color:var(--ink); font-size:12px; font-weight:700; display:inline-flex;
   align-items:center; justify-content:center; flex:none}
@@ -688,6 +692,8 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 .field .flabel a{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   font-size:12px; letter-spacing:0; text-transform:none; color:var(--mute)}
 .hint{margin:-5px 0 0; font-size:12.5px; color:var(--mute)}
+.dangerhead{margin:0 0 10px; font-size:13px; color:var(--warn)}
+.dangerhead + .hint{margin:0 0 14px}
 .field input{background:var(--ink); border:1px solid var(--edge); color:var(--text);
   border-radius:2px; padding:10px 12px; font-size:14px; width:100%}
 .field input:disabled{opacity:.5}
@@ -4276,6 +4282,22 @@ const VIEWS = {
       </p>
       <p class="alt"><a href="#" data-view="forgot">Send another code</a></p>`,
   }),
+
+  account: () => ({
+    title: "Your account",
+    busy:  "Deleting",
+    lede:  `Signed in as <b>${esc2(session?.email)}</b>.`,
+    body: `
+      <h4 class="dangerhead">Delete account</h4>
+      <p class="hint">This permanently deletes your account, every deck saved in it and your
+        collection for both games. It can't be undone. Export anything you want to keep first.</p>
+      <label class="field"><span>Type DELETE to confirm</span>
+        <input name="confirm" autocomplete="off" autocapitalize="characters"
+               spellcheck="false" required></label>
+      <div class="authacts">
+        <button type="submit" class="btn go danger">Delete my account</button>
+      </div>`,
+  }),
 };
 
 let view = "signin";
@@ -4368,6 +4390,24 @@ async function onSubmit(e){
       openAuth("signin");
       setMsg("Password updated. Sign in with it.", true);
     }
+
+    else if(view === "account"){
+      if(f.confirm.trim().toUpperCase() !== "DELETE"){
+        setMsg("Type DELETE to confirm.");
+        return;
+      }
+      const r = flatten(await db.rpc("delete_my_account"));
+      if(r.error){
+        console.warn("[auth] account deletion failed:", r.error);
+        setMsg("Couldn't delete your account, and nothing was removed. Try again in a minute.");
+        return;
+      }
+      try { await auth.signOut(); } catch {}
+      session = null; paintAccount();
+      syncCloud();
+      openAuth("signin");
+      setMsg("Your account and everything saved in it have been deleted.", true);
+    }
   });
 }
 
@@ -4415,8 +4455,9 @@ function paintAccount(){
   if(session){
     const who = session.name && session.name !== session.email ? session.name : session.email;
     const initial = (who.trim()[0] || "?").toUpperCase();
-    el.innerHTML = `<span class="avatar" aria-hidden="true">${esc2(initial)}</span>
-      <span class="who" title="${esc2(session.email)}">${esc2(who)}</span>
+    el.innerHTML = `<button class="me" data-auth="account" title="Your account (${esc2(session.email)})">
+        <span class="avatar" aria-hidden="true">${esc2(initial)}</span>
+        <span class="who">${esc2(who)}</span></button>
       <button class="btn sm quiet" data-auth="out">Sign out</button>`;
   } else {
     el.innerHTML = `<button class="btn" data-auth="in">Sign in</button>
@@ -4429,6 +4470,7 @@ window.openAuthModal = () => openAuth("signin");
 $("acct").addEventListener("click", async e => {
   const a = e.target.closest("[data-auth]")?.dataset.auth;
   if(a === "in")  openAuth("signin");
+  if(a === "account") openAuth("account");
   if(a === "out"){
     if(window.hasUnsavedChanges?.() &&
        !confirm("This deck has unsaved changes that will be discarded. Sign out anyway?"))
