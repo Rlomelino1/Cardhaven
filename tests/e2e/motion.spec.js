@@ -1,15 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { fileURLToPath } from "node:url";
 import { openApp, openPokemon } from "./helpers.js";
 
 const BACK_DIR = "others/back";
-
-// The Pokemon back is hotlinked from Bulbagarden, which does not reliably serve CI
-// runners. When it fails the app swaps in the generated SVG back, so tests that
-// inspect the <img> serve a stand-in image locally instead of depending on that host.
-const LOCAL_BACK = fileURLToPath(new URL("../../icon-192.png", import.meta.url));
-const serveBulbagardenBack = (page) => page.route(/^https:\/\/archives\.bulbagarden\.net\//,
-  (route) => route.fulfill({ path: LOCAL_BACK, contentType: "image/png" }));
 
 const frameState = (el) => ({
   transform: getComputedStyle(el).transform,
@@ -243,19 +235,18 @@ test.describe("the back face comes from the registry", () => {
         .toBe("no-referrer");
     });
 
-  test("a Pokemon card shows the Bulbagarden back", async ({ page }) => {
-    await serveBulbagardenBack(page);
+  test("a Pokemon card shows the back served from the site", async ({ page }) => {
     await openPokemon(page);
     await page.waitForFunction(() => S.pool.length > 0);
     await page.evaluate(() => openCard(refOf(S.pool[0])));
     await page.waitForSelector("#cardFlipper");
     expect(await page.getAttribute(".face.back img", "src"))
-      .toBe("https://archives.bulbagarden.net/media/upload/1/17/Cardback.jpg");
+      .toBe("./pokemon-back.jpg");
   });
 
   test("the back is never requested before a modal opens", async ({ page }) => {
     const hits = [];
-    await page.route(/others\/back\/|archives\.bulbagarden\.net/, (route) => {
+    await page.route(/others\/back\/|pokemon-back\.jpg/, (route) => {
       hits.push(route.request().url());
       return route.abort();
     });
@@ -447,7 +438,6 @@ test.describe("the Pokemon back has no white corners", () => {
     () => getComputedStyle(document.querySelector(".face.back img")).borderRadius);
 
   test("the Pokemon back is rounded to its own artwork", async ({ page }) => {
-    await serveBulbagardenBack(page);
     await openPokemon(page);
     await page.waitForFunction(() => S.pool.length > 0);
     await page.evaluate(() => openCard(refOf(S.pool[0])));

@@ -134,12 +134,13 @@ index.html              the app — must stay at the root; Pages deploys from ma
 data/{set}-pool.json    the 8 Riftbound sets, 1,304 printings with image URLs
                         (OGN 352, SFD 288, UNL 280, VEN 227, OPP 117, OGS 24, PR 13,
                         JDG 3)
-data/pokemon/           174 slim per-set pools + sets.json + search-index.json (~8.9 MB)
+data/pokemon/           176 slim per-set pools + sets.json + search-index.json (~8.9 MB)
 scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon) ·
                         refresh-data.mjs (both, weekly)
 vendor/neon/            bundle.mjs (what the page loads) + the vendored module graph
 vendor/goatcounter/     count.js, cookie-free page counts (see its README)
 privacy.html            the privacy page, linked from the footer
+pokemon-back.jpg        the Pokémon card back (copy of Bulbagarden's scan, re-encoded)
 migrations/             schema + tests
 tests/                  Playwright e2e suite and a static server
 ```
@@ -198,9 +199,9 @@ Card Haven is not affiliated with, endorsed, sponsored, or specifically approved
 Nintendo, Creatures Inc., GAME FREAK inc., or The Pokémon Company. Pokémon and all related
 names and card images are trademarks and copyrights of their respective owners.
 
-No card images are redistributed here; every one is hotlinked and served by someone else.
-Card fronts come from the publishers' own CDNs — `cmsassets.rgpub.io` for Riftbound,
-`images.pokemontcg.io` and `images.scrydex.com` for Pokémon. Card backs come from two
-third-party archives rather than a publisher: `raw.githubusercontent.com` (a
-fan-maintained image repository, pinned to a commit) and `archives.bulbagarden.net` (a
-community wiki archive). Non-commercial, personal use.
+Card fronts are hotlinked from the publishers' own CDNs — `cmsassets.rgpub.io` for
+Riftbound, `images.pokemontcg.io` and `images.scrydex.com` for Pokémon. The Riftbound
+backs are hotlinked from `raw.githubusercontent.com` (a fan-maintained image repository,
+pinned to a commit). The one Pokémon card back is served from this site as
+`pokemon-back.jpg`, a copy of the scan on `archives.bulbagarden.net` (a community wiki
+archive), because that host did not load reliably. Non-commercial, personal use.
