@@ -45,12 +45,12 @@ jobs:
       GH_TOKEN: ${{ secrets.DATA_REFRESH_TOKEN || github.token }}
       HAS_TOKEN: ${{ secrets.DATA_REFRESH_TOKEN != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           token: ${{ secrets.DATA_REFRESH_TOKEN || github.token }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
       - name: Refresh both games
         run: node scripts/refresh-data.mjs --summary "$RUNNER_TEMP/summary.md"
       - name: Open or update the pull request

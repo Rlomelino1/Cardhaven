@@ -218,7 +218,6 @@ test.describe("what an imported image URL can reach", () => {
     expect(img.sort()).toEqual([
       "'self'",
       "data:",
-      "https://archives.bulbagarden.net",
       "https://cmsassets.rgpub.io",
       "https://images.pokemontcg.io",
       "https://images.scrydex.com",
