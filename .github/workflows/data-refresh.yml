@@ -9,9 +9,13 @@
 # Things this relies on:
 #   - Settings > Actions > General > "Allow GitHub Actions to create and approve
 #     pull requests" must be on, or `gh pr create` is refused.
-#   - A PR opened with the workflow token does not start other workflows, so CI
-#     never runs on it by itself. The last step dispatches ci.yml on the branch,
-#     which puts the `e2e` check on the PR's head commit like any other PR.
+#   - A repository secret named DATA_REFRESH_TOKEN: a fine-grained personal access
+#     token for this repository with Contents and Pull requests set to read and
+#     write. Pushes made with the built-in workflow token start no other workflow,
+#     so without it CI never runs on the PR through a pull_request event, and an
+#     `e2e` run dispatched by hand does not count toward the required check.
+#     Without the secret the job falls back to the workflow token and dispatches
+#     CI, which shows the result but leaves the PR blocked.
 #   - Each run replaces the data-refresh branch. Merge or close the PR before the
 #     next Thursday; edits pushed to it by hand are overwritten.
 #   - GitHub may start scheduled runs late when it is busy, and pauses schedules
@@ -38,9 +42,12 @@ jobs:
     timeout-minutes: 20
     env:
       BRANCH: data-refresh
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.DATA_REFRESH_TOKEN || github.token }}
+      HAS_TOKEN: ${{ secrets.DATA_REFRESH_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.DATA_REFRESH_TOKEN || github.token }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -76,6 +83,7 @@ jobs:
             gh pr create --base main --head "$BRANCH" --title "$title" --body-file "$RUNNER_TEMP/body.md"
           fi
       - name: Run CI on the pull request
+        if: ${{ env.HAS_TOKEN != 'true' }}
         run: |
           if git rev-parse -q --verify "refs/heads/$BRANCH" >/dev/null; then
             gh workflow run ci.yml --ref "$BRANCH"

@@ -92,7 +92,10 @@ at 14:00 UTC. It rebuilds every Riftbound and Pokémon pool, adds new Riftbound 
 listing what changed when anything did. Merge it to publish. "Run workflow" on the
 Actions tab refreshes outside the schedule, and running the script locally does the same
 refresh without the PR. The repository setting *Allow GitHub Actions to create and
-approve pull requests* has to stay on for it to open the PR.
+approve pull requests* has to stay on for it to open the PR. A `DATA_REFRESH_TOKEN` secret (a
+fine-grained token for this repository with Contents and Pull requests read and write)
+lets CI run on that PR through a normal pull request event, which the required `e2e`
+check needs; the workflow file explains why.
 
 ### Adding a game
 
