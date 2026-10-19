@@ -140,7 +140,7 @@ scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs
 vendor/neon/            bundle.mjs (what the page loads) + the vendored module graph
 vendor/goatcounter/     count.js, cookie-free page counts (see its README)
 privacy.html            the privacy page, linked from the footer
-pokemon-back.jpg        the Pokémon card back (copy of Bulbagarden's scan, re-encoded)
+pokemon-back.webp       the Pokémon card back (copy of Bulbagarden's scan, as WebP)
 migrations/             schema + tests
 tests/                  Playwright e2e suite and a static server
 ```
@@ -203,5 +203,5 @@ Card fronts are hotlinked from the publishers' own CDNs — `cmsassets.rgpub.io`
 Riftbound, `images.pokemontcg.io` and `images.scrydex.com` for Pokémon. The Riftbound
 backs are hotlinked from `raw.githubusercontent.com` (a fan-maintained image repository,
 pinned to a commit). The one Pokémon card back is served from this site as
-`pokemon-back.jpg`, a copy of the scan on `archives.bulbagarden.net` (a community wiki
+`pokemon-back.webp`, a copy of the scan on `archives.bulbagarden.net` (a community wiki
 archive), because that host did not load reliably. Non-commercial, personal use.

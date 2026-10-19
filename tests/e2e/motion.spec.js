@@ -241,12 +241,12 @@ test.describe("the back face comes from the registry", () => {
     await page.evaluate(() => openCard(refOf(S.pool[0])));
     await page.waitForSelector("#cardFlipper");
     expect(await page.getAttribute(".face.back img", "src"))
-      .toBe("./pokemon-back.jpg");
+      .toBe("./pokemon-back.webp");
   });
 
   test("the back is never requested before a modal opens", async ({ page }) => {
     const hits = [];
-    await page.route(/others\/back\/|pokemon-back\.jpg/, (route) => {
+    await page.route(/others\/back\/|pokemon-back\.webp/, (route) => {
       hits.push(route.request().url());
       return route.abort();
     });
