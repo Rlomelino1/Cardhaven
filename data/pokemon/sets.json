@@ -1,5 +1,27 @@
 [
   {
+    "id": "me55",
+    "name": "30th Celebration",
+    "series": "Mega Evolution",
+    "ptcgoCode": "30C",
+    "releaseDate": "2026/09/16",
+    "total": 161,
+    "symbolUrl": "https://images.scrydex.com/pokemon/me55-symbol/symbol",
+    "logoUrl": "https://images.scrydex.com/pokemon/me55-logo/logo",
+    "cards": 161
+  },
+  {
+    "id": "me55c",
+    "name": "30th Celebration: Classic Collection",
+    "series": "Mega Evolution",
+    "ptcgoCode": "30C",
+    "releaseDate": "2026/09/16",
+    "total": 30,
+    "symbolUrl": "https://images.scrydex.com/pokemon/me55c-symbol/symbol",
+    "logoUrl": "https://images.scrydex.com/pokemon/me55c-logo/logo",
+    "cards": 30
+  },
+  {
     "id": "me5",
     "name": "Pitch Black",
     "series": "Mega Evolution",
