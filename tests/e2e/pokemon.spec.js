@@ -1,5 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { openApp, openPokemon, RB_POOL, RB_CODES } from "./helpers.js";
+
+// Counts come from the committed data, so the weekly refresh can add sets without
+// editing tests.
+const pkData = (f) => JSON.parse(readFileSync(new URL(`../../data/pokemon/${f}`, import.meta.url), "utf8"));
+const PK_SETS = pkData("sets.json");
+const PK_INDEX = pkData("search-index.json").length;
+const PK_SERIES = new Set(PK_SETS.map((s) => s.series)).size;
 
 const PIKACHU_BASE1 = "base1-58";
 const PIKACHU_BASE2 = "base2-60";
@@ -20,7 +28,7 @@ const problemsAfter = async (page, main) => {
 };
 
 test.describe("boot and lazy loading", () => {
-  test("the manifest and the index load, one set pool loads, not 174", async ({ page }) => {
+  test("the manifest and the index load, one set pool loads, not every set", async ({ page }) => {
     const pools = [];
     await page.route("**/data/pokemon/*.json", route => {
       const f = route.request().url().split("/").pop();
@@ -35,8 +43,8 @@ test.describe("boot and lazy loading", () => {
       openSet: S.openSet,
       cached: POOL_CACHE.size,
     }));
-    expect(r.sets).toBe(174);
-    expect(r.index).toBe(20444);
+    expect(r.sets).toBe(PK_SETS.length);
+    expect(r.index).toBe(PK_INDEX);
     expect(pools).toHaveLength(1);
     expect(pools[0]).toBe(`${r.openSet}-pool.json`);
     expect(r.cached).toBe(1);
@@ -285,7 +293,7 @@ test.describe("deck rules", () => {
 });
 
 test.describe("browsing and search", () => {
-  test("search spans all 174 sets and says so", async ({ page }) => {
+  test("search spans every set and says so", async ({ page }) => {
     await openPokemon(page);
     await page.fill("#q", "pikachu");
     const r = await page.evaluate(() => ({
@@ -294,7 +302,7 @@ test.describe("browsing and search", () => {
         .map(b => b.textContent)).size,
       openSet: S.openSet,
     }));
-    expect(r.count).toMatch(/all 174 sets$/);
+    expect(r.count).toMatch(new RegExp(`all ${PK_SETS.length} sets$`));
     expect(r.sets).toBeGreaterThan(1);
   });
 
@@ -440,7 +448,7 @@ test.describe("browsing and search", () => {
 });
 
 test.describe("the set picker", () => {
-  test("174 sets are grouped by series, collapsed but for the open one", async ({ page }) => {
+  test("sets are grouped by series, collapsed but for the open one", async ({ page }) => {
     await openPokemon(page);
     await page.click("#setPickBtn");
     const r = await page.evaluate(() => ({
@@ -449,7 +457,7 @@ test.describe("the set picker", () => {
       openSeries: setMetaOf(S.openSet).series,
       firstGroup: document.querySelector("#setPickList .spghead").innerText.replace(/\s+/g, " "),
     }));
-    expect(r.groups).toBe(17);
+    expect(r.groups).toBe(PK_SERIES);
     expect(r.rowsShown).toBeGreaterThan(0);
     expect(r.rowsShown).toBeLessThan(30);
     expect(r.firstGroup.toLowerCase()).toContain(r.openSeries.toLowerCase());
