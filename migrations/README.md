@@ -13,7 +13,7 @@ are hard to read.
 | 0004 | `0004_collection_history_safety_net.sql` | 2026-08-17 | live — snapshots a collection before any update that removes printings |
 | 0005 | `0005_scope_decks_by_game.sql` | 2026-08-19 | live — `decks.game`, defaulted to `riftbound`; scopes a deck to one Card Haven game |
 | 0006 | `0006_collection_room_for_two_games.sql` | 2026-08-20 | live — collection size cap 64 KB → 1 MB, for the nested-by-game blob stage 9 introduced |
-| 0008 | `0008_delete_my_account.sql` | not yet | `delete_my_account()` RPC behind the app's Delete account button: removes the caller's account, sessions, decks, settings and collection history |
+| 0008 | `0008_delete_my_account.sql` | 2026-10-20 | live — `delete_my_account()` RPC behind the app's Delete account button: removes the caller's account, sessions, decks, settings and collection history |
 
 ## Running
 
@@ -52,7 +52,7 @@ JWT — `pg_session_jwt` would need a real signed token to populate `auth.user_i
 rollback restores the real function. The JWT-to-uuid step it skips is covered separately
 by C11/C11b.
 
-### What they cover — 48 tests, all passing, plus 7 for 0008
+### What they cover — 55 tests
 
 **Isolation (`rls_test.sql`)**
 
@@ -103,7 +103,7 @@ by C11/C11b.
 | C21 | (0006) over 1 MB is still rejected — the cap exists to catch a client posting card *objects* instead of counts |
 | C22 | (0006) a non-object collection is refused. Note *which* layer refuses it: the 0004 trigger calls `jsonb_object_keys` on the new value and raises before the CHECK gets a look, so the error is not a `check_violation`. The write does not land either way, which is the property that matters |
 
-**Account deletion (`account_delete_test.sql`, needs 0008 applied)**
+**Account deletion (`account_delete_test.sql`)**
 
 | | |
 |---|---|
