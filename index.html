@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-9YpECaULVQQyD/+hZwotIu6ukIfDMAkunwAdq6HczkA=' 'sha256-WFt3Gm2rKe/+4Dj6Nm6M440dwzq3oMs6MbBDUw9KwxM=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-d81pbzkRzs8ip/NH/OzqYqqXA/xo7bjQMT4GmuvAJvs=' 'sha256-WFt3Gm2rKe/+4Dj6Nm6M440dwzq3oMs6MbBDUw9KwxM=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -1001,7 +1001,8 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
     Build decks, check card limits and legality, and track which cards you
     own across sets.
   </p>
-  <p class="legal"><a class="legallink" id="privacyLink" href="/privacy.html">Privacy</a></p>
+  <p class="legal"><a class="legallink" href="/sets/">Card lists for every set</a> ·
+    <a class="legallink" id="privacyLink" href="/privacy.html">Privacy</a></p>
 </footer>
 
 <div id="modal"><div class="box" id="modalBox"></div></div>
@@ -1682,6 +1683,26 @@ function adoptGame(){
     legal.hidden = !GAME.legal;
   }
 }
+
+// A link from a set page (/sets/…) arrives as ?game=pokemon&set=sv8. Write the game and
+// set where the app already keeps them, so boot opens that set like a returning visit,
+// then drop the parameters from the address bar. An unknown set is ignored at boot.
+(() => {
+  try{
+    const u = new URL(location.href);
+    const game = u.searchParams.get("game"), set = u.searchParams.get("set");
+    if(!game && !set) return;
+    if(GAME_IDS.includes(game)){
+      localStorage.setItem(LS_GAME, game);
+      if(set && /^[A-Za-z0-9-]{1,24}$/.test(set)){
+        if(GAMES[game].lazySets) localStorage.setItem(`${game}.openSet`, set);
+        else localStorage.setItem(`${game}.setScope`, JSON.stringify([set]));
+      }
+    }
+    u.searchParams.delete("game"); u.searchParams.delete("set");
+    history.replaceState(history.state, "", u.pathname + u.search + u.hash);
+  }catch{}
+})();
 
 const readActiveGame = () => {
   try{

@@ -11,6 +11,7 @@
 // the app has never seen gets a GAMES.riftbound.sets entry in index.html (named as
 // Riftcodex names it, placed after the newest release) and the CSP hashes are redone.
 // Pokémon: build-pokemon-pools.mjs --force, which also picks up new sets on its own.
+// Then build-set-pages.mjs rewrites /sets/ and sitemap.xml to match.
 
 import { readFile, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
@@ -105,6 +106,11 @@ for (const s of pkAfter) {
 }
 const gone = [...pkBefore.keys()].filter((id) => !pkAfter.some((s) => s.id === id));
 for (const id of gone) pkLines.push(`- ${id} is no longer in the source; its pool file was left in place`);
+
+// ---- Set pages and sitemap, rebuilt from the refreshed data ----
+
+process.stderr.write("set pages\n");
+run("build-set-pages.mjs", []);
 
 // ---- Image hosts the CSP would block ----
 

@@ -55,7 +55,7 @@ jobs:
         run: node scripts/refresh-data.mjs --summary "$RUNNER_TEMP/summary.md"
       - name: Open or update the pull request
         run: |
-          if [ -z "$(git status --porcelain -- data index.html)" ]; then
+          if [ -z "$(git status --porcelain -- data index.html sets sitemap.xml)" ]; then
             echo "The card data is already current."
             exit 0
           fi
@@ -63,7 +63,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$BRANCH"
-          git add -A data index.html
+          git add -A data index.html sets sitemap.xml
           git commit -q -m "Refresh card data ($day)"
           git push -q --force origin "$BRANCH"
 
