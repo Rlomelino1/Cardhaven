@@ -14,6 +14,11 @@ width. No cookies, nothing stored on the device, no identifier. It skips localho
 private-network hosts and automated browsers, so local runs and the test suite are
 never counted.
 
+Feature counts: `track(name)` in index.html sends a GoatCounter event (fixed names such
+as `search`, `view-collection`, `save-deck`), at most once per feature per page load.
+Click-driven ones are listed in the `TRACK` map next to `ACTIONS`. They show under
+Events on the dashboard, as visits that used the feature.
+
 To refresh: download the file again over the top of this one and commit it.
 
 To stop counting your own visits on one browser, open
