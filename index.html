@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-oR0Yibwz0Sfij2nJHjE2lbSRrp7HtOXNIV/Nl3hCBao=' 'sha256-4SiaO4Dzz1iZKPcGNm9qKAd2i1D4XMNOykqgMvPswEY=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-9YpECaULVQQyD/+hZwotIu6ukIfDMAkunwAdq6HczkA=' 'sha256-WFt3Gm2rKe/+4Dj6Nm6M440dwzq3oMs6MbBDUw9KwxM=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -3687,11 +3687,45 @@ const ACTIONS = {
   colClear:      () => colClear(),
 };
 
+// Feature counts for GoatCounter. Each feature is counted at most once per page load,
+// so the dashboard reads as "visits that used X" and a busy visit can't flood the
+// quota. Names are fixed strings: nothing a person types, names or picks is sent,
+// apart from which game or view they opened (both fixed lists).
+const TRACKED = new Set();
+const track = name => {
+  if(TRACKED.has(name) || typeof window.goatcounter?.count !== "function") return;
+  TRACKED.add(name);
+  try { window.goatcounter.count({path: name, title: name, event: true}); } catch {}
+};
+window.track = track;
+const VIEW_IDS = new Set(["deck", "collection"]);
+const TRACK = {
+  goView:        a => VIEW_IDS.has(a) && `view-${a}`,
+  switchGame:    a => GAMES[a] && `game-${a}`,
+  toggleTheme:   () => "switch-theme",
+  pickFile:      () => "import-file",
+  exportDeck:    () => "export-deck",
+  copyText:      () => "copy-deck-text",
+  saveDeck:      () => "save-deck",
+  newDeck:       () => "new-deck",
+  duplicateDeck: () => "duplicate-deck",
+  switchDeck:    () => "open-saved-deck",
+  openSet:       () => "browse-set",
+  toggleSetScope: () => "filter-sets",
+  toggleFilter:  () => "filter-cards",
+  openCard:      () => "open-card",
+  addCard:       () => "add-card-to-deck",
+  colBump:       () => "change-collection",
+  colMarkAll:    () => "collection-mark-all",
+  colShowMissing: () => "collection-show-missing",
+};
 document.addEventListener("click", e => {
   const el = e.target.closest("[data-a]");
   if(!el || el.disabled) return;
   const fn = ACTIONS[el.dataset.a];
   if(!fn) return;
+  const name = TRACK[el.dataset.a]?.(el.dataset.a1);
+  if(name) track(name);
   fn(el.dataset.a1, el.dataset.a2, el.dataset.a3);
 });
 
@@ -3759,9 +3793,11 @@ document.addEventListener("scroll", () => {
 
 document.getElementById("q").addEventListener("input", e => {
   S.q = e.target.value; S.limit = pageSize(); render();
+  track("search");
 });
 document.getElementById("colQ").addEventListener("input", e => {
   COLF.q = e.target.value; renderCollection();
+  track("collection-search");
 });
 document.getElementById("deckName").addEventListener("input", e => {
   S.deckName = e.target.value; touch();
@@ -4352,6 +4388,7 @@ async function onSubmit(e){
     if(view === "signin"){
       try {
         await api.signIn({ email: f.email, password: f.password });
+        window.track?.("sign-in-email");
         await refresh(); closeAuth();
         syncCloud();
       } catch(err){
@@ -4368,6 +4405,7 @@ async function onSubmit(e){
 
     else if(view === "signup"){
       await api.signUp({ email: f.email, password: f.password, name: f.name || f.email });
+      window.track?.("sign-up");
       pending = f.email;
       openAuth("verify");
     }
@@ -4402,6 +4440,7 @@ async function onSubmit(e){
         setMsg("Couldn't delete your account, and nothing was removed. Try again in a minute.");
         return;
       }
+      window.track?.("delete-account");
       try { await auth.signOut(); } catch {}
       session = null; paintAccount();
       syncCloud();
@@ -4417,6 +4456,7 @@ async function onClick(e){
 
   const act = e.target.closest("[data-act]")?.dataset.act;
   if(act === "google"){
+    window.track?.("sign-in-google");
     mark();
     await run(() => api.google({
       provider: "google",

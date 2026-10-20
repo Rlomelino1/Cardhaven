@@ -55,6 +55,47 @@ test.describe("GoatCounter page counts", () => {
     });
 });
 
+test.describe("GoatCounter feature counts", () => {
+  // Counting is allowed here so the hits are visible; real local runs send nothing.
+  const counted = async (page) => {
+    const hits = [];
+    await page.route(HOST, (route) => { hits.push(new URL(route.request().url())); route.fulfill({ status: 204 }); });
+    await page.addInitScript(() => { window.goatcounter = { allow_local: true }; });
+    await openApp(page);
+    await page.waitForFunction(() => typeof window.goatcounter?.count === "function");
+    const events = () => hits.filter((u) => u.searchParams.get("e") === "true")
+      .map((u) => u.searchParams.get("p"));
+    return { hits, events };
+  };
+
+  test("a feature is counted as an event, once per visit", async ({ page }) => {
+    const { events } = await counted(page);
+    await page.click('.vtab[data-goview="collection"]');
+    await page.click('.vtab[data-goview="deck"]');
+    await page.click('.vtab[data-goview="collection"]');
+    await expect.poll(events).toEqual(["view-collection", "view-deck"]);
+  });
+
+  test("a search is counted without what was typed", async ({ page }) => {
+    const { hits, events } = await counted(page);
+    await page.fill("#q", "secret words");
+    await page.fill("#q", "more secret words");
+    await expect.poll(events).toEqual(["search"]);
+    expect(hits.map(String).join(" ")).not.toContain("secret");
+  });
+
+  test("nothing is counted when GoatCounter is not loaded", async ({ page }) => {
+    await page.route(/\/vendor\/goatcounter\/count\.js$/, (route) => route.abort());
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await openApp(page);
+    await page.fill("#q", "x");
+    await page.click('.vtab[data-goview="collection"]');
+    await expect(page.locator('.vtab[data-goview="collection"]')).toHaveClass(/on/);
+    expect(errors).toEqual([]);
+  });
+});
+
 test.describe("the privacy page", () => {
   test("the footer links to it", async ({ page }) => {
     await openApp(page);
