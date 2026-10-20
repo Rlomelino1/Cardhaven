@@ -13,6 +13,7 @@ are hard to read.
 | 0004 | `0004_collection_history_safety_net.sql` | 2026-08-17 | live — snapshots a collection before any update that removes printings |
 | 0005 | `0005_scope_decks_by_game.sql` | 2026-08-19 | live — `decks.game`, defaulted to `riftbound`; scopes a deck to one Card Haven game |
 | 0006 | `0006_collection_room_for_two_games.sql` | 2026-08-20 | live — collection size cap 64 KB → 1 MB, for the nested-by-game blob stage 9 introduced |
+| 0008 | `0008_delete_my_account.sql` | 2026-10-20 | live — `delete_my_account()` RPC behind the app's Delete account button: removes the caller's account, sessions, decks, settings and collection history |
 
 ## Running
 
@@ -33,6 +34,7 @@ node run.mjs --file ..\0001_create_decks.sql
 node run.mjs --file rls_test.sql
 node run.mjs --file constraint_test.sql
 node run.mjs --file history_test.sql
+node run.mjs --file account_delete_test.sql
 ```
 
 The 0006 cases in `constraint_test.sql` run under their own account
@@ -40,7 +42,7 @@ The 0006 cases in `constraint_test.sql` run under their own account
 deletes the account the tests before it share — and `pin_ownership()` takes `user_id`
 from `app_user_id()`, so a fresh row needs a fresh stub, not just a fresh uuid.
 
-Or `npm run test:sql` from the repo root, which runs all three.
+Or `npm run test:sql` from the repo root, which runs all four.
 
 Both wrap everything in a transaction that is **rolled back**, including the rows they
 insert into `neon_auth."user"`. Running them leaves the database exactly as it was.
@@ -50,7 +52,7 @@ JWT — `pg_session_jwt` would need a real signed token to populate `auth.user_i
 rollback restores the real function. The JWT-to-uuid step it skips is covered separately
 by C11/C11b.
 
-### What they cover — 48 tests, all passing
+### What they cover — 55 tests
 
 **Isolation (`rls_test.sql`)**
 
@@ -100,6 +102,17 @@ by C11/C11b.
 | C20 | (0006) a complete 20,444-printing Pokémon collection fits under the cap |
 | C21 | (0006) over 1 MB is still rejected — the cap exists to catch a client posting card *objects* instead of counts |
 | C22 | (0006) a non-object collection is refused. Note *which* layer refuses it: the 0004 trigger calls `jsonb_object_keys` on the new value and raises before the CHECK gets a look, so the error is not a `check_violation`. The write does not land either way, which is the property that matters |
+
+**Account deletion (`account_delete_test.sql`)**
+
+| | |
+|---|---|
+| D1 | `anonymous` cannot execute `delete_my_account()` |
+| D2/D2b | `authenticated` with no usable JWT subject is refused, and nothing is deleted |
+| D3 | the caller's `neon_auth."user"` row is gone |
+| D4 | their decks, settings/collection and collection history are gone (history has no FK, so the function deletes it itself) |
+| D5 | their Neon Auth sessions and linked sign-ins are gone |
+| D6 | another account's rows are untouched |
 
 **Collection history safety net (`history_test.sql`)**
 
