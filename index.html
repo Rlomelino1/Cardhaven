@@ -826,10 +826,12 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   .setbar{padding:8px 10px; gap:8px}
   .setcount{margin-left:0; flex:1 1 100%}
   .browsecol,.controls,.searchrow,.setbar{min-width:0}
-  .setchips,.controls .row{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
+  .setchips,.controls .row,.colchips{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
     flex:1 1 100%; min-width:0}
-  .setchips::-webkit-scrollbar,.controls .row::-webkit-scrollbar{display:none}
-  .setchip,.controls .row .chip,.controls .row .lbl{flex:none}
+  .setchips::-webkit-scrollbar,.controls .row::-webkit-scrollbar,
+  .colchips::-webkit-scrollbar{display:none}
+  .setchip,.controls .row .chip,.controls .row .lbl,.colchips .chip{flex:none}
+  .colchiprow{gap:6px}
   .gamebtn{font-size:12.5px}
   .shelf{grid-template-columns:repeat(auto-fill,minmax(94px,1fr)); gap:8px}
   .curve{min-height:72px}
