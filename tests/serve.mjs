@@ -23,7 +23,8 @@ const MIME = {
 const server = http.createServer(async (req, res) => {
   try {
     const path = decodeURIComponent(req.url.split("?")[0]);
-    const rel = normalize(path === "/" ? "index.html" : path).replace(/^(\.\.[/\\])+/, "");
+    // Like GitHub Pages, a path ending in / serves that folder's index.html.
+    const rel = normalize(path.endsWith("/") ? path + "index.html" : path).replace(/^(\.\.[/\\])+/, "");
     const file = join(ROOT, rel);
     if (!file.startsWith(ROOT)) { res.writeHead(403); res.end("forbidden"); return; }
     const body = await readFile(file);

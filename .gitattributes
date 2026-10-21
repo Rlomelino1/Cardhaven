@@ -10,3 +10,6 @@ index.html text eol=lf
 
 # privacy.html carries the same kind of hashed inline script, so it is pinned too.
 privacy.html text eol=lf
+
+# The generated set pages carry the same hashed theme script.
+sets/**/*.html text eol=lf

@@ -97,6 +97,14 @@ fine-grained token for this repository with Contents and Pull requests read and 
 lets CI run on that PR through a normal pull request event, which the required `e2e`
 check needs; the workflow file explains why.
 
+### Set pages
+
+`node scripts/build-set-pages.mjs` writes a static card list per set under `sets/`
+(`/sets/pokemon/sv8/`, `/sets/riftbound/ogn/`, …), a `/sets/` index, and the set entries in
+`sitemap.xml`, all from the committed data. They exist so searches like "Surging Sparks card
+list" can land on the site. Each page links into the app with `?game=…&set=…`, which opens
+that game and set. The weekly refresh reruns it, so never edit `sets/` by hand.
+
 ### Adding a game
 
 One entry in the `GAMES` registry plus one vendor script that transforms the source into
@@ -136,7 +144,8 @@ data/{set}-pool.json    the 8 Riftbound sets, 1,304 printings with image URLs
                         JDG 3)
 data/pokemon/           176 slim per-set pools + sets.json + search-index.json (~8.9 MB)
 scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon) ·
-                        refresh-data.mjs (both, weekly)
+                        refresh-data.mjs (both, weekly) · build-set-pages.mjs (sets/)
+sets/                   generated card-list page per set, plus the /sets/ index
 vendor/neon/            bundle.mjs (what the page loads) + the vendored module graph
 vendor/goatcounter/     count.js, cookie-free page counts (see its README)
 privacy.html            the privacy page, linked from the footer
