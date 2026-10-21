@@ -35,6 +35,23 @@ test.describe("on a phone", () => {
     await expect(page.locator("#deckBar")).toBeHidden();
   });
 
+  test("the collection's filter chips sit on one row that scrolls sideways", async ({ page }) => {
+    await openApp(page, { hash: "#collection" });
+    const r = await page.evaluate(() => {
+      const row = document.querySelector(".colchips");
+      const tops = new Set([...row.querySelectorAll(".chip")].map(c => Math.round(c.getBoundingClientRect().top)));
+      return { chips: row.querySelectorAll(".chip").length, lines: tops.size,
+               scrolls: row.scrollWidth > row.clientWidth,
+               page: document.documentElement.scrollWidth };
+    });
+    expect(r.chips).toBeGreaterThan(8);
+    expect(r.lines).toBe(1);
+    expect(r.scrolls).toBe(true);
+    expect(r.page).toBeLessThanOrEqual(390);
+    await page.locator("#colTypeRow .chip").last().click();
+    expect(await page.evaluate(() => COLF.types.length)).toBe(1);
+  });
+
   test("nothing is wider than the screen", async ({ page }) => {
     await openApp(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
