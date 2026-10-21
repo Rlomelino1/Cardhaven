@@ -150,6 +150,9 @@ vendor/neon/            bundle.mjs (what the page loads) + the vendored module g
 vendor/goatcounter/     count.js, cookie-free page counts (see its README)
 privacy.html            the privacy page, linked from the footer
 pokemon-back.webp       the Pokémon card back (copy of Bulbagarden's scan, as WebP)
+manifest.webmanifest    makes the site installable as an app (name, icons, colours);
+                        no service worker, so the website itself behaves the same
+icon-maskable-512.png   the app icon with a full-bleed background, for Android's shapes
 migrations/             schema + tests
 tests/                  Playwright e2e suite and a static server
 ```
