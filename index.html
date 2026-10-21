@@ -800,13 +800,20 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 @media (max-width:640px){
   body{padding:12px 10px 32px}
   header{gap:10px; padding:8px 10px}
-  .brand{border-right:none; padding-right:0}
+  /* Phone header, three rows: brand with theme and account; the view tabs;
+     then the game and the deck, as two matching controls. */
+  .brand{border-right:none; padding-right:0; margin-right:auto}
   .brandsub{display:none}
-  .deckid{flex:1 1 100%; order:3}
-  #deckName{width:100%; min-width:0; flex:1; font-size:19px}
   .topright{display:contents}
-  .viewnav{margin-right:auto}
-  #saveBtn,.themebtn,.acct{order:2}
+  #saveBtn,.themebtn,.acct{order:1}
+  .viewnav{order:2; flex:1 1 100%}
+  .vtab{flex:1}
+  .gamewrap,.deckid{order:3}
+  .gamebtn{min-height:42px}
+  .deckid{flex:1 1 0; gap:0; background:var(--ink); border:1px solid var(--edge);
+    border-radius:3px; padding-left:6px}
+  #deckName{width:100%; min-width:0; flex:1; font-size:17px}
+  .deckid .caret{background:none; border:none}
   .themebtn{min-width:40px}
   .themebtn .dot{margin-right:0}
   #themeLabel,.acct .who{position:absolute; width:1px; height:1px; overflow:hidden;
@@ -826,8 +833,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   .gamebtn{font-size:12.5px}
   .shelf{grid-template-columns:repeat(auto-fill,minmax(94px,1fr)); gap:8px}
   .curve{min-height:72px}
-  .viewnav{order:2}
-  .syncstate{order:5; flex:1 1 100%; text-align:right; white-space:normal}
+  .syncstate{order:3; flex:1 1 0; min-width:0; text-align:right; white-space:normal}
   .searchrow{flex-wrap:wrap; gap:6px}
   .searchrow .rescount{flex:1 1 100%}
   .setchip b,.setcount,.setlbl,.syncstate,.gmhead,.gmsub,.gmstate,.spghead,
