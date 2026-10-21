@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-d81pbzkRzs8ip/NH/OzqYqqXA/xo7bjQMT4GmuvAJvs=' 'sha256-WFt3Gm2rKe/+4Dj6Nm6M440dwzq3oMs6MbBDUw9KwxM=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-PDN1lOZTatgMhX3xnrTgHvdyFVGZRmiL8MrQqcxrif8=' 'sha256-WFt3Gm2rKe/+4Dj6Nm6M440dwzq3oMs6MbBDUw9KwxM=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.pokemontcg.io">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -244,6 +244,8 @@ button.gmrow{cursor:pointer}
 .deckpanel{background:var(--panel); border:1px solid var(--edge); border-radius:4px;
   padding:15px; display:flex; flex-direction:column; gap:15px;
   position:sticky; top:12px; max-height:calc(100vh - 24px); overflow:auto}
+
+.deckbar,.backtocards{display:none}
 
 .legendbox{display:flex; gap:12px; align-items:center; padding:10px;
   background:var(--ink); border:1px solid var(--edge); border-radius:4px}
@@ -747,23 +749,48 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 }
 @media (prefers-reduced-motion:reduce){
   .box .flipper{transition:none}
+  .deckbar{transition:none}
 }
 
 @media (hover:none){
-  .step{width:30px; height:30px; font-size:15px}
+  .step{width:36px; height:36px; font-size:16px}
   .qty{gap:8px; font-size:14px}
-  .btn{padding:10px 14px}
-  .btn.sm{padding:7px 10px; font-size:11px}
-  .chip{padding:8px 11px; font-size:12px}
+  .btn,.acct .btn{padding:11px 14px}
+  .btn.sm{padding:10px 12px; font-size:12px}
+  .chip{padding:10px 12px; font-size:12.5px}
+  .vtab,.coltab{padding:11px 14px}
+  .setchip{padding:10px 12px}
+  .caret{width:40px; height:40px}
+  .gamebtn{padding:8px 11px 8px 7px}
+  .spghead{padding:13px 8px}
+  .dname{padding:8px 0}
   #q,#colQ,#deckName{font-size:16px}
   #deckName{font-size:26px}
   .acts{flex-wrap:wrap}
   .acts .btn{flex:1 1 auto}
+  .acts .btn.sm{padding:10px 5px; font-size:11px}
 }
 
 @media (max-width:940px){
   .layout{grid-template-columns:1fr}
-  .deckpanel{position:static; max-height:none}
+  .deckpanel{position:static; max-height:none; scroll-margin-top:12px}
+  .backtocards{display:block; align-self:flex-start}
+  body:not(.view-collection){padding-bottom:96px}
+  body:not(.view-collection) .deckbar{display:flex}
+  .deckbar{position:fixed; left:0; right:0; bottom:0; z-index:30; align-items:center;
+    gap:12px; padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    background:var(--panel); border-top:1px solid var(--edge);
+    box-shadow:0 -8px 20px rgba(0,0,0,.3); transition:transform .2s ease}
+  body.deck-in-view .deckbar{transform:translateY(110%)}
+  .dbcounts{flex:1; min-width:0; display:flex; gap:12px; overflow:hidden;
+    font-family:ui-monospace,Menlo,monospace; font-size:10.5px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--mute); white-space:nowrap}
+  .dbcounts b{color:var(--text); font-size:15px; font-weight:600; letter-spacing:0}
+  .dbcounts .ok b{color:var(--teal)}
+  .dbnote{flex:1; min-width:0; font-size:13px; color:var(--text); overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap}
+  .deckbar:not(.noting) .dbnote,.deckbar.noting .dbcounts{display:none}
+  #browser{scroll-margin-top:12px}
   .colsummary{grid-template-columns:1fr}
   .crargrid{grid-template-columns:1fr 1fr}
 }
@@ -775,7 +802,13 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   .brandsub{display:none}
   .deckid{flex:1 1 100%; order:3}
   #deckName{width:100%; min-width:0; flex:1; font-size:19px}
-  .topright{margin-left:auto}
+  .topright{display:contents}
+  .viewnav{margin-right:auto}
+  #saveBtn,.themebtn,.acct{order:2}
+  .themebtn{min-width:40px}
+  .themebtn .dot{margin-right:0}
+  #themeLabel,.acct .who{position:absolute; width:1px; height:1px; overflow:hidden;
+    clip-path:inset(50%); white-space:nowrap}
   .acct .pitch{display:none}
   .savestate{display:none}
   .gamewrap,.switchwrap,.setpickwrap{position:static}
@@ -792,8 +825,11 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   .shelf{grid-template-columns:repeat(auto-fill,minmax(94px,1fr)); gap:8px}
   .curve{min-height:72px}
   .viewnav{order:2}
-  .topright{flex-wrap:wrap; justify-content:flex-end}
   .syncstate{order:5; flex:1 1 100%; text-align:right; white-space:normal}
+  .searchrow{flex-wrap:wrap; gap:6px}
+  .searchrow .rescount{flex:1 1 100%}
+  .setchip b,.setcount,.setlbl,.syncstate,.gmhead,.gmsub,.gmstate,.spghead,
+  .spmeta,.csetmeta,.row > .lbl,.rescount,.eyebrow,.leyebrow{font-size:10.5px}
   .crargrid{grid-template-columns:1fr}
   .coltabs{flex:1 1 100%}
   .coltab{flex:1; padding:8px 4px}
@@ -926,6 +962,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 </main>
 
 <aside class="deckpanel" id="deck">
+  <button class="btn quiet sm backtocards" data-a="showCards">&uarr; Back to cards</button>
   <div class="legendbox" id="legendBox"></div>
   <ul class="checks" id="checks"></ul>
   <div class="ztabs" id="zoneTabs"></div>
@@ -942,6 +979,12 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
     <button class="btn quiet" data-a="wipe">Reset</button>
   </div>
 </aside>
+</div>
+
+<div class="deckbar" id="deckBar">
+  <span class="dbcounts" id="deckBarCounts"></span>
+  <span class="dbnote" id="deckBarNote" role="status"></span>
+  <button class="btn go sm" data-a="showDeck">View deck</button>
 </div>
 
 <div id="collectionView">
@@ -3159,6 +3202,13 @@ function render(){
       <div class="bar"><i style="width:${Math.round(frac*100)}%"></i></div></li>`;
   }).join("");
 
+  document.getElementById("deckBarCounts").innerHTML = Object.entries(ZONES).map(([k,z]) => {
+    const n = zoneCount(k);
+    if(z.rule === "zeroOrExact" && !n) return "";
+    const ok = z.rule==="exact" ? n===z.target : z.rule==="min" ? n>=z.target : n===z.target;
+    return `<span class="${ok?"ok":""}">${esc(z.short)} <b>${n}</b>/${z.target}</span>`;
+  }).join("");
+
   const probs = [];
   if(S.unresolved.length){
     const total = S.unresolved.reduce((n,u)=>n+u.qty,0);
@@ -3380,15 +3430,39 @@ window.addCard = (id, zone) => {
     S.unresolved = S.unresolved.filter(u => u.zone !== "legend");
     touch(); render(); return;
   }
-  if(zone !== "legend" && deckFullReason()) return;
+  const full = deckFullReason();
+  if(full){ flashDeckBar(full); return; }
   const blocked = GAME.blockAdd?.(card, zone);
-  if(blocked){ note(blocked); return; }
+  if(blocked){ note(blocked); flashDeckBar(blocked); return; }
   const list = S.zones[zone];
   const hit = list.find(c => refOf(c) === refOf(card));
+  const before = hit ? hit.qty : 0;
   if(hit) hit.qty = Math.min(copyCap(card), hit.qty + 1);
   else list.push({...card, id: uid(), qty: 1});
+  flashDeckBar(hit && hit.qty === before
+    ? `${card.name}: already at ${before} ${before === 1 ? "copy" : "copies"}, the most allowed.`
+    : `Added ${card.name} to ${ZONES[zone]?.label ?? "the deck"}.`);
   touch(); render();
 };
+
+// On phones the deck sits below the card grid, so a bar pinned to the bottom of the
+// screen shows the counts, confirms each add, and jumps to the deck. It hides while
+// the deck itself is on screen.
+let deckBarTimer = 0;
+function flashDeckBar(text){
+  const bar = document.getElementById("deckBar");
+  document.getElementById("deckBarNote").textContent = text;
+  bar.classList.add("noting");
+  clearTimeout(deckBarTimer);
+  deckBarTimer = setTimeout(() => bar.classList.remove("noting"), 2200);
+}
+if("IntersectionObserver" in window){
+  new IntersectionObserver(([e]) =>
+    document.body.classList.toggle("deck-in-view", e.isIntersecting))
+    .observe(document.getElementById("deck"));
+}
+const scrollToPanel = id => document.getElementById(id)
+  .scrollIntoView({behavior: flipAnimates() ? "smooth" : "auto", block: "start"});
  
 window.setChampion = id => {
   const card = findCard(id); if(!card) return;
@@ -3693,6 +3767,8 @@ const ACTIONS = {
   setColSet:     a => setColSet(a),
   openCard:      a => openCard(a),
   addCard:       (a, b) => addCard(a, b),
+  showDeck:      () => scrollToPanel("deck"),
+  showCards:     () => scrollToPanel("browser"),
   bump:          (a, b, c) => bump(a, b, Number(c)),
   setZoneTab:    a => setZoneTab(a),
   toggleFilter:  (a, b) => toggleFilter(a, b),
@@ -3736,6 +3812,7 @@ const TRACK = {
   toggleFilter:  () => "filter-cards",
   openCard:      () => "open-card",
   addCard:       () => "add-card-to-deck",
+  showDeck:      () => "mobile-deck-bar",
   colBump:       () => "change-collection",
   colMarkAll:    () => "collection-mark-all",
   colShowMissing: () => "collection-show-missing",
