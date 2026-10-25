@@ -1,0 +1,686 @@
+{
+ "sets": {
+  "base1": {
+   "cards": 102,
+   "missing": []
+  },
+  "base2": {
+   "cards": 64,
+   "missing": []
+  },
+  "base3": {
+   "cards": 62,
+   "missing": []
+  },
+  "base4": {
+   "cards": 130,
+   "missing": []
+  },
+  "base5": {
+   "cards": 83,
+   "missing": []
+  },
+  "base6": {
+   "cards": 110,
+   "missing": []
+  },
+  "basep": {
+   "cards": 53,
+   "missing": []
+  },
+  "bp": {
+   "cards": 9,
+   "missing": []
+  },
+  "bw1": {
+   "cards": 115,
+   "missing": []
+  },
+  "bw10": {
+   "cards": 105,
+   "missing": []
+  },
+  "bw11": {
+   "cards": 140,
+   "missing": []
+  },
+  "bw2": {
+   "cards": 98,
+   "missing": []
+  },
+  "bw3": {
+   "cards": 102,
+   "missing": []
+  },
+  "bw4": {
+   "cards": 103,
+   "missing": []
+  },
+  "bw5": {
+   "cards": 111,
+   "missing": []
+  },
+  "bw6": {
+   "cards": 128,
+   "missing": []
+  },
+  "bw7": {
+   "cards": 153,
+   "missing": []
+  },
+  "bw8": {
+   "cards": 138,
+   "missing": []
+  },
+  "bw9": {
+   "cards": 122,
+   "missing": []
+  },
+  "bwp": {
+   "cards": 101,
+   "missing": []
+  },
+  "cel25": {
+   "cards": 25,
+   "missing": []
+  },
+  "cel25c": {
+   "cards": 25,
+   "missing": []
+  },
+  "col1": {
+   "cards": 106,
+   "missing": []
+  },
+  "dc1": {
+   "cards": 34,
+   "missing": []
+  },
+  "det1": {
+   "cards": 18,
+   "missing": []
+  },
+  "dp1": {
+   "cards": 130,
+   "missing": []
+  },
+  "dp2": {
+   "cards": 124,
+   "missing": []
+  },
+  "dp3": {
+   "cards": 132,
+   "missing": []
+  },
+  "dp4": {
+   "cards": 106,
+   "missing": []
+  },
+  "dp5": {
+   "cards": 100,
+   "missing": []
+  },
+  "dp6": {
+   "cards": 146,
+   "missing": []
+  },
+  "dp7": {
+   "cards": 106,
+   "missing": []
+  },
+  "dpp": {
+   "cards": 56,
+   "missing": []
+  },
+  "dv1": {
+   "cards": 21,
+   "missing": []
+  },
+  "ecard1": {
+   "cards": 165,
+   "missing": []
+  },
+  "ecard2": {
+   "cards": 182,
+   "missing": []
+  },
+  "ecard3": {
+   "cards": 182,
+   "missing": []
+  },
+  "ex1": {
+   "cards": 109,
+   "missing": []
+  },
+  "ex10": {
+   "cards": 145,
+   "missing": []
+  },
+  "ex11": {
+   "cards": 114,
+   "missing": []
+  },
+  "ex12": {
+   "cards": 93,
+   "missing": []
+  },
+  "ex13": {
+   "cards": 111,
+   "missing": []
+  },
+  "ex14": {
+   "cards": 100,
+   "missing": []
+  },
+  "ex15": {
+   "cards": 101,
+   "missing": []
+  },
+  "ex16": {
+   "cards": 108,
+   "missing": []
+  },
+  "ex2": {
+   "cards": 100,
+   "missing": []
+  },
+  "ex3": {
+   "cards": 100,
+   "missing": []
+  },
+  "ex4": {
+   "cards": 97,
+   "missing": []
+  },
+  "ex5": {
+   "cards": 102,
+   "missing": []
+  },
+  "ex6": {
+   "cards": 116,
+   "missing": []
+  },
+  "ex7": {
+   "cards": 111,
+   "missing": []
+  },
+  "ex8": {
+   "cards": 108,
+   "missing": []
+  },
+  "ex9": {
+   "cards": 107,
+   "missing": []
+  },
+  "fut20": {
+   "cards": 5,
+   "missing": []
+  },
+  "g1": {
+   "cards": 117,
+   "missing": []
+  },
+  "gym1": {
+   "cards": 132,
+   "missing": []
+  },
+  "gym2": {
+   "cards": 132,
+   "missing": []
+  },
+  "hgss1": {
+   "cards": 124,
+   "missing": []
+  },
+  "hgss2": {
+   "cards": 96,
+   "missing": []
+  },
+  "hgss3": {
+   "cards": 91,
+   "missing": []
+  },
+  "hgss4": {
+   "cards": 103,
+   "missing": []
+  },
+  "hsp": {
+   "cards": 25,
+   "missing": [
+    "hsp-HGSS18"
+   ]
+  },
+  "mcd11": {
+   "cards": 12,
+   "missing": []
+  },
+  "mcd12": {
+   "cards": 12,
+   "missing": []
+  },
+  "mcd14": {
+   "cards": 12,
+   "missing": []
+  },
+  "mcd15": {
+   "cards": 12,
+   "missing": []
+  },
+  "mcd16": {
+   "cards": 12,
+   "missing": []
+  },
+  "mcd17": {
+   "cards": 12,
+   "missing": []
+  },
+  "mcd18": {
+   "cards": 12,
+   "missing": []
+  },
+  "mcd19": {
+   "cards": 12,
+   "missing": []
+  },
+  "mcd21": {
+   "cards": 25,
+   "missing": []
+  },
+  "mcd22": {
+   "cards": 15,
+   "missing": []
+  },
+  "me1": {
+   "cards": 188,
+   "missing": []
+  },
+  "me2": {
+   "cards": 130,
+   "missing": []
+  },
+  "neo1": {
+   "cards": 111,
+   "missing": []
+  },
+  "neo2": {
+   "cards": 75,
+   "missing": []
+  },
+  "neo3": {
+   "cards": 66,
+   "missing": []
+  },
+  "neo4": {
+   "cards": 113,
+   "missing": []
+  },
+  "np": {
+   "cards": 40,
+   "missing": []
+  },
+  "pgo": {
+   "cards": 88,
+   "missing": []
+  },
+  "pl1": {
+   "cards": 133,
+   "missing": []
+  },
+  "pl2": {
+   "cards": 120,
+   "missing": []
+  },
+  "pl3": {
+   "cards": 153,
+   "missing": []
+  },
+  "pl4": {
+   "cards": 111,
+   "missing": []
+  },
+  "pop1": {
+   "cards": 17,
+   "missing": []
+  },
+  "pop2": {
+   "cards": 17,
+   "missing": []
+  },
+  "pop3": {
+   "cards": 17,
+   "missing": []
+  },
+  "pop4": {
+   "cards": 17,
+   "missing": []
+  },
+  "pop5": {
+   "cards": 17,
+   "missing": []
+  },
+  "pop6": {
+   "cards": 17,
+   "missing": []
+  },
+  "pop7": {
+   "cards": 17,
+   "missing": []
+  },
+  "pop8": {
+   "cards": 17,
+   "missing": []
+  },
+  "pop9": {
+   "cards": 17,
+   "missing": []
+  },
+  "rsv10pt5": {
+   "cards": 173,
+   "missing": []
+  },
+  "ru1": {
+   "cards": 16,
+   "missing": []
+  },
+  "si1": {
+   "cards": 18,
+   "missing": []
+  },
+  "sm1": {
+   "cards": 173,
+   "missing": []
+  },
+  "sm10": {
+   "cards": 238,
+   "missing": []
+  },
+  "sm11": {
+   "cards": 261,
+   "missing": []
+  },
+  "sm115": {
+   "cards": 69,
+   "missing": []
+  },
+  "sm12": {
+   "cards": 272,
+   "missing": []
+  },
+  "sm2": {
+   "cards": 180,
+   "missing": []
+  },
+  "sm3": {
+   "cards": 177,
+   "missing": []
+  },
+  "sm35": {
+   "cards": 81,
+   "missing": []
+  },
+  "sm4": {
+   "cards": 126,
+   "missing": []
+  },
+  "sm5": {
+   "cards": 178,
+   "missing": []
+  },
+  "sm6": {
+   "cards": 150,
+   "missing": []
+  },
+  "sm7": {
+   "cards": 187,
+   "missing": []
+  },
+  "sm75": {
+   "cards": 80,
+   "missing": []
+  },
+  "sm8": {
+   "cards": 240,
+   "missing": []
+  },
+  "sm9": {
+   "cards": 198,
+   "missing": []
+  },
+  "sma": {
+   "cards": 94,
+   "missing": []
+  },
+  "smp": {
+   "cards": 251,
+   "missing": []
+  },
+  "sv1": {
+   "cards": 258,
+   "missing": []
+  },
+  "sv10": {
+   "cards": 244,
+   "missing": []
+  },
+  "sv2": {
+   "cards": 279,
+   "missing": []
+  },
+  "sv3": {
+   "cards": 230,
+   "missing": []
+  },
+  "sv3pt5": {
+   "cards": 207,
+   "missing": []
+  },
+  "sv4": {
+   "cards": 266,
+   "missing": []
+  },
+  "sv4pt5": {
+   "cards": 245,
+   "missing": []
+  },
+  "sv5": {
+   "cards": 218,
+   "missing": []
+  },
+  "sv6": {
+   "cards": 226,
+   "missing": []
+  },
+  "sv6pt5": {
+   "cards": 99,
+   "missing": []
+  },
+  "sv7": {
+   "cards": 175,
+   "missing": []
+  },
+  "sv8": {
+   "cards": 252,
+   "missing": []
+  },
+  "sv8pt5": {
+   "cards": 180,
+   "missing": []
+  },
+  "sv9": {
+   "cards": 190,
+   "missing": []
+  },
+  "sve": {
+   "cards": 16,
+   "missing": []
+  },
+  "svp": {
+   "cards": 165,
+   "missing": []
+  },
+  "swsh1": {
+   "cards": 216,
+   "missing": []
+  },
+  "swsh10": {
+   "cards": 216,
+   "missing": []
+  },
+  "swsh10tg": {
+   "cards": 30,
+   "missing": []
+  },
+  "swsh11": {
+   "cards": 217,
+   "missing": []
+  },
+  "swsh11tg": {
+   "cards": 30,
+   "missing": []
+  },
+  "swsh12": {
+   "cards": 215,
+   "missing": []
+  },
+  "swsh12pt5": {
+   "cards": 160,
+   "missing": []
+  },
+  "swsh12pt5gg": {
+   "cards": 70,
+   "missing": []
+  },
+  "swsh12tg": {
+   "cards": 30,
+   "missing": []
+  },
+  "swsh2": {
+   "cards": 209,
+   "missing": []
+  },
+  "swsh3": {
+   "cards": 201,
+   "missing": []
+  },
+  "swsh35": {
+   "cards": 80,
+   "missing": []
+  },
+  "swsh4": {
+   "cards": 203,
+   "missing": []
+  },
+  "swsh45": {
+   "cards": 73,
+   "missing": []
+  },
+  "swsh45sv": {
+   "cards": 122,
+   "missing": []
+  },
+  "swsh5": {
+   "cards": 183,
+   "missing": []
+  },
+  "swsh6": {
+   "cards": 233,
+   "missing": []
+  },
+  "swsh7": {
+   "cards": 237,
+   "missing": []
+  },
+  "swsh8": {
+   "cards": 284,
+   "missing": []
+  },
+  "swsh9": {
+   "cards": 186,
+   "missing": []
+  },
+  "swsh9tg": {
+   "cards": 30,
+   "missing": []
+  },
+  "swshp": {
+   "cards": 304,
+   "missing": []
+  },
+  "tk1a": {
+   "cards": 10,
+   "missing": []
+  },
+  "tk1b": {
+   "cards": 10,
+   "missing": []
+  },
+  "tk2a": {
+   "cards": 12,
+   "missing": []
+  },
+  "tk2b": {
+   "cards": 12,
+   "missing": []
+  },
+  "xy0": {
+   "cards": 39,
+   "missing": []
+  },
+  "xy1": {
+   "cards": 146,
+   "missing": []
+  },
+  "xy10": {
+   "cards": 129,
+   "missing": []
+  },
+  "xy11": {
+   "cards": 116,
+   "missing": []
+  },
+  "xy12": {
+   "cards": 113,
+   "missing": []
+  },
+  "xy2": {
+   "cards": 110,
+   "missing": []
+  },
+  "xy3": {
+   "cards": 114,
+   "missing": []
+  },
+  "xy4": {
+   "cards": 124,
+   "missing": []
+  },
+  "xy5": {
+   "cards": 164,
+   "missing": []
+  },
+  "xy6": {
+   "cards": 112,
+   "missing": []
+  },
+  "xy7": {
+   "cards": 101,
+   "missing": []
+  },
+  "xy8": {
+   "cards": 165,
+   "missing": []
+  },
+  "xy9": {
+   "cards": 126,
+   "missing": []
+  },
+  "xyp": {
+   "cards": 216,
+   "missing": []
+  },
+  "zsv10pt5": {
+   "cards": 172,
+   "missing": []
+  }
+ }
+}

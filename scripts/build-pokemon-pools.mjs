@@ -28,6 +28,81 @@ const getJson = async (url) => {
 
 const str = (v) => (v === undefined || v === null ? null : String(v));
 
+// Card images. The upstream data points most cards at images.pokemontcg.io, which only
+// serves full PNGs (160-195 KB for a thumbnail). Scrydex serves the same cards as
+// ~20 KB AVIF/WebP, so every card it has goes there instead. Scrydex answers a card it
+// doesn't have with a stand-in image and a 200, so each card is checked against the
+// stand-in's ETag, and the result is kept per set in scrydex-check.json so the weekly
+// refresh only checks sets that are new or changed size.
+const SCRYDEX = "https://images.scrydex.com/pokemon";
+const CHECK_FILE = "scrydex-check.json";
+const onPtcg = (c) => String(c.imageSmall ?? "").startsWith("https://images.pokemontcg.io/");
+const scrydexUrl = (id, size) => `${SCRYDEX}/${encodeURIComponent(id)}/${size}`;
+
+// The ETag of a HEAD request, null when the image is plainly absent, undefined when
+// Scrydex couldn't be reached (the set is then left as it is and checked next run).
+const headTag = async (url) => {
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await fetch(url, { method: "HEAD", headers: { accept: "image/avif,image/webp" } });
+      if (res.ok) return (res.headers.get("etag") || "").replace(/^W\//, "") || null;
+      if (res.status < 500) return null;
+    } catch {}
+    await sleep(500 * (i + 1));
+  }
+  return undefined;
+};
+
+const eachLimit = async (items, n, fn) => {
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (next < items.length) await fn(items[next++]);
+  }));
+};
+
+// Two made-up ids must come back as the same stand-in, or the check can't be trusted.
+async function scrydexStandIn() {
+  const tags = await Promise.all(["cardhaven-none-1", "cardhaven-none-2"].flatMap((id) =>
+    ["small", "large"].map((size) => headTag(scrydexUrl(id, size)))));
+  const [s1, l1, s2, l2] = tags;
+  if (!s1 || !l1 || s1 !== s2 || l1 !== l2) return null;
+  return { small: s1, large: l1 };
+}
+
+async function scrydexMissing(cards, standIn) {
+  const missing = [];
+  let unreachable = false;
+  await eachLimit(cards.filter(onPtcg), 16, async (c) => {
+    const [s, l] = await Promise.all(["small", "large"].map((size) => headTag(scrydexUrl(c.id, size))));
+    if (s === undefined || l === undefined) unreachable = true;
+    else if (!s || !l || s === standIn.small || l === standIn.large) missing.push(c.id);
+  });
+  return unreachable ? null : missing.sort();
+}
+
+// Points every card Scrydex has at Scrydex. Returns true when a card changed.
+async function preferScrydex(setId, cards, check, standIn) {
+  let entry = check.sets[setId];
+  if (!entry || entry.cards !== cards.length) {
+    if (!standIn || !cards.some(onPtcg)) return false;
+    const missing = await scrydexMissing(cards, standIn);
+    if (!missing) {
+      process.stderr.write(`    ${setId}: Scrydex unreachable, images left as they are\n`);
+      return false;
+    }
+    entry = check.sets[setId] = { cards: cards.length, missing };
+  }
+  const gone = new Set(entry.missing);
+  let changed = false;
+  for (const c of cards) {
+    if (!onPtcg(c) || gone.has(c.id)) continue;
+    c.imageSmall = scrydexUrl(c.id, "small");
+    c.imageLarge = scrydexUrl(c.id, "large");
+    changed = true;
+  }
+  return changed;
+}
+
 const toCard = (c) => {
   const out = { id: String(c.id), name: String(c.name ?? "").trim() };
   const put = (k, v) => { if (v !== null && v !== undefined && v !== "") out[k] = v; };
@@ -107,6 +182,11 @@ async function main() {
     .filter((f) => f.endsWith("-pool.json"))
     .map((f) => f.replace(/-pool\.json$/, "")));
 
+  let check = { sets: {} };
+  try { check = JSON.parse(await readFile(outFile(CHECK_FILE), "utf8")); } catch {}
+  const standIn = await scrydexStandIn();
+  if (!standIn) process.stderr.write("Scrydex stand-in check failed; card images left as they are\n");
+
   let fetched = 0, skipped = 0, bytes = 0, cardCount = 0;
   const index = [];
   const counts = new Map();
@@ -119,6 +199,7 @@ async function main() {
       const raw = await getJson(`${RAW_BASE}/cards/en/${set.id}.json`);
       if (!Array.isArray(raw) || !raw.length) throw new Error(`${set.id}: no cards`);
       cards = raw.map(toCard).filter((c) => c.name);
+      await preferScrydex(set.id, cards, check, standIn);
       const body = JSON.stringify(cards);
       await writeFile(outFile(`${set.id}-pool.json`), body);
       fetched++;
@@ -129,6 +210,8 @@ async function main() {
       if (!cards) {
         throw new Error(`${set.id}: no pool file on disk — run without --index first`);
       }
+      if (await preferScrydex(set.id, cards, check, standIn))
+        await writeFile(outFile(`${set.id}-pool.json`), JSON.stringify(cards));
       skipped++;
     }
 
@@ -164,6 +247,9 @@ async function main() {
   const indexBody = JSON.stringify(index);
   await writeFile(outFile("sets.json"), manifestBody);
   await writeFile(outFile("search-index.json"), indexBody);
+  const kept = Object.fromEntries(Object.entries(check.sets)
+    .filter(([id]) => counts.has(id)).sort(([a], [b]) => a.localeCompare(b)));
+  await writeFile(outFile(CHECK_FILE), JSON.stringify({ sets: kept }, null, 1) + "\n");
 
   const hosts = new Map();
   for (const e of index) {
