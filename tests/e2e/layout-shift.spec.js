@@ -52,3 +52,12 @@ test("the set bar is already drawn, without counts, while the cards load", async
   release();
   await expect(page.locator("#setScopeCount")).toContainText("cards in scope");
 });
+
+test("the page below the header is revealed once the app has drawn it", async ({ page }) => {
+  await openApp(page);
+  expect(await page.evaluate(() => ({
+    booted: document.documentElement.classList.contains("booted"),
+    layout: getComputedStyle(document.querySelector(".layout")).visibility,
+    footer: getComputedStyle(document.querySelector("footer")).visibility,
+  }))).toEqual({ booted: true, layout: "visible", footer: "visible" });
+});
