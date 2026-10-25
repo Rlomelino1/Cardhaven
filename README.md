@@ -84,6 +84,11 @@ node scripts/build-pokemon-pools.mjs --raw       # print one raw record
 Sets already on disk are skipped unless `--force` or `--set` names them. Commit the
 regenerated `data/pokemon/`.
 
+The build points every card that Scrydex has at `images.scrydex.com` (~20 KB AVIF/WebP)
+instead of the upstream `images.pokemontcg.io` PNG (160-195 KB). Scrydex answers a card it
+lacks with a stand-in image, so each card is checked against that; the results live in
+`data/pokemon/scrydex-check.json`, and only new or resized sets are checked again.
+
 ### Weekly refresh
 
 `.github/workflows/data-refresh.yml` runs `node scripts/refresh-data.mjs` every Thursday
