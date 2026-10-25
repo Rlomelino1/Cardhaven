@@ -1,4 +1,4 @@
-import { mkdir, writeFile, rm, readdir } from "node:fs/promises";
+import { mkdir, writeFile, rm, readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { execSync } from "node:child_process";
@@ -140,12 +140,26 @@ await writeFile(join(OUT, ENTRY_FILE),
   ENTRIES.map(e => `export { ${e.expose.join(", ")} } from "./${names.get(e.url)}";`)
     .join("\n") + "\n", "utf8");
 
+// zod re-exports all ~50 of its error-message languages as one namespace, so
+// tree-shaking can't drop them (215 KB raw), yet only English is ever used. While
+// bundling, the locales module is swapped for one that exports English alone; the
+// committed module is put back afterwards, so the audit trail is unchanged.
+const LOCALES = join(OUT, "zod_4.3.6_es2022_v4_locales.mjs");
+const localesKept = await readFile(LOCALES, "utf8").catch(() => null);
+if (localesKept !== null)
+  await writeFile(LOCALES,
+    `export { default as en } from "./zod_4.3.6_es2022_v4_locales_en.mjs";\n`, "utf8");
+
 console.log(`\nbundling with ${ESBUILD}...`);
 const q = a => `"${a}"`;
-execSync([`npx --yes ${ESBUILD}`, q(join(OUT, ENTRY_FILE)), "--bundle",
-  "--format=esm", "--target=es2022", q(`--outfile=${join(OUT, "bundle.mjs")}`),
-  "--log-level=warning"].join(" "), { stdio: "inherit" });
-await rm(join(OUT, ENTRY_FILE), { force: true });
+try {
+  execSync([`npx --yes ${ESBUILD}`, q(join(OUT, ENTRY_FILE)), "--bundle", "--minify",
+    "--format=esm", "--target=es2022", q(`--outfile=${join(OUT, "bundle.mjs")}`),
+    "--log-level=warning"].join(" "), { stdio: "inherit" });
+} finally {
+  if (localesKept !== null) await writeFile(LOCALES, localesKept, "utf8");
+  await rm(join(OUT, ENTRY_FILE), { force: true });
+}
 
 const { size } = await stat(join(OUT, "bundle.mjs"));
 console.log(`wrote vendor/neon/bundle.mjs (${(size / 1024).toFixed(0)} KB) <- index.html imports this`);
