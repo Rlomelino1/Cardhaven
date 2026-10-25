@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-aGCHn2cffN2hFQLx9Wm4Qf4ahcBdT++gJheBWs3raqc=' 'sha256-XfMiwJ1FfN3G45oMtEqwtxe8A5JPKdBLCCSjEFyFaEI=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-XjabfMMuFcN5BmMPG86dbG5tkemmxILvazCv70+wOWU=' 'sha256-XfMiwJ1FfN3G45oMtEqwtxe8A5JPKdBLCCSjEFyFaEI=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -53,8 +53,8 @@ try{ if(localStorage.getItem("rb.theme")==="paper")
 }
 :root.paper{
   --ink:#F2EDE3; --panel:#FBF8F1; --edge:#DCD5C5;
-  --text:#211D15; --text2:#3D372B; --mute:#867D69;
-  --brass:#8C6D1F; --teal:#2E7D77; --warn:#B0392E;
+  --text:#211D15; --text2:#3D372B; --mute:#695F4D;
+  --brass:#7A5E18; --teal:#286E69; --warn:#B0392E;
   --go-bg:#211D15; --go-fg:#F2EDE3;
   --tile-bg:#E5DFCF;
   --warn-ink:#7A2A22; --ok-ink:#1F5C57; --note-ink:#6B5416;
@@ -71,20 +71,20 @@ button,input{font-family:inherit}
 header{position:relative; z-index:40; display:flex; align-items:center; gap:14px;
   flex-wrap:wrap; background:var(--panel); border:1px solid var(--edge);
   border-radius:4px; padding:9px 14px}
-.eyebrow{margin:0 0 5px; font-family:ui-monospace,Menlo,monospace; font-size:10px;
+.eyebrow{margin:0 0 5px; font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--teal)}
 .brand{display:flex; align-items:baseline; gap:8px; padding-right:14px;
   border-right:1px solid var(--edge)}
 .wordmark{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:21px; font-weight:700; color:var(--text)}
-.brandsub{font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.22em;
+.brandsub{font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.1em;
   text-transform:uppercase; color:var(--mute)}
 .deckid{display:flex; align-items:center; gap:10px; flex:1 1 260px; min-width:0}
 #deckName{background:none; border:none; color:var(--text); padding:2px 4px;
   font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:20px; font-weight:600; width:min(300px,42vw); min-width:110px;
   border-radius:2px}
-.savestate{font-family:ui-monospace,Menlo,monospace; font-size:9px;
+.savestate{font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute);
   white-space:nowrap}
 .savestate.dirty{color:var(--warn)}
@@ -92,8 +92,10 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
 .topright{margin-left:auto; display:flex; align-items:center; gap:9px}
 .themebtn{font-family:ui-monospace,Menlo,monospace; font-size:10px;
   letter-spacing:.12em; text-transform:uppercase}
-.themebtn .dot{width:7px; height:7px; border-radius:50%; background:var(--text);
-  display:inline-block; margin-right:7px; vertical-align:1px}
+.themebtn .ticon{width:13px; height:13px; margin-right:7px; vertical-align:-2px;
+  fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round}
+.themebtn .moon,:root.paper .themebtn .sun{display:none}
+:root.paper .themebtn .moon{display:inline}
 .pip{width:9px; height:9px; border-radius:50%; display:block}
 
 .gamewrap{position:relative}
@@ -110,7 +112,7 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
   background:var(--panel); border:1px solid var(--edge); border-radius:4px;
   box-shadow:0 14px 34px rgba(0,0,0,.45); z-index:60; padding:5px}
 .gamemenu[hidden]{display:none}
-.gmhead{padding:8px 11px 7px; font-family:ui-monospace,Menlo,monospace; font-size:9px;
+.gmhead{padding:8px 11px 7px; font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
 .gmrow{display:flex; align-items:center; gap:10px; width:100%; padding:9px 11px;
   border-radius:2px; text-align:left; color:var(--text);
@@ -123,9 +125,9 @@ button.gmrow{cursor:pointer}
 .gmname{display:block; font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .gmsub{display:block; margin-top:3px; font-family:ui-monospace,Menlo,monospace;
-  font-size:8.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute);
+  font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.gmstate{font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:.1em;
+.gmstate{font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.1em;
   text-transform:uppercase; color:var(--mute); white-space:nowrap}
 .gmstate.on{color:var(--teal)}
 .gmfoot{border-top:1px solid var(--edge); margin-top:5px; padding:10px 11px 6px;
@@ -135,19 +137,19 @@ button.gmrow{cursor:pointer}
   background:var(--panel); border:1px solid var(--edge); border-radius:4px;
   padding:8px 14px}
 .setbar[hidden]{display:none}
-.setlbl{font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.14em;
+.setlbl{font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.14em;
   text-transform:uppercase; color:var(--mute)}
 .setchips{display:flex; gap:6px; flex-wrap:wrap; align-items:center}
-.setcount{margin-left:auto; font-family:ui-monospace,Menlo,monospace; font-size:9.5px;
+.setcount{margin-left:auto; font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.12em; text-transform:uppercase; color:var(--mute); white-space:nowrap}
 .setchip{background:var(--ink); border:1px solid var(--edge); color:var(--text2);
   border-radius:2px; padding:6px 11px; font-size:12.5px; cursor:pointer;
   display:inline-flex; align-items:baseline; gap:7px}
-.setchip b{font-family:ui-monospace,Menlo,monospace; font-size:9px; font-weight:400;
+.setchip b{font-family:ui-monospace,Menlo,monospace; font-size:11px; font-weight:400;
   color:var(--mute)}
 .setchip.on{background:var(--brass); border-color:var(--brass); color:var(--go-fg);
   font-weight:600}
-.setchip.on b{color:var(--go-fg); opacity:.75}
+.setchip.on b{color:var(--go-fg)}
 .setchip b.pending,.ssym:not([src]){visibility:hidden}
 /* Until the app's first render only the header shows, so nothing visibly jumps while
    the script fills the page in. The animation reveals the page anyway if it never runs. */
@@ -157,9 +159,9 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
 .acct:not(.known) > *{visibility:hidden}
 .setbadge{position:absolute; left:6px; bottom:6px; background:rgba(10,8,18,.85);
   color:#CFC9DE; border:1px solid rgba(234,231,244,.28); border-radius:2px;
-  font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.09em;
+  font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.09em;
   padding:2px 5px; line-height:1.1}
-.dset{font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:.1em;
+.dset{font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.1em;
   color:var(--mute); flex:none}
 #problems li.scopenote,#problems li.todo{border-left-color:var(--mute); background:var(--hover-wash);
   color:var(--text2)}
@@ -179,7 +181,7 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
 .spname{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis;
   white-space:nowrap}
-.spseries{font-family:ui-monospace,Menlo,monospace; font-size:8.5px;
+.spseries{font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.1em; text-transform:uppercase; color:var(--mute);
   white-space:nowrap}
 .setpick{position:absolute; top:calc(100% + 9px); left:0; width:400px; max-width:92vw;
@@ -193,7 +195,7 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
 .spgroup:first-child{border-top:none}
 .spghead{display:flex; align-items:center; gap:9px; width:100%; background:none;
   border:none; color:var(--text2); cursor:pointer; padding:9px 8px; text-align:left;
-  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.14em;
+  font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.14em;
   text-transform:uppercase}
 .spghead .twist{font-size:8px; color:var(--mute); width:9px; flex:none}
 .spghead .spgn{margin-left:auto; color:var(--mute)}
@@ -204,7 +206,7 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
 .sprow.on .spn{color:var(--brass)}
 .spn{flex:1; min-width:0; font-size:13.5px; overflow:hidden; text-overflow:ellipsis;
   white-space:nowrap}
-.spmeta{font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.08em;
+.spmeta{font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.08em;
   color:var(--mute); white-space:nowrap}
 .spempty{padding:14px 10px; font-size:12.5px; color:var(--mute)}
 .regmark{position:absolute; top:6px; right:6px; width:16px; height:16px;
@@ -222,7 +224,7 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
   box-shadow:0 14px 34px rgba(0,0,0,.45); z-index:60; padding:5px}
 .deckmenu[hidden]{display:none}
 .dmhead{display:flex; justify-content:space-between; gap:10px; padding:8px 11px 7px;
-  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.14em;
+  font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.14em;
   text-transform:uppercase; color:var(--mute)}
 .dmrow{position:relative; display:flex; align-items:center; gap:10px; width:100%;
   padding:8px 8px 8px 15px; border-radius:2px}
@@ -233,10 +235,10 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
 .dmname{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:15px; font-weight:600; display:block; overflow:hidden;
   text-overflow:ellipsis; white-space:nowrap}
-.dmsub{font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:.1em;
+.dmsub{font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.1em;
   text-transform:uppercase; color:var(--mute); display:block; margin-top:3px;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.dmmeta{font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:.1em;
+.dmmeta{font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.1em;
   text-transform:uppercase; color:var(--mute); white-space:nowrap}
 .dmmeta.open{color:var(--teal)}
 .dmdel{background:none; border:none; color:var(--mute); cursor:pointer; font-size:13px;
@@ -262,7 +264,7 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
   border:1px solid var(--edge); overflow:hidden; flex:none}
 .lthumb img{width:100%; height:100%; object-fit:cover; display:block}
 .lbody{min-width:0; flex:1}
-.leyebrow{margin:0; font-family:ui-monospace,Menlo,monospace; font-size:8px;
+.leyebrow{margin:0; font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.18em; text-transform:uppercase; color:var(--mute)}
 .lname{margin:3px 0; font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:17px; font-weight:600; color:var(--brass)}
@@ -277,19 +279,19 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
 #curveBlock[hidden]{display:none}
 .ztab{flex:1; background:none; border:none; border-radius:3px; padding:7px 2px;
   color:var(--mute); font-size:12px; cursor:pointer; white-space:nowrap}
-.ztab b{font-size:10px; margin-left:3px; font-weight:400}
+.ztab b{font-size:11px; margin-left:3px; font-weight:400}
 .ztab.on{background:var(--text); color:var(--ink); font-weight:600}
 .ztab.on b{color:var(--ink)}
 
 #deckStats{display:flex; flex-direction:column; gap:13px}
 #deckStats[hidden]{display:none}
-.dspending{margin:0; font-family:ui-monospace,Menlo,monospace; font-size:9px;
+.dspending{margin:0; font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.12em; text-transform:uppercase; color:var(--mute)}
 
 .dspills{display:flex; gap:6px; flex-wrap:wrap}
 .dspill{display:inline-flex; align-items:center; gap:7px; background:var(--ink);
   border:1px solid var(--edge); border-radius:3px; padding:7px 10px;
-  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.12em;
+  font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.12em;
   text-transform:uppercase; color:var(--text2); white-space:nowrap}
 .dspill.ok{border-color:var(--teal); color:var(--ok-ink)}
 .dspill.bad{border-color:var(--warn); color:var(--warn-ink); background:var(--warn-wash)}
@@ -300,13 +302,13 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
 .dsalign.warn{border-color:var(--brass)}
 .dsrows{flex:1; min-width:0; display:flex; flex-direction:column; gap:9px}
 .dsrow{display:flex; align-items:center; gap:10px}
-.dsrow > span{font-family:ui-monospace,Menlo,monospace; font-size:8.5px;
+.dsrow > span{font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute); width:66px;
   flex:none}
 .dsdots{display:flex; gap:6px; flex-wrap:wrap; align-items:center; min-height:11px}
 .dsdot{width:11px; height:11px; border-radius:50%; flex:none}
 .dsdot.any{background:none; border:1.5px solid var(--text2); position:relative}
-.dsnone{font-family:ui-monospace,Menlo,monospace; font-size:8.5px;
+.dsnone{font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.12em; text-transform:uppercase; color:var(--mute)}
 .dsflag{width:22px; height:22px; border-radius:50%; flex:none; border:1.5px solid var(--brass);
   color:var(--brass); font-family:ui-monospace,Menlo,monospace; font-size:12px;
@@ -316,12 +318,12 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
 .dschip{display:inline-flex; align-items:baseline; gap:5px; background:var(--ink);
   border:1px solid var(--edge); border-radius:2px; padding:6px 7px; font-size:11.5px;
   color:var(--text); min-width:0; white-space:nowrap}
-.dschip b{font-family:ui-monospace,Menlo,monospace; font-size:9.5px; font-weight:400;
+.dschip b{font-family:ui-monospace,Menlo,monospace; font-size:11px; font-weight:400;
   color:var(--mute); flex:none}
-.dschip.zero{color:var(--mute); opacity:.55}
+.dschip.zero{color:var(--mute); border-style:dashed}
 
 .dsmullhead{display:flex; justify-content:space-between; align-items:baseline;
-  gap:12px; margin:0 0 6px; font-family:ui-monospace,Menlo,monospace; font-size:9px;
+  gap:12px; margin:0 0 6px; font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
 .dsmullhead b{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:15px; font-weight:600; letter-spacing:0; margin-left:7px; color:var(--text)}
@@ -337,11 +339,11 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
   overflow:hidden; font-family:ui-monospace,Menlo,monospace; font-size:11.5px;
   font-weight:700; font-style:normal; padding:0 6px}
 .dsempty{padding:9px 11px; border:1px dashed var(--edge); border-radius:3px;
-  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.12em;
+  font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.12em;
   text-transform:uppercase; color:var(--mute); text-align:center}
 .dslegend{display:flex; gap:15px; flex-wrap:wrap; margin:-4px 0 0}
 .dslegend span{display:inline-flex; align-items:center; gap:6px;
-  font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:.12em;
+  font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.12em;
   text-transform:uppercase; color:var(--mute)}
 .dslegend i{width:9px; height:9px; border-radius:2px; flex:none}
 
@@ -355,10 +357,12 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
 .denergy{font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--mute);
   min-width:13px; text-align:right}
 .dempty{color:var(--mute); font-size:13px; text-align:center; padding:30px 0; margin:0}
+.noresults{grid-column:1/-1; text-align:center; padding-bottom:30px}
+.noresults .dempty{padding-bottom:12px}
 .dssec{display:flex; align-items:baseline; justify-content:space-between; gap:10px;
   margin:14px 0 2px; padding:0 0 6px 9px; border-bottom:1px solid var(--edge);
   border-left:3px solid var(--sc,var(--edge));
-  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.16em;
+  font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.16em;
   text-transform:uppercase; color:var(--mute); font-weight:400}
 .dssec:first-child{margin-top:0}
 .dssec span{font-size:12px; letter-spacing:.03em; color:var(--text)}
@@ -372,10 +376,10 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
 .dlist li.evo::after{content:""; position:absolute; left:7px; top:50%; width:7px;
   height:1px; background:var(--edge)}
 .dlist li.evo2::after{left:24px}
-.dbadge{font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.1em;
+.dbadge{font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.1em;
   text-transform:uppercase; color:var(--brass); border:1px solid var(--brass);
   border-radius:2px; padding:1px 4px; flex:none; line-height:1.3}
-.dorphan{font-family:ui-monospace,Menlo,monospace; font-size:10px; color:var(--mute);
+.dorphan{font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--mute);
   flex:none; cursor:help}
 
 #askModal,#legalModal{position:fixed; inset:0; background:rgba(8,6,14,.6);
@@ -398,7 +402,7 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
 .vtab{background:none; border:none; border-radius:2px; color:var(--mute);
   font-size:12.5px; padding:6px 13px; cursor:pointer; white-space:nowrap}
 .vtab.on{background:var(--edge); color:var(--text); font-weight:600}
-.syncstate{font-family:ui-monospace,Menlo,monospace; font-size:9px;
+.syncstate{font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute);
   white-space:nowrap}
 .syncstate.bad{color:var(--warn)}
@@ -415,21 +419,22 @@ body.view-collection #collectionView{display:block}
   margin-top:16px}
 .cpanel{background:var(--panel); border:1px solid var(--edge); border-radius:4px;
   padding:16px}
+.colmore{display:none}
 .csethead{margin:0; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
 .csetname{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:22px; font-weight:700}
-.csetmeta{font-family:ui-monospace,Menlo,monospace; font-size:8.5px;
+.csetmeta{font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
 .cpct{margin:8px 0 10px; display:flex; align-items:baseline; gap:7px}
 .cpct b{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:54px; font-weight:400; line-height:1}
 .pctsign{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:20px; color:var(--mute)}
-.pctlabel{font-family:ui-monospace,Menlo,monospace; font-size:9px;
+.pctlabel{font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.16em; text-transform:uppercase; color:var(--mute)}
 .cbar{height:6px; background:var(--edge); border-radius:3px; overflow:hidden}
 .cbar i{display:block; height:100%; background:var(--teal); width:0}
-.csetline{margin:11px 0 0; font-family:ui-monospace,Menlo,monospace; font-size:9.5px;
+.csetline{margin:11px 0 0; font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.1em; text-transform:uppercase; color:var(--mute);
   display:flex; gap:18px; flex-wrap:wrap}
 .csetcards{color:var(--text)}
@@ -439,7 +444,7 @@ body.view-collection #collectionView{display:block}
 .coltabs:empty{min-height:35px}
 .colchiprow{min-height:26px}
 #colGrid{display:flow-root}
-.cplabel{margin:0 0 13px; font-family:ui-monospace,Menlo,monospace; font-size:9px;
+.cplabel{margin:0 0 13px; font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
 .crargrid{display:grid; grid-template-columns:1fr 1fr; gap:11px 22px}
 .crrow{display:flex; align-items:center; gap:8px}
@@ -447,7 +452,7 @@ body.view-collection #collectionView{display:block}
   font-size:12.5px; color:var(--text)}
 .crbar{flex:1; height:2px; background:var(--edge); border-radius:1px; overflow:hidden}
 .crbar i{display:block; height:100%}
-.crcount{font-family:ui-monospace,Menlo,monospace; font-size:10px; color:var(--mute);
+.crcount{font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--mute);
   min-width:42px; text-align:right}
 body.game-pokemon .crargrid{grid-template-columns:1fr}
 body.game-pokemon .crlabel{width:170px}
@@ -468,7 +473,7 @@ body.game-pokemon .crlabel{width:170px}
   border-radius:3px; padding:3px}
 .coltab{background:none; border:none; border-radius:2px; color:var(--mute);
   font-size:12px; padding:6px 11px; cursor:pointer; white-space:nowrap}
-.coltab b{font-size:10px; margin-left:5px; font-weight:400}
+.coltab b{font-size:11px; margin-left:5px; font-weight:400}
 .coltab.on{background:var(--text); color:var(--ink); font-weight:600}
 .coltab.on b{color:var(--ink)}
 .colchiprow{display:flex; gap:14px; align-items:center; justify-content:space-between;
@@ -494,17 +499,17 @@ body.game-pokemon .crlabel{width:170px}
 .ismissing .tname{color:var(--mute)}
 .ctag{position:absolute; top:6px; right:6px; background:rgba(10,8,18,.85);
   color:#EAE7F4; border:1px solid rgba(234,231,244,.35); border-radius:2px;
-  font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.08em;
+  font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.08em;
   text-transform:uppercase; padding:2px 5px; line-height:1.1}
 .cnum{position:absolute; left:6px; bottom:6px; background:rgba(10,8,18,.85);
   color:#CFC9DE; border-radius:2px; font-family:ui-monospace,Menlo,monospace;
-  font-size:8px; letter-spacing:.08em; padding:2px 5px; line-height:1.2}
+  font-size:10px; letter-spacing:.08em; padding:2px 5px; line-height:1.2}
 .cown{position:absolute; right:6px; bottom:6px; background:rgba(10,8,18,.9);
   color:#EAE7F4; border-radius:2px; font-family:ui-monospace,Menlo,monospace;
-  font-size:9px; font-weight:700; padding:2px 6px; line-height:1.3}
+  font-size:10px; font-weight:700; padding:2px 6px; line-height:1.3}
 .cown.full{background:var(--teal); color:#0E1A19}
 .cown.miss{background:rgba(234,231,244,.85); color:#12101C; font-weight:400;
-  letter-spacing:.06em; text-transform:uppercase; font-size:8px}
+  letter-spacing:.06em; text-transform:uppercase; font-size:10px}
 .cstep{display:flex; align-items:center; gap:6px; margin-top:2px}
 .cseg{flex:1; display:flex; gap:3px}
 .cseg i{flex:1; height:4px; border-radius:1px; background:var(--edge)}
@@ -513,7 +518,7 @@ body.game-pokemon .crlabel{width:170px}
 .step:disabled{opacity:.35; cursor:default}
 
 .checks{list-style:none; display:flex; flex-direction:column; gap:10px; margin:0; padding:0}
-.checks li{font-family:ui-monospace,Menlo,monospace; font-size:9px;
+.checks li{font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.12em; text-transform:uppercase; color:var(--mute)}
 .checks .crow{display:flex; justify-content:space-between; align-items:baseline;
   margin-bottom:5px}
@@ -534,14 +539,14 @@ body.game-pokemon .crlabel{width:170px}
 .controls{display:flex; flex-direction:column; gap:9px; margin:0}
 .searchrow{display:flex; align-items:center; gap:14px}
 .searchrow #q{flex:1}
-.rescount{font-family:ui-monospace,Menlo,monospace; font-size:10px;
+.rescount{font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute);
   white-space:nowrap}
 #q,#colQ{background:var(--panel); border:1px solid var(--edge); color:var(--text);
   border-radius:2px; padding:10px 12px; font-size:14px; width:100%}
 .row{display:flex; gap:5px; flex-wrap:wrap; align-items:center}
 .chipgroup{display:contents}
-.row > .lbl{font-family:ui-monospace,Menlo,monospace; font-size:9px;
+.row > .lbl{font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute); margin-right:3px}
 .chip{background:var(--panel); border:1px solid var(--edge); color:var(--mute);
   border-radius:2px; padding:5px 9px; font-size:11px; cursor:pointer}
@@ -554,7 +559,7 @@ body.game-pokemon .crlabel{width:170px}
 .tile{margin:0; display:flex; flex-direction:column; gap:4px}
 .tname{font-size:12.5px; color:var(--text); margin:3px 0 0; overflow:hidden;
   text-overflow:ellipsis; white-space:nowrap}
-.ttype{font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.12em;
+.ttype{font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.12em;
   text-transform:uppercase; color:var(--mute); margin:0; overflow:hidden;
   text-overflow:ellipsis; white-space:nowrap}
 .frame{position:relative; border:none; border-radius:6px; padding:2px; cursor:pointer;
@@ -567,16 +572,16 @@ body.game-pokemon .crlabel{width:170px}
 .frame img,.frame svg{width:100%; height:auto; display:block; border-radius:4px;
   background:var(--tile-bg); aspect-ratio:744/1039}
 .orb{position:absolute; top:6px; left:6px; width:20px; height:20px; border-radius:50%;
-  background:rgba(10,8,18,.85); color:var(--brass); border:1px solid var(--brass);
+  background:rgba(10,8,18,.85); color:#C9A227; border:1px solid #C9A227;
   font-family:ui-monospace,Menlo,monospace; font-size:11px; line-height:19px; text-align:center}
 .sig{position:absolute; top:6px; right:6px; width:16px; height:16px; border-radius:2px;
   background:var(--brass); color:#12101c; font-family:ui-monospace,Menlo,monospace;
   font-size:9px; line-height:16px; text-align:center; font-weight:700}
-.flagtag{font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.1em;
+.flagtag{font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.1em;
   text-transform:uppercase; color:var(--warn)}
 .variant{position:absolute; bottom:6px; right:6px; background:rgba(10,8,18,.85);
   color:#EAE7F4; border:1px solid rgba(234,231,244,.35); border-radius:2px;
-  font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.08em;
+  font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.08em;
   text-transform:uppercase; padding:2px 5px; line-height:1.1}
 .acts{display:flex; gap:4px; align-items:center; flex-wrap:nowrap; min-height:22px}
 .acts .btn:disabled{opacity:.4; cursor:not-allowed}
@@ -587,7 +592,7 @@ body.game-pokemon .crlabel{width:170px}
 .btn.go{background:var(--go-bg); border-color:var(--go-bg); color:var(--go-fg); font-weight:600}
 .btn.danger{border-color:var(--warn); color:var(--warn)}
 .btn.go.danger{background:var(--warn); border-color:var(--warn); color:var(--ink)}
-.btn.sm{padding:3px 7px; font-size:10px}
+.btn.sm{padding:3px 7px; font-size:11px}
 .btn.quiet{color:var(--mute)}
 #more,#showAll,#showLess{margin-top:14px}
 #pager{display:flex; gap:8px; justify-content:center; margin-top:0; flex-wrap:wrap}
@@ -600,7 +605,7 @@ body.game-pokemon .crlabel{width:170px}
 .onboard{text-align:center; padding:48px 20px; color:var(--mute)}
 .onboard p{margin:0 0 14px; font-size:14px}
  
-h2{font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.16em;
+h2{font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.16em;
   text-transform:uppercase; color:var(--mute); font-weight:400; margin:0;
   display:flex; justify-content:space-between; align-items:baseline}
 h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
@@ -616,7 +621,7 @@ h2 span{color:var(--text); font-size:12px; letter-spacing:.03em}
  
 .actions{display:flex; gap:7px; flex-wrap:wrap; margin-top:auto;
   border-top:1px solid var(--edge); padding-top:13px}
-.legal{margin:36px auto 0; font-size:10px; line-height:1.7; color:var(--mute);
+.legal{margin:36px auto 0; font-size:11px; line-height:1.7; color:var(--mute);
   max-width:64ch; text-align:center}
 .legal + .legal{margin-top:10px}
 .legallink{background:none; border:none; padding:0; font:inherit; color:inherit;
@@ -656,6 +661,11 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   border-left:2px solid var(--warn); background:var(--warn-wash);
   color:var(--warn-ink)}
 .modalacts{display:flex; gap:8px; flex-wrap:wrap}
+.modaladd{display:contents}
+.modalheld{align-self:center; font-size:12.5px; color:var(--mute)}
+.modalcount{display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text2)}
+.modalcount .btn{min-width:38px}
+.modalacts [data-a="closeModal"]{margin-left:auto}
  
 .ic{display:inline-flex; align-items:center; justify-content:center;
   vertical-align:-0.18em; margin:0 1px}
@@ -686,8 +696,8 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 .avatar{width:27px; height:27px; border-radius:50%; background:var(--brass);
   color:var(--ink); font-size:12px; font-weight:700; display:inline-flex;
   align-items:center; justify-content:center; flex:none}
-.acct .pitch{font-family:ui-monospace,Menlo,monospace; font-size:8px;
-  letter-spacing:.12em; text-transform:uppercase; color:var(--mute)}
+.acct .pitch{font-family:ui-monospace,Menlo,monospace; font-size:10px;
+  letter-spacing:.04em; text-transform:uppercase; color:var(--mute)}
 .acct:empty{display:none}
 #authModal{position:fixed; inset:0; background:rgba(8,6,14,.85); display:none;
   place-items:center; padding:20px; z-index:60}
@@ -704,7 +714,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   font-size:23px; margin:0 0 6px; font-weight:600}
 .authbox .lede{font-size:13px; line-height:1.6; color:var(--mute); margin:0 0 18px}
 .field{display:block; margin:0 0 13px}
-.field span{display:block; font-family:ui-monospace,Menlo,monospace; font-size:9px;
+.field span{display:block; font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute); margin:0 0 5px}
 .field .flabel{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
 .field .flabel > span{margin:0}
@@ -721,7 +731,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 .authacts{display:flex; flex-direction:column; gap:9px; margin-top:18px}
 .authacts .btn{width:100%; padding:11px}
 .sep{display:flex; align-items:center; gap:10px; margin:16px 0;
-  font-family:ui-monospace,Menlo,monospace; font-size:9px; letter-spacing:.14em;
+  font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.14em;
   text-transform:uppercase; color:var(--mute)}
 .sep::before,.sep::after{content:""; flex:1; height:1px; background:var(--edge)}
 .alt{margin:16px 0 0; font-size:13px; color:var(--mute); text-align:center; line-height:1.9}
@@ -811,6 +821,12 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   #browser{scroll-margin-top:12px}
   .colsummary{grid-template-columns:1fr}
   .crargrid{grid-template-columns:1fr 1fr}
+  /* Stacked, the three summary panels push the cards more than a screen down, so the
+     breakdown and bulk actions fold behind one button and the cards come first. */
+  .colmore{display:flex; align-items:center; justify-content:space-between; width:100%}
+  .colmore::after{content:"▾"; margin-left:8px}
+  .colsummary.more .colmore::after{content:"▴"}
+  .colsummary:not(.more) .colextra{display:none}
 }
 
 @media (max-width:640px){
@@ -831,7 +847,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   #deckName{width:100%; min-width:0; flex:1; font-size:17px}
   .deckid .caret{background:none; border:none}
   .themebtn{min-width:40px}
-  .themebtn .dot{margin-right:0}
+  .themebtn .ticon{margin-right:0}
   #themeLabel,.acct .who{position:absolute; width:1px; height:1px; overflow:hidden;
     clip-path:inset(50%); white-space:nowrap}
   .acct .pitch{display:none}
@@ -855,7 +871,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   .searchrow{flex-wrap:wrap; gap:6px}
   .searchrow .rescount{flex:1 1 100%}
   .setchip b,.setcount,.setlbl,.syncstate,.gmhead,.gmsub,.gmstate,.spghead,
-  .spmeta,.csetmeta,.row > .lbl,.rescount,.eyebrow,.leyebrow{font-size:10.5px}
+  .spmeta,.csetmeta,.row > .lbl,.rescount,.eyebrow,.leyebrow{font-size:11px}
   .crargrid{grid-template-columns:1fr}
   .coltabs{flex:1 1 100%}
   .coltab{flex:1; padding:8px 4px}
@@ -923,7 +939,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
     <span class="syncstate" id="syncState" hidden></span>
     <button class="btn" id="saveBtn" data-a="saveDeck" hidden>Save deck</button>
     <button class="btn themebtn" id="themeBtn" data-a="toggleTheme">
-      <i class="dot"></i><span id="themeLabel">Paper</span></button>
+      <svg class="ticon sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg><svg class="ticon moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z"/></svg><span id="themeLabel">Paper</span></button>
     <div class="acct" id="acct"><button class="btn" data-auth="in">Sign in</button>
       <span class="pitch">Decks on every device</span></div>
   </div>
@@ -1025,11 +1041,13 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
       <p class="csetline"><span class="csetcards" id="colCards"></span>
         <span id="colCopies"></span></p>
     </section>
-    <section class="cpanel">
+    <button class="btn quiet colmore" id="colMoreBtn" data-a="toggleColMore"
+      aria-expanded="false" aria-controls="colRarityPanel colMissPanel">Rarity breakdown and bulk actions</button>
+    <section class="cpanel colextra" id="colRarityPanel">
       <p class="cplabel">By rarity</p>
       <div class="crargrid" id="colRarity"></div>
     </section>
-    <section class="cpanel cmiss">
+    <section class="cpanel cmiss colextra" id="colMissPanel">
       <p class="cplabel">Still missing</p>
       <p class="cmisscount"><b id="colMissN">–</b> cards</p>
       <p class="cmissnote" id="colMissNote"></p>
@@ -3043,7 +3061,8 @@ function renderCollection(){
         return `<h2 class="colsec">${esc(r)} <span>${owned === null ? all.length : `${owned}/${all.length}`}</span></h2>
           <div class="shelf colshelf">${cards.map(colTileHtml).join("")}</div>`;
       }).join("")
-    : `<p class="dempty">Nothing matches these filters.</p>`;
+    : `<div class="noresults"><p class="dempty">Nothing matches these filters.</p>
+        <button class="btn sm" data-a="colClearFilters">Clear search and filters</button></div>`;
 }
 
 window.colBump = (id, d) => {
@@ -3307,17 +3326,10 @@ function render(){
     : `${res.length} cards in scope`;
   document.getElementById("results").innerHTML = res.slice(0,S.limit).map(x=>{
     const c = asCard(x);
-    const sug = zoneFor(c.type);
-    const no = addBlock(c, sug === "legend" ? "legend" : sug);
-    const off = no ? ` disabled title="${esc(no)}"` : "";
-    let acts;
-    if(sug === "legend")      acts = `<button class="btn sm" data-a="addCard" data-a1="${esc(refOf(c))}" data-a2="legend">Legend</button>`;
-    else if(sug === "runes")  acts = `<button class="btn sm"${off} data-a="addCard" data-a1="${esc(refOf(c))}" data-a2="runes">+ Rune</button>`;
-    else if(sug === "battlefields") acts = `<button class="btn sm"${off} data-a="addCard" data-a1="${esc(refOf(c))}" data-a2="battlefields">+ Field</button>`;
-    else acts = `<button class="btn sm"${off} data-a="addCard" data-a1="${esc(refOf(c))}" data-a2="main">+ ${ZONES.sideboard ? "Main" : "Deck"}</button>`
-             + (ZONES.sideboard ? `<button class="btn sm quiet" data-a="addCard" data-a1="${esc(refOf(c))}" data-a2="sideboard">+ Side</button>` : "");
-    return tileHtml(c, acts);
-  }).join("");
+    return tileHtml(c, addActs(c));
+  }).join("") || (!POOL_READY || crossSet && !PIDX ? "" : `<div class="noresults"><p class="dempty">No cards match ${
+      term ? `“${esc(S.q.trim())}”` : "these filters"}${crossSet ? "" : " in the sets you’ve picked"}.</p>
+      <button class="btn sm" data-a="clearSearch">Clear search and filters</button></div>`);
  
   RESULT_COUNT = res.length;
   const remaining = Math.max(0, res.length - S.limit);
@@ -3444,6 +3456,14 @@ window.toggleFilter = (k,v) => {
   S[k] = S[k].includes(v) ? S[k].filter(x=>x!==v) : [...S[k], v];
   S.limit = pageSize(); render();
 };
+window.clearSearch = () => {
+  S.q = ""; S.domainFilter = []; S.typeFilter = []; S.rarityFilter = []; S.limit = pageSize();
+  const q = document.getElementById("q"); q.value = ""; render(); q.focus();
+};
+window.colClearFilters = () => {
+  COLF.q = ""; COLF.tab = "all"; COLF.domains = []; COLF.types = [];
+  const q = document.getElementById("colQ"); q.value = ""; renderCollection(); q.focus();
+};
 window.clearLegend = () => { S.legend = null; touch(); render(); };
 window.dropUnresolved = () => { S.unresolved = []; touch(); render(); };
 
@@ -3455,6 +3475,47 @@ const deckFullReason = () => {
 function addBlock(card, zone){
   if(zone === "legend") return null;
   return deckFullReason() || GAME.blockAdd?.(card, zone) || null;
+}
+
+// The add buttons for one card, shared by the grid tile and the card view. `act` is the
+// action name, so the card view can use one that also refreshes its own counts.
+function addActs(c, act = "addCard", cls = "btn sm"){
+  const sug = zoneFor(c.type);
+  const no = addBlock(c, sug === "legend" ? "legend" : sug);
+  const off = no ? ` disabled title="${esc(no)}"` : "";
+  const b = (zone, label, extra = "") =>
+    `<button class="${cls}${extra}"${zone === "legend" || zone === "sideboard" ? "" : off} data-a="${act}" data-a1="${esc(refOf(c))}" data-a2="${zone}">${label}</button>`;
+  if(sug === "legend") return b("legend", "Legend");
+  if(sug === "runes") return b("runes", "+ Rune");
+  if(sug === "battlefields") return b("battlefields", "+ Field");
+  return b("main", `+ ${ZONES.sideboard ? "Main" : "Deck"}`)
+    + (ZONES.sideboard ? b("sideboard", "+ Side", " quiet") : "");
+}
+
+// What the card view offers besides Close: the same add buttons as the tile and how many
+// copies the deck already holds in the deckbuilder, and the copy stepper in Collection.
+function modalActs(c){
+  const id = refOf(c);
+  if(VIEW === "collection"){
+    if(!COL_READY) return "";
+    const q = qtyOf(id), cap = colCap();
+    return `<div class="modalcount">
+      <button class="btn" data-a="modalColBump" data-a1="${esc(id)}" data-a2="-1"
+        ${q === 0 ? "disabled" : ""} aria-label="Remove a copy">–</button>
+      <span>${q} of ${cap} owned</span>
+      <button class="btn" data-a="modalColBump" data-a1="${esc(id)}" data-a2="1"
+        ${q >= cap ? "disabled" : ""} aria-label="Add a copy">+</button></div>`;
+  }
+  if(VIEW !== "deck" || (GAME.legend && c.type === "Legend")) return "";
+  const held = Object.entries(S.zones).filter(([z]) => z !== "legend")
+    .map(([, list]) => list.find(x => refOf(x) === id)?.qty || 0).reduce((n, q) => n + q, 0);
+  return addActs(c, "modalAdd", "btn")
+    + (held ? `<span class="modalheld">${held} in deck</span>` : "");
+}
+function repaintModalActs(id){
+  const box = document.getElementById("modalAdd");
+  const c = findCard(id);
+  if(box && c) box.innerHTML = modalActs(c);
 }
 
 window.addCard = (id, zone) => {
@@ -3612,6 +3673,7 @@ function paintCard(c){
         ${VIEW === "deck" && GAME.legend && c.supertype === "Champion"
           ? `<button class="btn" data-a="setChampion" data-a1="${esc(refOf(c))}">Set as Champion</button>`
           : ""}
+        <span id="modalAdd" class="modaladd">${modalActs(c)}</span>
         <button class="btn quiet" data-a="closeModal">Close</button>
       </div>
     </div>`;
@@ -3817,6 +3879,14 @@ const ACTIONS = {
   colShowMissing: () => colShowMissing(),
   colMarkAll:    () => colMarkAll(),
   colClear:      () => colClear(),
+  clearSearch:   () => clearSearch(),
+  toggleColMore: () => {
+    const open = document.querySelector(".colsummary").classList.toggle("more");
+    document.getElementById("colMoreBtn").setAttribute("aria-expanded", open);
+  },
+  modalAdd:      (a, b) => { addCard(a, b); repaintModalActs(a); },
+  modalColBump:  (a, b) => { colBump(a, Number(b)); repaintModalActs(a); },
+  colClearFilters: () => colClearFilters(),
 };
 
 // Feature counts for GoatCounter. Each feature is counted at most once per page load,
