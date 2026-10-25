@@ -13,15 +13,22 @@ one of them is loaded.
 
 `bundle.mjs` is what runs. Measured over HTTP/2, which is what GitHub Pages
 serves: the 132-file graph costs 232 KB across 132 requests and the auth module
-reports at 10.6s on a slow-3G profile, while the bundle is 135 KB in one request
-and reports at 7.0s. First paint and time-to-cards are unchanged either way —
-the card pool wins that race regardless — so this buys nothing for a visitor who
-never signs in, and about 3.6 seconds for one who is already signed in and
-waiting for their decks.
+reports at 10.6s on a slow-3G profile, while one bundle reports at 7.0s.
+
+The bundle is minified, and zod's locale table is stubbed down to English only
+(the SDK never sets another locale, so the other 40-odd translations were dead
+weight). That takes it from 674 KB to 332 KB raw, and 137 KB to 94 KB gzipped.
+
+`index.html` also defers it. For a visitor with no sign-in on record the page
+waits until the cards have rendered and the browser is idle (or 8s at most)
+before importing it, so SDK evaluation no longer competes with decoding the first
+card images. Clicking Sign in before then loads it on demand. A visitor who was
+signed in before (the `ch.signed-in` flag), or who is returning from an OAuth
+redirect, gets it immediately as before.
 
 The individual modules stay committed because they are the audit trail. A version
 bump can then be reviewed file-by-file against what esm.sh actually served, which
-one generated 670 KB file cannot show. They are served by Pages (everything in
+one generated, minified file cannot show. They are served by Pages (everything in
 the repo is) but nothing fetches them.
 
 ## Regenerating

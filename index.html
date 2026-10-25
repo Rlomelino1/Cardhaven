@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-Pc9dLnV4cxDQCWdlrJ7uQMkclxzWA9W63UjsqKBjXbg=' 'sha256-8uq0Zu1XMLCluUR+62Hwh/2xU4WFxiU8Ju4gDae4Bco=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-aGCHn2cffN2hFQLx9Wm4Qf4ahcBdT++gJheBWs3raqc=' 'sha256-XfMiwJ1FfN3G45oMtEqwtxe8A5JPKdBLCCSjEFyFaEI=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -4025,11 +4025,13 @@ window.loadPool = async function loadPool(){
     applyPending();
     render();
     renderCollectionAll();
+    cardsSettled();
   }catch(err){
     msg.textContent = `Couldn't load the card pool (${err.message}).`;
     retry.hidden = pick.hidden = false;
     pick.hidden = GAME.lazySets;
     note("Card pool unavailable");
+    cardsSettled();
   }
 };
 
@@ -4156,12 +4158,42 @@ applyHash();
 render();
 document.documentElement.classList.add("booted");
 loadPool();
+
+// The sign-in SDK (vendor/neon/bundle.mjs) is the biggest thing the page loads, and a
+// visitor who isn't signed in doesn't need it before the cards. The auth module waits
+// on this gate: it opens at once for someone signed in last time or coming back from
+// Google, and otherwise once the cards are up, or as soon as Sign in is pressed.
+const AUTH_SEEN = "ch.signed-in";
+let openAuthGate, authWanted = false;
+window.authGate = new Promise(r => { openAuthGate = r; });
+window.authWanted = () => authWanted;
+const authEager = (() => {
+  try{
+    return localStorage.getItem(AUTH_SEEN) === "1"
+      || sessionStorage.getItem("rb.oauth-pending") === "1"
+      || new URL(location.href).searchParams.has("neon_auth_session_verifier");
+  }catch{ return true; }
+})();
+if(authEager) openAuthGate();
+else document.getElementById("acct").classList.add("known");
+window.openAuthModal = () => { authWanted = true; openAuthGate(); };
+document.getElementById("acct").addEventListener("click", e => {
+  if(!window.authLoaded && e.target.closest('[data-auth="in"]')) window.openAuthModal();
+});
+setTimeout(openAuthGate, 8000);  // in case the cards never settle
+// Called by loadPool once the cards are up (or failed to load).
+function cardsSettled(){
+  const open = () => openAuthGate();
+  if(window.requestIdleCallback) requestIdleCallback(open, {timeout: 3000});
+  else setTimeout(open, 200);
+}
 </script>
 
 <script type="module">
 
-import { createAuthClient, BetterAuthVanillaAdapter,
-         NeonPostgrestClient, fetchWithToken } from "./vendor/neon/bundle.mjs";
+await window.authGate;
+const { createAuthClient, BetterAuthVanillaAdapter,
+        NeonPostgrestClient, fetchWithToken } = await import("./vendor/neon/bundle.mjs");
 
 const NEON = {
   authUrl:    "https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech/neondb/auth",
@@ -4629,6 +4661,7 @@ async function refresh(){
 function paintAccount(){
   const el = $("acct");
   el.classList.add("known");
+  try{ session ? localStorage.setItem("ch.signed-in", "1") : localStorage.removeItem("ch.signed-in"); }catch{}
   if(session){
     const who = session.name && session.name !== session.email ? session.name : session.email;
     const initial = (who.trim()[0] || "?").toUpperCase();
@@ -4643,6 +4676,8 @@ function paintAccount(){
 }
 
 window.openAuthModal = () => openAuth("signin");
+window.authLoaded = true;
+if(window.authWanted?.()) openAuth("signin");
 
 $("acct").addEventListener("click", async e => {
   const a = e.target.closest("[data-auth]")?.dataset.auth;
