@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-VWPEjRFubbMl+lOwV03fUujnfJ2Vy0rPDDgi+KJqpFQ=' 'sha256-WFt3Gm2rKe/+4Dj6Nm6M440dwzq3oMs6MbBDUw9KwxM=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-wp2+IqjlS9Qok/cCInoVW2QGopdcN204MyzzqDfoSqw=' 'sha256-8uq0Zu1XMLCluUR+62Hwh/2xU4WFxiU8Ju4gDae4Bco=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -148,6 +148,9 @@ button.gmrow{cursor:pointer}
 .setchip.on{background:var(--brass); border-color:var(--brass); color:var(--go-fg);
   font-weight:600}
 .setchip.on b{color:var(--go-fg); opacity:.75}
+.setchip b.pending,.ssym:not([src]){visibility:hidden}
+/* The signed-out buttons hold the account area's space until sign-in state is known. */
+.acct:not(.known) > *{visibility:hidden}
 .setbadge{position:absolute; left:6px; bottom:6px; background:rgba(10,8,18,.85);
   color:#CFC9DE; border:1px solid rgba(234,231,244,.28); border-radius:2px;
   font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:.09em;
@@ -399,6 +402,8 @@ button.gmrow{cursor:pointer}
 body.view-collection .deckid,
 body.view-collection #saveBtn,
 body.view-collection .layout{display:none}
+/* Keeps the footer below the fold while the cards load, so it isn't pushed off-screen. */
+.layout,#collectionView{min-height:100vh}
 #collectionView{display:none}
 body.view-collection #collectionView{display:block}
 
@@ -424,6 +429,12 @@ body.view-collection #collectionView{display:block}
   letter-spacing:.1em; text-transform:uppercase; color:var(--mute);
   display:flex; gap:18px; flex-wrap:wrap}
 .csetcards{color:var(--text)}
+/* Hold the summary's text lines and tab row open before the cards load. */
+.csetmeta,.csetline,.cmissnote{min-height:1lh}
+.csetmeta{flex-basis:100%}
+.coltabs:empty{min-height:35px}
+.colchiprow{min-height:26px}
+#colGrid{display:flow-root}
 .cplabel{margin:0 0 13px; font-family:ui-monospace,Menlo,monospace; font-size:9px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
 .crargrid{display:grid; grid-template-columns:1fr 1fr; gap:11px 22px}
@@ -775,6 +786,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 
 @media (max-width:940px){
   .layout{grid-template-columns:1fr}
+  .browsecol{min-height:100vh}  /* the deck sits below the cards; keep it there while they load */
   .deckpanel{position:static; max-height:none; scroll-margin-top:12px}
   .backtocards{display:block; align-self:flex-start}
   body:not(.view-collection){padding-bottom:96px}
@@ -908,7 +920,8 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
     <button class="btn" id="saveBtn" data-a="saveDeck" hidden>Save deck</button>
     <button class="btn themebtn" id="themeBtn" data-a="toggleTheme">
       <i class="dot"></i><span id="themeLabel">Paper</span></button>
-    <div class="acct" id="acct"></div>
+    <div class="acct" id="acct"><button class="btn" data-auth="in">Sign in</button>
+      <span class="pitch">Decks on every device</span></div>
   </div>
 </header>
 
@@ -2420,10 +2433,16 @@ window.toggleSetScope = code => {
   render();
 };
 
+// A hidden stand-in count, about as wide as a real one, for chips drawn before the cards.
+const SETCHIP_PENDING = `<b class="pending">000</b>`;
+const COLCHIP_PENDING = `<b class="pending">0/000</b>`;
+
 function renderSetBar(){
   renderPickSetBar();
   const bar = document.getElementById("setBar");
-  const sets = poolSets();
+  // Before the cards arrive the bar still shows, with the static set list and no
+  // counts, so the page doesn't jump down when they land.
+  const sets = POOL_READY ? poolSets() : GAME.sets;
   bar.hidden = GAME.lazySets || VIEW !== "deck" || !sets.length;
   if(bar.hidden) return;
   const lone = S.setScope.length === 1;
@@ -2435,11 +2454,11 @@ function renderSetBar(){
       return `<button class="setchip${on ? " on" : ""}"${pinned
         ? ` title="At least one set stays in scope"` : ""}
       data-a="toggleSetScope" data-a1="${esc(s.code)}">${esc(s.name)}
-      <b>${setCardsOf(s.code).length}</b></button>`;
+      ${POOL_READY ? `<b>${setCardsOf(s.code).length}</b>` : SETCHIP_PENDING}</button>`;
     }).join("");
   const n = S.setScope.length, cards = scopedPool().length;
-  document.getElementById("setScopeCount").textContent =
-    `${n} set${n === 1 ? "" : "s"} · ${cards} cards in scope`;
+  document.getElementById("setScopeCount").textContent = POOL_READY
+    ? `${n} set${n === 1 ? "" : "s"} · ${cards} cards in scope` : "Loading the cards in scope…";
 }
 
 window.toggleDeckMenu = (open = !MENU_OPEN) => {
@@ -2718,21 +2737,22 @@ window.setColSet = code => {
 
 function renderColSetBar(){
   const bar = document.getElementById("colSetBar");
-  const sets = poolSets();
+  const sets = POOL_READY ? poolSets() : GAME.sets;
   bar.hidden = GAME.lazySets || VIEW !== "collection" || !sets.length;
   if(bar.hidden) return;
   const chip = (code, label, meta, on) =>
-    `<button class="setchip${on ? " on" : ""}" data-a="setColSet" data-a1="${esc(code)}">${esc(label)} <b>${meta}</b></button>`;
+    `<button class="setchip${on ? " on" : ""}" data-a="setColSet" data-a1="${esc(code)}">${esc(label)} ${
+      POOL_READY ? `<b>${meta}</b>` : COLCHIP_PENDING}</button>`;
   document.getElementById("colSetChips").innerHTML =
-    chip("all", "All sets", S.pool.length, COLF.set === "all") +
+    chip("all", "All sets", POOL_READY ? S.pool.length : "", COLF.set === "all") +
     sets.map(s => {
       const list = setCardsOf(s.code);
-      const meta = COL_READY ? `${colOwnedCount(list)}/${list.length}` : list.length;
+      const meta = !POOL_READY ? "" : COL_READY ? `${colOwnedCount(list)}/${list.length}` : list.length;
       return chip(s.code, s.name, meta, COLF.set === s.code);
     }).join("");
   const n = colScoped().length;
-  document.getElementById("colSetCount").textContent =
-    `${n} printing${n === 1 ? "" : "s"}`;
+  document.getElementById("colSetCount").textContent = POOL_READY
+    ? `${n} printing${n === 1 ? "" : "s"}` : "Loading cards…";
 }
 
 let colTimer = null, colRetryTimer = null, colInflight = false,
@@ -4059,15 +4079,17 @@ window.openSet = async code => {
 
 function renderPickSetBar(){
   const bar = document.getElementById("pickSetBar");
-  bar.hidden = !GAME.lazySets || !GAME.sets.length;
+  bar.hidden = !GAME.lazySets || (POOL_READY && !GAME.sets.length);
   if(bar.hidden){ if(SETPICK_OPEN) toggleSetPick(false); return; }
+  document.getElementById("setPickBtn").disabled = !POOL_READY;
   const meta = setMetaOf(S.openSet);
   const sym = document.getElementById("setPickSym");
   if(meta?.symbolUrl){ sym.src = meta.symbolUrl; sym.hidden = false; }
-  else sym.hidden = true;
+  else { sym.removeAttribute("src"); sym.hidden = POOL_READY; }  // keeps its space while loading
   document.getElementById("setPickName").textContent = meta?.name || S.openSet || "…";
   document.getElementById("setPickSeries").textContent = meta?.series || "";
-  document.getElementById("pickSetCount").textContent = VIEW === "collection"
+  document.getElementById("pickSetCount").textContent = !POOL_READY ? "Loading cards…"
+    : VIEW === "collection"
     ? `${colOwnedCount(S.pool)}/${S.pool.length} in this set · ${colLoggedPrintings()} logged overall`
     : `${S.pool.length} cards in this set · ${gameCardTotal().toLocaleString()} searchable`;
   if(SETPICK_OPEN) renderSetPickList();
@@ -4601,6 +4623,7 @@ async function refresh(){
 
 function paintAccount(){
   const el = $("acct");
+  el.classList.add("known");
   if(session){
     const who = session.name && session.name !== session.email ? session.name : session.email;
     const initial = (who.trim()[0] || "?").toUpperCase();
