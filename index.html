@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-XjabfMMuFcN5BmMPG86dbG5tkemmxILvazCv70+wOWU=' 'sha256-XfMiwJ1FfN3G45oMtEqwtxe8A5JPKdBLCCSjEFyFaEI=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-m357Om9v7gk6qg1dOLAsS392QOl0j4cMPTVUNRgZCaw=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -923,8 +923,8 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
     <div class="gamemenu" id="gameMenu" hidden></div>
   </div>
   <nav class="viewnav" aria-label="View">
-    <button class="vtab on" data-goview="deck" data-a="goView" data-a1="deck">Deckbuilder</button>
-    <button class="vtab" data-goview="collection" data-a="goView" data-a1="collection">Collection</button>
+    <button class="vtab on" aria-pressed="true" data-goview="deck" data-a="goView" data-a1="deck">Deckbuilder</button>
+    <button class="vtab" aria-pressed="false" data-goview="collection" data-a="goView" data-a1="collection">Collection</button>
   </nav>
   <div class="deckid">
     <input id="deckName" value="Untitled deck" aria-label="Deck name">
@@ -986,7 +986,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   <div id="browser" hidden>
     <div class="controls">
       <div class="searchrow">
-        <input id="q" placeholder="Search name, rules text, or artist">
+        <input id="q" aria-label="Search cards" placeholder="Search name, rules text, or artist">
         <span class="rescount" id="resultCount"></span>
       </div>
       <div class="row">
@@ -1061,7 +1061,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 
   <div class="colcontrols">
     <div class="colsearchrow">
-      <input id="colQ" placeholder="Search name, number, or artist">
+      <input id="colQ" aria-label="Search your collection" placeholder="Search name, number, or artist">
       <div class="coltabs" id="colTabs"></div>
     </div>
     <div class="colchiprow">
@@ -1093,10 +1093,10 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
     <a class="legallink" id="privacyLink" href="/privacy.html">Privacy</a></p>
 </footer>
 
-<div id="modal"><div class="box" id="modalBox"></div></div>
+<div id="modal"><div class="box" id="modalBox" role="dialog" aria-modal="true" tabindex="-1"></div></div>
 
 <div id="askModal">
-  <div class="askbox">
+  <div class="askbox" role="dialog" aria-modal="true" aria-labelledby="askTitle" aria-describedby="askText" tabindex="-1">
     <h3 id="askTitle"></h3>
     <p id="askText"></p>
     <div class="askacts" id="askActs"></div>
@@ -1104,8 +1104,8 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 </div>
 
 <div id="legalModal">
-  <div class="askbox legalbox">
-    <h3>Legal notices</h3>
+  <div class="askbox legalbox" role="dialog" aria-modal="true" aria-labelledby="legalTitle" tabindex="-1">
+    <h3 id="legalTitle">Legal notices</h3>
     <div id="legalList"></div>
     <div class="askacts">
       <button type="button" class="btn quiet" id="legalClose">Close</button>
@@ -1114,7 +1114,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 </div>
 
 <div id="authModal">
-  <div class="authbox">
+  <div class="authbox" role="dialog" aria-modal="true" aria-labelledby="authTitle" tabindex="-1">
     <div class="authhead">
       <p class="eyebrow">Account</p>
       <button type="button" class="authclose" id="authClose" aria-label="Close">
@@ -2090,11 +2090,14 @@ function freshDeck(){
   BASELINE = null;
 }
 
-function wipe(){
+async function wipe(){
   const msg = MODE === "cloud"
     ? "Clear the current deck from the table? Saved decks in your account are not affected."
     : "Clear the saved deck from this browser?";
-  if(!confirm(msg)) return;
+  const v = await ask("Reset deck?", msg,
+    [{label:"Reset", value:"reset", kind:"danger"},
+     {label:"Cancel", value:"cancel", kind:"quiet"}]);
+  if(v !== "reset") return;
   if(MODE === "local"){ try{ localStorage.removeItem(deckKey()); }catch{} }
   freshDeck();
   touch(); render();
@@ -2469,11 +2472,11 @@ function renderSetBar(){
   if(bar.hidden) return;
   const lone = S.setScope.length === 1;
   document.getElementById("setChips").innerHTML =
-    `<button class="setchip${S.setScopeAll ? " on" : ""}" data-a="toggleSetScope" data-a1="all">All sets</button>` +
+    `<button class="setchip${S.setScopeAll ? " on" : ""}" aria-pressed="${S.setScopeAll ? "true" : "false"}" data-a="toggleSetScope" data-a1="all">All sets</button>` +
     sets.map(s => {
       const on = S.setScope.includes(s.code);
       const pinned = on && lone;
-      return `<button class="setchip${on ? " on" : ""}"${pinned
+      return `<button class="setchip${on ? " on" : ""}" aria-pressed="${on ? "true" : "false"}"${pinned
         ? ` title="At least one set stays in scope"` : ""}
       data-a="toggleSetScope" data-a1="${esc(s.code)}">${esc(s.name)}
       ${POOL_READY ? `<b>${setCardsOf(s.code).length}</b>` : SETCHIP_PENDING}</button>`;
@@ -2763,7 +2766,7 @@ function renderColSetBar(){
   bar.hidden = GAME.lazySets || VIEW !== "collection" || !sets.length;
   if(bar.hidden) return;
   const chip = (code, label, meta, on) =>
-    `<button class="setchip${on ? " on" : ""}" data-a="setColSet" data-a1="${esc(code)}">${esc(label)} ${
+    `<button class="setchip${on ? " on" : ""}" aria-pressed="${on ? "true" : "false"}" data-a="setColSet" data-a1="${esc(code)}">${esc(label)} ${
       POOL_READY ? `<b>${meta}</b>` : COLCHIP_PENDING}</button>`;
   document.getElementById("colSetChips").innerHTML =
     chip("all", "All sets", POOL_READY ? S.pool.length : "", COLF.set === "all") +
@@ -2849,8 +2852,10 @@ function applyHash(){
   const v = location.hash === "#collection" ? "collection" : "deck";
   VIEW = v;
   document.body.classList.toggle("view-collection", v === "collection");
-  document.querySelectorAll(".vtab").forEach(b =>
-    b.classList.toggle("on", b.dataset.goview === v));
+  document.querySelectorAll(".vtab").forEach(b => {
+    b.classList.toggle("on", b.dataset.goview === v);
+    b.setAttribute("aria-pressed", String(b.dataset.goview === v));
+  });
   paintGameButton();
   renderSetBar();
   renderColSetBar();
@@ -2945,7 +2950,8 @@ function colTileHtml(c){
     `<i class="${q >= i + 1 ? (q >= cap ? "full" : "on") : ""}"></i>`).join("");
   return `<figure class="ctile${missing ? " ismissing" : ""}" data-ref="${esc(id)}">
     <button class="cframe${GAME.landscape?.(c) ? " land" : ""}" style="--fc:${border}"
-      title="${esc(c.name)}"
+      title="${esc(c.name)}" aria-label="${esc(c.name)}, ${esc(colNum(c))}${tag ? `, ${esc(tag)}` : ""}${
+        !COL_READY ? "" : missing ? ", missing" : `, ${q} of ${cap} owned`}"
       data-a="openCard" data-a1="${esc(id)}">
       ${art}
       <span class="hatch"></span>
@@ -2958,10 +2964,10 @@ function colTileHtml(c){
     <p class="ttype">${esc(c.rarity || "")}${c.rarity && c.type ? " · " : ""}${esc(c.type || "")}</p>
     <div class="cstep">
       <button class="step" data-a="colBump" data-a1="${esc(id)}" data-a2="-1"
-        ${(!COL_READY || q === 0) ? "disabled" : ""} aria-label="Remove a copy">–</button>
+        ${(!COL_READY || q === 0) ? "disabled" : ""} aria-label="Remove a copy of ${esc(c.name)}">–</button>
       <span class="cseg" aria-label="${q} of ${cap} copies">${segs}</span>
       <button class="step" data-a="colBump" data-a1="${esc(id)}" data-a2="1"
-        ${(!COL_READY || q >= cap) ? "disabled" : ""} aria-label="Add a copy">+</button>
+        ${(!COL_READY || q >= cap) ? "disabled" : ""} aria-label="Add a copy of ${esc(c.name)}">+</button>
     </div>
   </figure>`;
 }
@@ -3021,7 +3027,7 @@ function renderColSummary(){
   document.getElementById("colTabs").innerHTML = tabs.map(([k, label]) => {
     const n = COL_READY ? base.filter(c => colTabMatch(qtyOf(refOf(c)), k)).length
                         : (k === "all" ? base.length : "–");
-    return `<button class="coltab${COLF.tab === k ? " on" : ""}"
+    return `<button class="coltab${COLF.tab === k ? " on" : ""}" aria-pressed="${COLF.tab === k ? "true" : "false"}"
       data-a="setColTab" data-a1="${esc(k)}">${label}<b>${n}</b></button>`;
   }).join("");
 
@@ -3041,10 +3047,10 @@ function renderCollection(){
     colIsAll() ? "Mark all owned" : "Mark set owned";
 
   document.getElementById("colDomainRow").innerHTML = DOMAINS.map(d =>
-    `<button class="chip dchip${COLF.domains.includes(d) ? " on" : ""}"
+    `<button class="chip dchip${COLF.domains.includes(d) ? " on" : ""}" aria-pressed="${COLF.domains.includes(d) ? "true" : "false"}"
       style="--c:var(--${d});--dt:${DOMAIN_INK[d]}" data-a="toggleColChip" data-a1="domains" data-a2="${esc(d)}">${d}</button>`).join("");
   document.getElementById("colTypeRow").innerHTML = TYPES.map(t =>
-    `<button class="chip${COLF.types.includes(t) ? " on" : ""}"
+    `<button class="chip${COLF.types.includes(t) ? " on" : ""}" aria-pressed="${COLF.types.includes(t) ? "true" : "false"}"
       data-a="toggleColChip" data-a1="types" data-a2="${esc(t)}">${t}</button>`).join("");
 
   const scope = colScoped();
@@ -3195,7 +3201,7 @@ function tileHtml(c, acts){
   const land = GAME.landscape?.(c) ? " land" : "";
   return `<figure class="tile${offDomain(c)?" flagged":""}">
     <button class="frame${land}" style="background:${frameStyle(c)}"
-      title="${esc(c.name)}${tag?" — "+esc(tag):""}"
+      title="${esc(c.name)}${tag?" — "+esc(tag):""}" aria-label="${esc(c.name)}${tag?", "+esc(tag):""}"
       data-a="openCard" data-a1="${esc(refOf(c))}">
       ${art}
       ${GAME.tileBadges(c)}
@@ -3287,10 +3293,10 @@ function render(){
     probs.map(p=>`<li>${p}</li>`).join("") + todoNote + scopeNote;
  
   document.getElementById("domainRow").innerHTML = DOMAINS.map(d=>
-    `<button class="chip dchip${S.domainFilter.includes(d)?" on":""}"
+    `<button class="chip dchip${S.domainFilter.includes(d)?" on":""}" aria-pressed="${S.domainFilter.includes(d) ? "true" : "false"}"
       style="--c:var(--${d});--dt:${DOMAIN_INK[d]}" data-a="toggleFilter" data-a1="domainFilter" data-a2="${esc(d)}">${d}</button>`).join("");
   document.getElementById("typeRow").innerHTML = TYPES.map(t=>
-    `<button class="chip${S.typeFilter.includes(t)?" on":""}"
+    `<button class="chip${S.typeFilter.includes(t)?" on":""}" aria-pressed="${S.typeFilter.includes(t) ? "true" : "false"}"
       data-a="toggleFilter" data-a1="typeFilter" data-a2="${esc(t)}">${esc(t)}</button>`).join("");
   const rarities = [...new Set(S.pool.map(c=>c.rarity).filter(Boolean))]
     .sort((a,b)=>{
@@ -3299,7 +3305,7 @@ function render(){
     });
   document.getElementById("rarityRow").innerHTML = `<span class="lbl">rarity</span>` +
     rarities.map(r=>
-      `<button class="chip${S.rarityFilter.includes(r)?" on":""}"
+      `<button class="chip${S.rarityFilter.includes(r)?" on":""}" aria-pressed="${S.rarityFilter.includes(r) ? "true" : "false"}"
         data-a="toggleFilter" data-a1="rarityFilter" data-a2="${esc(r)}">${esc(r)}</button>`).join("");
  
   const term = S.q.trim().toLowerCase();
@@ -3356,7 +3362,7 @@ function render(){
   document.getElementById("avg").textContent = "avg " + avg.toFixed(2);
  
   document.getElementById("zoneTabs").innerHTML = Object.entries(ZONES).map(([k,z])=>
-    `<button class="ztab${ZONE_TAB===k?" on":""}" data-a="setZoneTab" data-a1="${esc(k)}">${z.short}<b>${zoneCount(k)}</b></button>`).join("");
+    `<button class="ztab${ZONE_TAB===k?" on":""}" aria-pressed="${ZONE_TAB===k ? "true" : "false"}" data-a="setZoneTab" data-a1="${esc(k)}">${z.short}<b>${zoneCount(k)}</b></button>`).join("");
 
   const zk = ZONE_TAB;
   const zun = S.unresolved.filter(u=>u.zone===zk);
@@ -3374,9 +3380,9 @@ function render(){
         ${code?`<span class="dset">${esc(code)}</span>`:""}
         ${GAME.energyCurve?`<span class="denergy">${c.energy||""}</span>`:""}
         <span class="qty">
-          <button class="step" data-a="bump" data-a1="${esc(zk)}" data-a2="${esc(c.id)}" data-a3="-1">–</button>
+          <button class="step" data-a="bump" data-a1="${esc(zk)}" data-a2="${esc(c.id)}" data-a3="-1" aria-label="Remove a copy of ${esc(c.name)}">–</button>
           <b>${c.qty}</b>
-          <button class="step" data-a="bump" data-a1="${esc(zk)}" data-a2="${esc(c.id)}" data-a3="1"${
+          <button class="step" data-a="bump" data-a1="${esc(zk)}" data-a2="${esc(c.id)}" data-a3="1" aria-label="Add a copy of ${esc(c.name)}"${
             blockedNow ? ` disabled title="${esc(blockedNow)}"` : ""}>+</button>
         </span></li>`;
   };
@@ -3484,7 +3490,7 @@ function addActs(c, act = "addCard", cls = "btn sm"){
   const no = addBlock(c, sug === "legend" ? "legend" : sug);
   const off = no ? ` disabled title="${esc(no)}"` : "";
   const b = (zone, label, extra = "") =>
-    `<button class="${cls}${extra}"${zone === "legend" || zone === "sideboard" ? "" : off} data-a="${act}" data-a1="${esc(refOf(c))}" data-a2="${zone}">${label}</button>`;
+    `<button class="${cls}${extra}"${zone === "legend" || zone === "sideboard" ? "" : off} data-a="${act}" data-a1="${esc(refOf(c))}" data-a2="${zone}" aria-label="${label}: ${esc(c.name)}">${label}</button>`;
   if(sug === "legend") return b("legend", "Legend");
   if(sug === "runes") return b("runes", "+ Rune");
   if(sug === "battlefields") return b("battlefields", "+ Field");
@@ -3654,6 +3660,7 @@ function paintCard(c){
     ? `<img src="${esc(backUrl)}" alt="" referrerpolicy="no-referrer"
          data-back="${land ? "land" : "1"}">`
     : backSvg(land);
+  document.getElementById("modalBox").setAttribute("aria-label", c.name);
   document.getElementById("modalBox").innerHTML =
     `<div class="flipscene${land ? " land" : ""}">
       <div class="flipper" id="cardFlipper">
@@ -3922,6 +3929,35 @@ const TRACK = {
   colMarkAll:    () => "collection-mark-all",
   colShowMissing: () => "collection-show-missing",
 };
+// Focus that survives a redraw. Most actions re-render the markup they came from, which
+// drops keyboard focus to the top of the page. A control is found again by what it does
+// (its action and arguments, or its id); if that one is now disabled, such as + at the
+// copy cap, the nearest enabled control for the same card takes focus instead.
+const focusKey = el => el && el !== document.body &&
+  { id: el.id, a: el.dataset.a, a1: el.dataset.a1, a2: el.dataset.a2, a3: el.dataset.a3,
+    auth: el.dataset.auth, scope: el.closest("[id]")?.id };
+function findByKey(k){
+  if(!k) return null;
+  if(k.id) return document.getElementById(k.id);
+  if(k.auth) return document.querySelector(`[data-auth="${CSS.escape(k.auth)}"]`);
+  if(!k.a) return null;
+  const sel = (a, ...args) => `[data-a="${CSS.escape(a)}"]` + args.map(([n, v]) =>
+    v === undefined ? "" : `[data-${n}="${CSS.escape(v)}"]`).join("");
+  const root = (k.scope && document.getElementById(k.scope)) || document;
+  const usable = el => el && !el.disabled && el.getClientRects().length;
+  const exact = [...root.querySelectorAll(sel(k.a, ["a1", k.a1], ["a2", k.a2], ["a3", k.a3]))];
+  return exact.find(usable)
+    || [...root.querySelectorAll(sel(k.a, ["a1", k.a1], ["a2", k.a2]))].find(usable)
+    || [...root.querySelectorAll(sel(k.a, ["a1", k.a1]))].find(usable)
+    || exact[0] || null;
+}
+function restoreFocus(k){
+  if(document.activeElement && document.activeElement !== document.body
+     && document.activeElement.isConnected) return;
+  const el = findByKey(k);
+  if(el?.isConnected) el.focus({preventScroll: true});
+}
+
 document.addEventListener("click", e => {
   const el = e.target.closest("[data-a]");
   if(!el || el.disabled) return;
@@ -3929,7 +3965,9 @@ document.addEventListener("click", e => {
   if(!fn) return;
   const name = TRACK[el.dataset.a]?.(el.dataset.a1);
   if(name) track(name);
+  const key = el === document.activeElement ? focusKey(el) : null;
   fn(el.dataset.a1, el.dataset.a2, el.dataset.a3);
+  if(key){ restoreFocus(key); requestAnimationFrame(() => restoreFocus(key)); }
 });
 
 document.addEventListener("error", e => {
@@ -4023,9 +4061,64 @@ document.addEventListener("keydown", e => {
   closeModal();
   closeAsk("cancel");
   closeLegal();
-  if(MENU_OPEN) toggleDeckMenu(false);
-  if(GAME_MENU_OPEN) toggleGameMenu(false);
-  if(SETPICK_OPEN) toggleSetPick(false);
+  // A menu closed from inside hands focus back to the button that opened it.
+  const shut = (open, toggle, menu, opener) => {
+    if(!open) return;
+    const inside = document.getElementById(menu).contains(document.activeElement);
+    toggle(false);
+    if(inside) document.getElementById(opener).focus();
+  };
+  shut(MENU_OPEN, toggleDeckMenu, "deckMenu", "deckCaret");
+  shut(GAME_MENU_OPEN, toggleGameMenu, "gameMenu", "gameBtn");
+  shut(SETPICK_OPEN, toggleSetPick, "setPickPanel", "setPickBtn");
+});
+
+// Pop-ups behave as dialogs: focus moves in when one opens, Tab stays inside it, and
+// focus goes back to the control that opened it when it closes (found again by what it
+// does if a redraw replaced it meanwhile).
+const DIALOG_IDS = ["modal", "askModal", "legalModal", "authModal"];
+const DIALOG_SEL = DIALOG_IDS.map(id => "#" + id).join(",");
+let lastOutside = null;
+document.addEventListener("focusin", e => {
+  if(!e.target.closest(DIALOG_SEL)) lastOutside = e.target;
+});
+const topDialog = () => DIALOG_IDS.map(id => document.getElementById(id))
+  .filter(d => d.classList.contains("open")).pop();
+for(const id of DIALOG_IDS){
+  const wrap = document.getElementById(id);
+  const box = wrap.querySelector("[role=dialog]");
+  let back = null;
+  new MutationObserver(() => {
+    const open = wrap.classList.contains("open");
+    if(open && !back){
+      back = { el: lastOutside, key: focusKey(lastOutside) };
+      if(!box.contains(document.activeElement)) box.focus({preventScroll: true});
+    } else if(!open && back){
+      const b = back; back = null;
+      const a = document.activeElement;
+      if(a && a !== document.body && !wrap.contains(a) && a.isConnected) return;
+      const el = b.el?.isConnected && b.el.getClientRects().length ? b.el : findByKey(b.key);
+      el?.focus({preventScroll: true});
+    }
+  }).observe(wrap, { attributes: true, attributeFilter: ["class"] });
+}
+document.addEventListener("keydown", e => {
+  if(e.key !== "Tab") return;
+  const d = topDialog();
+  if(!d) return;
+  const items = [...d.querySelectorAll('button:not([disabled]),[href],input:not([type=hidden]):not([disabled]),select,textarea,[tabindex]:not([tabindex="-1"])')]
+    .filter(el => el.getClientRects().length);
+  if(!items.length){ e.preventDefault(); return; }
+  const first = items[0], last = items[items.length - 1], at = document.activeElement;
+  if(!d.contains(at) || (e.shiftKey ? at === first || !items.includes(at) : at === last)){
+    e.preventDefault();
+    (e.shiftKey ? last : first).focus();
+  }
+});
+document.getElementById("setPickQ").addEventListener("keydown", e => {
+  if(e.key !== "Enter") return;
+  e.preventDefault();
+  document.querySelector("#setPickList .sprow")?.click();
 });
 document.getElementById("deckCaret").addEventListener("click", e => {
   e.stopPropagation();
@@ -4754,8 +4847,10 @@ $("acct").addEventListener("click", async e => {
   if(a === "in")  openAuth("signin");
   if(a === "account") openAuth("account");
   if(a === "out"){
-    if(window.hasUnsavedChanges?.() &&
-       !confirm("This deck has unsaved changes that will be discarded. Sign out anyway?"))
+    if(window.hasUnsavedChanges?.() && await ask("Sign out?",
+         "This deck has unsaved changes that will be discarded.",
+         [{label:"Sign out", value:"out", kind:"danger"},
+          {label:"Cancel", value:"cancel", kind:"quiet"}]) !== "out")
       return;
     try { await auth.signOut(); } catch {}
     session = null; paintAccount();
