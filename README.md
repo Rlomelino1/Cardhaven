@@ -54,15 +54,21 @@ a failed fetch, or for trying a pool that isn't committed yet.
 
 ### Adding a Riftbound set
 
-Data only, no code change:
+Data only, no code change, and the weekly refresh does it on its own. By hand:
 
 ```
-node scripts/build-pool-v2.mjs --set <code>     # writes <code>-pool.json
+node scripts/build-pool-v2.mjs --set <code>     # from Riftcodex; writes <code>-pool.json
+node scripts/build-pool-riot.mjs --set <code>   # from Riot's card gallery; writes data/<code>-pool.json
+node scripts/build-pool-riot.mjs --list         # the sets Riot's gallery has
 ```
 
-Move it to `data/`, add one entry to the `GAMES.riftbound.sets` list at the top of
-`index.html` (`{ code, name, pool }`), and commit both. Nothing in the app switches on a
-set code. Every set Riftcodex publishes is already in, so this is for a new release.
+Riftcodex is the source for every set it has (the promo sets are only there). Riot's
+official card gallery lists each main set on release day, often weeks before Riftcodex,
+so a set Riftcodex lacks comes from Riot, in the same card shape and ref format.
+`data/riftbound-riot-sets.json` lists the sets built that way. For a set built from
+Riftcodex, move the file to `data/`. Then add one entry to the `GAMES.riftbound.sets`
+list at the top of `index.html` (`{ code, name, pool }`) and commit both. Nothing in the
+app switches on a set code.
 
 A card's ref is `{set}-{number}{variant}-{source}`, and the trailing segment matters: a
 promo set reprints cards from several sets and keeps each one's *source* collector
@@ -101,6 +107,11 @@ approve pull requests* has to stay on for it to open the PR. A `DATA_REFRESH_TOK
 fine-grained token for this repository with Contents and Pull requests read and write)
 lets CI run on that PR through a normal pull request event, which the required `e2e`
 check needs; the workflow file explains why.
+
+Riftbound has two sources (see *Adding a Riftbound set*). Riftcodex has refused GitHub's
+runners since October 2026; when it does, its sets are left as they are, new sets still
+come in from Riot's gallery, and the PR says so. The run fails, and GitHub emails, only
+when Riot's gallery can't be read.
 
 ### Set pages
 

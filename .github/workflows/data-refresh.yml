@@ -88,8 +88,10 @@ jobs:
           if git rev-parse -q --verify "refs/heads/$BRANCH" >/dev/null; then
             gh workflow run ci.yml --ref "$BRANCH"
           fi
-      # A skipped Riftbound refresh still lets the Pokémon PR through, but fails the
-      # run afterwards so GitHub's failure email says the Riftbound data is stale.
+      # Riftbound counts as skipped only when Riot's card gallery could not be read (a
+      # Riftcodex refusal alone is a note in the PR, since Riot still brings in new sets).
+      # A skip still lets the Pokémon PR through, but fails the run afterwards so
+      # GitHub's failure email says the Riftbound data is stale.
       - name: Flag a skipped Riftbound refresh
         run: |
           if grep -q "Not refreshed this time" "$RUNNER_TEMP/summary.md"; then

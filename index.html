@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-m357Om9v7gk6qg1dOLAsS392QOl0j4cMPTVUNRgZCaw=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-xNe0gvRa130eDXpduxWfA8IR+ZW+/9trw+UafF3knMQ=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -1645,6 +1645,7 @@ const GAMES = {
       { code:"SFD", name:"Spiritforged",    pool:"./data/sfd-pool.json" },
       { code:"UNL", name:"Unleashed",       pool:"./data/unl-pool.json" },
       { code:"VEN", name:"Vendetta",        pool:"./data/ven-pool.json" },
+      { code:"RAD", name:"Radiance",        pool:"./data/rad-pool.json" },
       { code:"OGS", name:"Proving Grounds", pool:"./data/ogs-pool.json" },
       { code:"OPP", name:"Organized Play",  pool:"./data/opp-pool.json" },
       { code:"PR",  name:"Promos",          pool:"./data/pr-pool.json"  },
@@ -2458,8 +2459,12 @@ window.toggleSetScope = code => {
   render();
 };
 
-// A hidden stand-in count, about as wide as a real one, for chips drawn before the cards.
-const SETCHIP_PENDING = `<b class="pending">000</b>`;
+// A hidden stand-in count for chips drawn before the cards. Two digits, not three: the
+// promo sets have one- and two-digit counts, and a three-digit stand-in on every chip made
+// the set bar too wide to share a row with its label at 1280px once there were nine sets,
+// so it dropped a row when the real counts landed. A chip growing by one digit moves its
+// neighbours a few pixels at most.
+const SETCHIP_PENDING = `<b class="pending">00</b>`;
 const COLCHIP_PENDING = `<b class="pending">0/000</b>`;
 
 function renderSetBar(){

@@ -167,7 +167,9 @@ test.describe("cross-set card identity", () => {
       });
       expect(bad.collisions).toEqual([]);
       expect(bad.printings).toBe(RB_POOL);
-      expect(bad.keys).toBe(946);
+      // Distinct cards across every Riftbound set. A new set raises it by its main-set size
+      // (Radiance added 167), so a data refresh that adds a set updates this number too.
+      expect(bad.keys).toBe(1113);
     });
 
   test("printings that share a name are always the same card", async ({ page }) => {
