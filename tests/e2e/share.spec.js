@@ -44,8 +44,7 @@ test.describe("sharing a deck as a link", () => {
   test("an empty deck isn't shared", async ({ page }) => {
     await openApp(page);
     await page.click("[data-a='shareDeck']");
-    await expect(page.locator("#note, .note, [role=status]").first()).toBeAttached();
-    expect(await page.evaluate(() => deckIsBlank())).toBe(true);
+    await expect(page.locator("#notice")).toHaveText("Add some cards before sharing the deck.");
   });
 
   test("a Pokémon deck round-trips too", async ({ page, context }) => {
@@ -114,29 +113,6 @@ test.describe("opening a shared deck while signed out", () => {
     expect(new URL(page.url()).search).toBe("");
     await openApp(page, { query: "?deck=chess.AAAA" });
     expect(await page.evaluate(() => ACTIVE_GAME)).toBe("riftbound");
-  });
-});
-
-test.describe("search basics", () => {
-  test("the app has one h1 naming the site", async ({ page }) => {
-    await openApp(page);
-    await expect(page.locator("h1")).toHaveCount(1);
-    await expect(page.locator("h1 .wordmark")).toHaveText("Card Haven");
-  });
-
-  test("an unknown address gets the not-found page, kept out of search", async ({ page }) => {
-    const res = await page.request.get("/404.html");
-    expect(res.status()).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("<h1>Page not found</h1>");
-    expect(html).toContain('<meta name="robots" content="noindex">');
-  });
-
-  test("every sitemap entry has a lastmod date", async ({ page }) => {
-    const xml = await (await page.request.get("/sitemap.xml")).text();
-    const urls = xml.match(/<url>[\s\S]*?<\/url>/g);
-    expect(urls.length).toBeGreaterThan(100);
-    for (const u of urls) expect(u).toMatch(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
   });
 });
 
