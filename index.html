@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-wsFZxurbSAagFaZW/DAUrkrvcax12pa5c86O9YPaJfo=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-WS6p9QUPYKj+Mi7LBUvrvcOJ/U8Bu1theJv8uHGaZXw=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -3969,7 +3969,7 @@ async function shareDeck(){
   if(deckIsBlank()){ note("Add some cards before sharing the deck."); toast("Add some cards first", btn); return; }
   let url;
   try{ url = `${location.origin}/?deck=${ACTIVE_GAME}.${await packDeck()}`; }
-  catch{ note("This browser can't make deck links."); return; }
+  catch{ note("This browser can't make deck links."); toast("Can't make a link here", btn); return; }
   try{
     await navigator.clipboard.writeText(url);
     note("Deck link copied. Anyone who opens it gets a copy of this deck.");
@@ -3980,9 +3980,10 @@ async function shareDeck(){
 }
 
 function copyText(){
+  const btn = document.querySelector("[data-a='copyText']");
   navigator.clipboard.writeText(GAME.deckText())
-    .then(()=>{ note("Decklist copied."); toast("Decklist copied", document.querySelector("[data-a='copyText']")); })
-    .catch(()=>note("Clipboard blocked — use Export instead."));
+    .then(()=>{ note("Decklist copied."); toast("Decklist copied", btn); })
+    .catch(()=>{ note("Clipboard blocked — use Export instead."); toast("Clipboard blocked", btn); });
 }
  
 const ACTIONS = {

@@ -56,6 +56,17 @@ test.describe("sharing a deck as a link", () => {
     await expect(page.locator("#toast")).toHaveText("Add some cards first");
   });
 
+  test("Copy as text says so in the same bubble, and so does a blocked clipboard", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openApp(page);
+    await buildDeck(page, RB_DECK, "Bubble deck");
+    await page.click("[data-a='copyText']");
+    await expect(page.locator("#toast")).toHaveText("Decklist copied");
+    await page.evaluate(() => { navigator.clipboard.writeText = () => Promise.reject(new Error("blocked")); });
+    await page.click("[data-a='copyText']");
+    await expect(page.locator("#toast")).toHaveText("Clipboard blocked");
+  });
+
   test("a Pokémon deck round-trips too", async ({ page, context }) => {
     await openPokemon(page);
     const refs = await page.evaluate(() => PIDX.slice(0, 3).map(e => e.id));
