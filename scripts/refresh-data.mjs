@@ -17,7 +17,6 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
-import { fetchGallery, poolFor } from "./build-pool-riot.mjs";
 
 const args = process.argv.slice(2);
 const SUMMARY = args.includes("--summary") ? args[args.indexOf("--summary") + 1] : null;
@@ -31,6 +30,14 @@ const run = (script, scriptArgs, cwd = ROOT) => {
   const r = spawnSync(process.execPath, [new URL(script, at("scripts/")).pathname, ...scriptArgs],
     { cwd, stdio: ["ignore", "ignore", "inherit"] });
   if (r.status !== 0) throw new Error(`${script} ${scriptArgs.join(" ")} exited with ${r.status}`);
+};
+
+// Same, but hands back what the script printed.
+const runOut = (script, scriptArgs) => {
+  const r = spawnSync(process.execPath, [new URL(script, at("scripts/")).pathname, ...scriptArgs],
+    { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8", maxBuffer: 1 << 20 });
+  if (r.status !== 0) throw new Error((r.stderr || "").trim().split("\n").at(-1) || `${script} exited with ${r.status}`);
+  return r.stdout;
 };
 
 const readJson = async (p) => {
@@ -78,7 +85,7 @@ try {
 
 let riot = null;
 try {
-  riot = await fetchGallery();
+  riot = { sets: JSON.parse(runOut("build-pool-riot.mjs", ["--list"])) };
 } catch (err) {
   riotError = err.message;
   process.stderr.write(`riot card gallery skipped: ${riotError}\n`);
@@ -101,7 +108,8 @@ for (const s of rcSets) {
 for (const s of riotSets) {
   rbBefore.set(s.code, await countOf(s.code));
   process.stderr.write(`riftbound ${s.code} (Riot)\n`);
-  await writeFile(at(`data/${s.code.toLowerCase()}-pool.json`), JSON.stringify(poolFor(riot.items, s.code), null, 2));
+  try { run("build-pool-riot.mjs", ["--set", s.code.toLowerCase()]); }
+  catch (err) { riotError ??= err.message; }
 }
 if (riot) {
   const stillRiot = riotSets.map((s) => s.code).sort();
