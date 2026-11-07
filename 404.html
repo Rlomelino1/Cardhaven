@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'self'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<title>Page not found — Card Haven</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="robots" content="noindex">
+<script>
+try{ if(localStorage.getItem("rb.theme")==="paper")
+  document.documentElement.classList.add("paper"); }catch(e){}
+</script>
+<style>
+:root{
+  --ink:#141024; --panel:#1F1936; --edge:#312A4C;
+  --text:#EAE7F4; --text2:#C9C2DA; --mute:#948CAB;
+  --brass:#C9A227; --teal:#3FA7A0;
+}
+:root.paper{
+  --ink:#F2EDE3; --panel:#FBF8F1; --edge:#DCD5C5;
+  --text:#211D15; --text2:#3D372B; --mute:#867D69;
+  --brass:#8C6D1F; --teal:#2E7D77;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ink); color:var(--text2); padding:22px 18px 48px;
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.65}
+:focus-visible{outline:2px solid var(--brass); outline-offset:2px}
+main{max-width:68ch; margin:0 auto}
+.top{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+  flex-wrap:wrap; background:var(--panel); border:1px solid var(--edge);
+  border-radius:4px; padding:10px 14px; margin-bottom:28px}
+.wordmark{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:21px; font-weight:700; color:var(--text); text-decoration:none}
+a{color:var(--brass)}
+a:hover{color:var(--text)}
+h1{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  color:var(--text); font-size:30px; margin:0 0 4px}
+.eyebrow{margin:0 0 22px; font-family:ui-monospace,Menlo,monospace; font-size:11px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--teal)}
+h2{color:var(--text); font-size:17px; margin:30px 0 8px}
+p,li{font-size:15px}
+ul{padding-left:20px}
+li{margin:4px 0}
+.short{background:var(--panel); border:1px solid var(--edge); border-left:3px solid var(--brass);
+  border-radius:4px; padding:12px 16px}
+.short p{margin:0}
+footer{margin-top:40px; font-size:12px; color:var(--mute)}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a class="wordmark" href="/">Card Haven</a>
+    <a href="/">Back to the deck builder</a>
+  </div>
+
+  <h1>Page not found</h1>
+  <p class="eyebrow">404</p>
+
+  <div class="short">
+    <p>There's nothing at this address. It may have moved, or the link may be mistyped.</p>
+  </div>
+
+  <h2>Where to go instead</h2>
+  <ul>
+    <li><a href="/">The deck builder and collection tracker</a> for Riftbound and the Pokémon TCG</li>
+    <li><a href="/sets/">Card lists for every set</a></li>
+  </ul>
+</main>
+</body>
+</html>

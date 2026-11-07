@@ -13,8 +13,10 @@
 // Each page links into the app with ?game=…&set=…, which index.html turns into the
 // open game and set before it boots.
 
-import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile, rm } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const ROOT = new URL("../", import.meta.url);
 const at = (p) => new URL(p, ROOT);
@@ -258,13 +260,31 @@ ${footer(GAMES)}`;
 
 // ---- write ----
 
+// The pages as they were, so each page's lastmod can tell whether it changed.
+const previous = new Map();
+for (const f of await readdir(at(OUT), { recursive: true }).catch(() => []))
+  if (f.endsWith("index.html")) previous.set(`/${OUT}${f.replace(/index\.html$/, "")}`, await readFile(at(OUT + f), "utf8"));
 await rm(at(OUT), { recursive: true, force: true });
+// Each page's sitemap lastmod is the day its content last changed: kept from the old
+// sitemap while the page is unchanged, today when it changes or is new, and the date of
+// its last commit when an unchanged page has none yet.
+const old = await readFile(at("sitemap.xml"), "utf8");
+const oldMod = new Map([...old.matchAll(/<url>\s*<loc>([^<]+)<\/loc>(?:\s*<lastmod>([^<]+)<\/lastmod>)?\s*<\/url>/g)]
+  .map(([, loc, mod]) => [loc, mod]));
+const today = new Date().toISOString().slice(0, 10);
+const committed = (file) => {
+  const r = spawnSync("git", ["log", "-1", "--format=%cs", "--", fileURLToPath(file)], { encoding: "utf8" });
+  return r.status === 0 && /^\d{4}-\d{2}-\d{2}$/.test(r.stdout.trim()) ? r.stdout.trim() : today;
+};
+
 const files = [];
 const put = async (path, text) => {
   const file = at(path.replace(/^\//, "") + "index.html");
   await mkdir(new URL("./", file), { recursive: true });
   await writeFile(file, text);
-  files.push(path);
+  const before = previous.get(path) ?? null;
+  const mod = before !== text ? today : oldMod.get(SITE + path) ?? committed(file);
+  files.push({ path, mod });
 };
 
 await put(`/${OUT}`, indexPage());
@@ -274,11 +294,10 @@ for (const g of GAMES) {
 }
 
 // Sitemap: the hand-kept pages first, keeping their lastmod, then every set page.
-const old = await readFile(at("sitemap.xml"), "utf8");
 const kept = [...old.matchAll(/<url>\s*<loc>([^<]+)<\/loc>(?:\s*<lastmod>([^<]+)<\/lastmod>)?\s*<\/url>/g)]
   .filter(([, loc]) => !loc.startsWith(`${SITE}/${OUT}`))
   .map(([, loc, mod]) => ({ loc, mod }));
-const urls = [...kept, ...files.map((p) => ({ loc: SITE + p }))];
+const urls = [...kept, ...files.map((f) => ({ loc: SITE + f.path, mod: f.mod }))];
 await writeFile(at("sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map((u) => `  <url>

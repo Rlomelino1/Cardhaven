@@ -113,6 +113,15 @@ runners since October 2026; when it does, its sets are left as they are, new set
 come in from Riot's gallery, and the PR says so. The run fails, and GitHub emails, only
 when Riot's gallery can't be read.
 
+### Deck links
+
+"Share link" under the deck copies `/?deck=<game>.<data>`: the deck (name, legend,
+champion, each zone's refs and counts) as compact JSON, deflated and base64url-encoded, so
+links need no server and never expire. Opening one starts a new deck holding those cards.
+Signed in, it is unsaved until Save. Signed out, it takes this browser's one deck slot,
+asking first if a deck is already there, and Save opens sign-in, which moves the deck into
+the account. Someone signed in last time waits for their session before it opens.
+
 ### Set pages
 
 `node scripts/build-set-pages.mjs` writes a static card list per set under `sets/`

@@ -4,7 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 
 // Every page that carries its own CSP with hashed inline scripts.
-const PAGES = ["index.html", "privacy.html"];
+const PAGES = ["index.html", "privacy.html", "404.html"];
 const WRITE = process.argv.includes("--write");
 
 const sha = (s) => "'sha256-" + createHash("sha256").update(s, "utf8").digest("base64") + "'";

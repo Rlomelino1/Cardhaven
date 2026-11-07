@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-xNe0gvRa130eDXpduxWfA8IR+ZW+/9trw+UafF3knMQ=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-Yi9RDxodSJvaFmKIpKwTLV3iuAovo1Rb0M9oXumu26o=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -74,7 +74,7 @@ header{position:relative; z-index:40; display:flex; align-items:center; gap:14px
 .eyebrow{margin:0 0 5px; font-family:ui-monospace,Menlo,monospace; font-size:11px;
   letter-spacing:.14em; text-transform:uppercase; color:var(--teal)}
 .brand{display:flex; align-items:baseline; gap:8px; padding-right:14px;
-  border-right:1px solid var(--edge)}
+  border-right:1px solid var(--edge); margin:0; font-size:inherit; font-weight:400}
 .wordmark{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:21px; font-weight:700; color:var(--text)}
 .brandsub{font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.1em;
@@ -389,7 +389,8 @@ html:not(.booted) body > :not(header){visibility:hidden; animation:reveal 0s 3s 
   padding:22px; max-width:430px; width:100%}
 .askbox h3{font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
   font-size:19px; font-weight:600; margin:0 0 10px}
-.askbox p{font-size:13.5px; line-height:1.65; color:var(--text2); margin:0 0 18px}
+.askbox p{font-size:13.5px; line-height:1.65; color:var(--text2); margin:0 0 18px;
+  overflow-wrap:anywhere}
 .askacts{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
 .legalbox{max-width:560px; max-height:80vh; overflow-y:auto}
 .legalbox h4{font-size:11px; letter-spacing:.08em; text-transform:uppercase;
@@ -696,6 +697,8 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 .avatar{width:27px; height:27px; border-radius:50%; background:var(--brass);
   color:var(--ink); font-size:12px; font-weight:700; display:inline-flex;
   align-items:center; justify-content:center; flex:none}
+/* A signed-out deck opened from a link shows Save in its place, keeping one header row. */
+#saveBtn:not([hidden]) ~ .acct .pitch{display:none}
 .acct .pitch{font-family:ui-monospace,Menlo,monospace; font-size:10px;
   letter-spacing:.04em; text-transform:uppercase; color:var(--mute)}
 .acct:empty{display:none}
@@ -912,9 +915,9 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 <body>
  
 <header>
-  <div class="brand">
+  <h1 class="brand">
     <span class="wordmark">Card Haven</span><span class="brandsub" id="ctxLabel">Deckbuilder</span>
-  </div>
+  </h1>
   <div class="gamewrap">
     <button class="gamebtn" id="gameBtn" aria-haspopup="true" aria-expanded="false">
       <i class="gmark" id="gameMark">RB</i><span id="gameLabel">Riftbound</span>
@@ -1017,6 +1020,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   <div id="zoneList"></div>
   <div class="actions">
     <button class="btn go" data-a="exportDeck">Export deck</button>
+    <button class="btn" data-a="shareDeck">Share link</button>
     <button class="btn" data-a="copyText">Copy as text</button>
     <button class="btn quiet" data-a="pickFile">Import</button>
     <button class="btn quiet" data-a="wipe">Reset</button>
@@ -1793,6 +1797,27 @@ function adoptGame(){
   }catch{}
 })();
 
+// A shared deck link arrives as ?deck=<game>.<data> (see packDeck). Switch to that game
+// the same way, keep the data for applyShared once the cards are in, and drop the
+// parameter so a reload doesn't open it again. Someone who was signed in last time waits
+// for their account first, so the deck opens as a new unsaved deck there instead of in
+// this browser's slot.
+let SHARED = null, AUTH_KNOWN = false, SHARED_OPEN = false;
+(() => {
+  try{
+    const u = new URL(location.href);
+    const v = u.searchParams.get("deck");
+    if(v === null) return;
+    u.searchParams.delete("deck");
+    history.replaceState(history.state, "", u.pathname + u.search + u.hash);
+    const m = /^([a-z]+)\.([A-Za-z0-9_-]{1,12000})$/.exec(v);
+    if(!m || !GAME_IDS.includes(m[1])) return;
+    SHARED = {game:m[1], data:m[2], waitAuth:
+      localStorage.getItem("ch.signed-in") === "1" || sessionStorage.getItem("rb.oauth-pending") === "1"};
+    localStorage.setItem(LS_GAME, m[1]);
+  }catch{}
+})();
+
 const readActiveGame = () => {
   try{
     const v = localStorage.getItem(LS_GAME);
@@ -2083,6 +2108,7 @@ const emptyZones = () =>
   Object.fromEntries(Object.keys(GAME.zones).map(k => [k, []]));
 
 function freshDeck(){
+  SHARED_OPEN = false;
   S.deckName = "Untitled deck";
   S.legend = null; S.champion = null;
   S.zones = emptyZones();
@@ -2107,15 +2133,41 @@ async function wipe(){
 function applyPending(){
   if(!POOL_READY) return;
   if(MODE === "cloud"){
-    if(PENDING_CLOUD === undefined) return;
-    const row = PENDING_CLOUD; PENDING_CLOUD = undefined;
-    openDeckRow(row);
-  } else {
-    if(PENDING_LOCAL === undefined) return;
+    if(PENDING_CLOUD !== undefined){
+      const row = PENDING_CLOUD; PENDING_CLOUD = undefined;
+      openDeckRow(row);
+    }
+  } else if(PENDING_LOCAL !== undefined){
     const p = PENDING_LOCAL; PENDING_LOCAL = undefined;
     hydrateDeck(p);
     render();
   }
+  applyShared();
+}
+
+// Opens the deck from a shared link as a new deck: unsaved in an account, or in this
+// browser's one slot when signed out, after asking if that slot already holds a deck.
+async function applyShared(){
+  if(!SHARED || !POOL_READY) return;
+  if(SHARED.game !== ACTIVE_GAME){ SHARED = null; return; }
+  if(SHARED.waitAuth && !AUTH_KNOWN) return;
+  const s = SHARED; SHARED = null;
+  let shared;
+  try{ shared = await unpackDeck(s.data); }
+  catch{ note("That deck link is damaged or incomplete, so it wasn't opened."); return; }
+  if(MODE === "local" && !deckIsBlank()){
+    const v = await ask("Open the shared deck?",
+      `It replaces "${S.deckName}", the deck saved in this browser. To keep both, cancel and sign in first.`,
+      [{label:"Open shared deck", value:"open", kind:"go"},
+       {label:"Cancel", value:"cancel", kind:"quiet"}]);
+    if(v !== "open") return;
+  }
+  freshDeck();
+  hydrateDeck(shared.deck);
+  S.deckName = shared.name;
+  SHARED_OPEN = MODE === "local";
+  touch(); render();
+  note(MODE === "cloud" ? "Opened a shared deck. Save it to keep it in your account." : "Opened a shared deck.");
 }
 
 function openDeckRow(row){
@@ -2133,6 +2185,7 @@ function openDeckRow(row){
 
 window.onCloudSession = function(user, decks, importedRow, collection){
   CLOUD_USER = user;
+  AUTH_KNOWN = true;
   if(user){
     MODE = "cloud";
     DECKS = decks || [];
@@ -2268,7 +2321,12 @@ function renderSaveState(){
   const btn = document.getElementById("saveBtn");
   const state = document.getElementById("saveState");
   if(MODE !== "cloud"){
-    btn.hidden = true;
+    // Signed out, a deck opened from a link offers Save too: it opens sign-in, and
+    // signing in moves this browser's deck into the account (syncCloud).
+    btn.hidden = !SHARED_OPEN;
+    btn.disabled = false;
+    btn.textContent = "Save deck";
+    btn.classList.toggle("go", SHARED_OPEN);
     state.textContent = "";
     state.classList.remove("dirty");
     return;
@@ -3848,6 +3906,52 @@ function rbDeckText(){
   }
   return lines.join("\n");
 }
+// A deck link carries the whole deck, so it needs no server and never expires: the
+// serialized deck as compact JSON, deflated, base64url, after ?deck=<game>. A typical
+// 40-60 card deck comes out at a few hundred characters.
+const b64url = bytes => btoa(String.fromCharCode(...bytes))
+  .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+async function packDeck(){
+  const d = serializeDeck();
+  const z = {};
+  for(const [k, list] of Object.entries(d.zones))
+    if(list.length) z[k] = list.map(e => [e.ref, e.qty]);
+  const json = JSON.stringify({v:1, n:S.deckName, l:d.legend, c:d.champion, z});
+  const packed = new Blob([json]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+  return b64url(new Uint8Array(await new Response(packed).arrayBuffer()));
+}
+async function unpackDeck(data){
+  const bin = atob(data.replace(/-/g, "+").replace(/_/g, "/"));
+  const bytes = Uint8Array.from(bin, ch => ch.charCodeAt(0));
+  const text = await new Response(new Blob([bytes]).stream()
+    .pipeThrough(new DecompressionStream("deflate-raw"))).text();
+  if(text.length > 200000) throw new Error("too large");
+  const o = JSON.parse(text);
+  if(!o || o.v !== 1 || typeof o.z !== "object" || !o.z) throw new Error("not a deck");
+  const ref = r => (typeof r === "string" && r && r.length <= 64) ? r : null;
+  const zones = {};
+  for(const k of Object.keys(GAME.zones))
+    zones[k] = (Array.isArray(o.z[k]) ? o.z[k] : []).slice(0, 200)
+      .filter(e => Array.isArray(e) && ref(e[0]))
+      .map(([r, q]) => ({ref:r, qty:q}));
+  return {
+    name: (typeof o.n === "string" && o.n.trim() ? o.n.trim() : "Shared deck").slice(0, 120),
+    deck: {schema:1, legend:ref(o.l), champion:ref(o.c), zones}
+  };
+}
+async function shareDeck(){
+  if(deckIsBlank()){ note("Add some cards before sharing the deck."); return; }
+  let url;
+  try{ url = `${location.origin}/?deck=${ACTIVE_GAME}.${await packDeck()}`; }
+  catch{ note("This browser can't make deck links."); return; }
+  try{
+    await navigator.clipboard.writeText(url);
+    note("Deck link copied. Anyone who opens it gets a copy of this deck.");
+  }catch{
+    await ask("Deck link", url, [{label:"Done", value:"ok", kind:"go"}]);
+  }
+}
+
 function copyText(){
   navigator.clipboard.writeText(GAME.deckText())
     .then(()=>note("Decklist copied."))
@@ -3861,9 +3965,10 @@ const ACTIONS = {
   loadPool:      () => loadPool(),
   exportDeck:    () => exportDeck(),
   copyText:      () => copyText(),
+  shareDeck:     () => shareDeck(),
   wipe:          () => wipe(),
   closeModal:    () => closeModal(),
-  saveDeck:      () => saveDeckCloud(),
+  saveDeck:      () => MODE === "cloud" ? saveDeckCloud() : window.openAuthModal(),
   newDeck:       () => newDeck(),
   duplicateDeck: () => duplicateDeck(),
   switchDeck:    a => switchDeck(a),
@@ -3920,6 +4025,7 @@ const TRACK = {
   pickFile:      () => "import-file",
   exportDeck:    () => "export-deck",
   copyText:      () => "copy-deck-text",
+  shareDeck:     () => "share-deck",
   saveDeck:      () => "save-deck",
   newDeck:       () => "new-deck",
   duplicateDeck: () => "duplicate-deck",
