@@ -35,7 +35,8 @@ test.describe("an empty deck is a start, not a list of failures", () => {
   test("Track my collection opens the collection", async ({ page }) => {
     await openApp(page);
     await page.click("#problems .welcome [data-a='goView']");
-    expect(await page.evaluate(() => VIEW)).toBe("collection");
+    // goView sets location.hash; VIEW follows on the hashchange event, a task later.
+    await expect.poll(() => page.evaluate(() => VIEW)).toBe("collection");
   });
 
   test("the Pokemon panel's pills start neutral, not failed", async ({ page }) => {

@@ -95,3 +95,26 @@ test.describe("indexable prose", () => {
         .toContain("free online deck builder and collection tracker");
     });
 });
+
+test.describe("headings, the not-found page and sitemap dates", () => {
+  test("the app has one h1 naming the site", async ({ page }) => {
+    await openApp(page);
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("h1 .wordmark")).toHaveText("Card Haven");
+  });
+
+  test("an unknown address gets the not-found page, kept out of search", async ({ page }) => {
+    const res = await page.request.get("/404.html");
+    expect(res.status()).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("<h1>Page not found</h1>");
+    expect(html).toContain('<meta name="robots" content="noindex">');
+  });
+
+  test("every sitemap entry has a lastmod date", async ({ page }) => {
+    const xml = await (await page.request.get("/sitemap.xml")).text();
+    const urls = xml.match(/<url>[\s\S]*?<\/url>/g);
+    expect(urls.length).toBeGreaterThan(100);
+    for (const u of urls) expect(u).toMatch(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
+  });
+});

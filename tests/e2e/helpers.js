@@ -12,7 +12,7 @@ export const rbWithout = code => RB_CODES.filter(c => c !== code);
 export const rbCardsWithout = code =>
   RB_POOL - RB_SETS.find(s => s.code === code).n;
 
-export async function openApp(page, { hash = "" } = {}) {
+export async function openApp(page, { hash = "", query = "" } = {}) {
   await page.route(/(^|\/\/)esm\.sh\//, route => route.abort());
 
   await page.addInitScript(() => {
@@ -27,7 +27,7 @@ export async function openApp(page, { hash = "" } = {}) {
       },
     });
   });
-  await page.goto("/" + hash);
+  await page.goto("/" + query + hash);
   await page.waitForFunction(() => typeof POOL_READY !== "undefined" && POOL_READY, null, {
     timeout: 15_000,
   });
