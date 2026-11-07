@@ -32,6 +32,14 @@ test.describe("sharing a deck as a link", () => {
       .toMatch(/\/\?deck=riftbound\.[A-Za-z0-9_-]+$/);
     const url = await page.evaluate(() => navigator.clipboard.readText());
     expect(url.length).toBeLessThan(400);
+    // A small bubble says so above the button, then goes away by itself.
+    const bubble = page.locator("#toast");
+    await expect(bubble).toHaveText("Link copied");
+    await expect(bubble).toHaveClass(/\bon\b/);
+    const [b, t] = await Promise.all([page.locator("[data-a='shareDeck']").boundingBox(), bubble.boundingBox()]);
+    expect(t.y + t.height).toBeLessThanOrEqual(b.y);
+    expect(Math.abs((t.x + t.width / 2) - (b.x + b.width / 2))).toBeLessThan(2);
+    await expect(bubble).not.toHaveClass(/\bon\b/, { timeout: 3000 });
 
     const other = await context.newPage();
     await openApp(other, { query: url.slice(url.indexOf("?")) });
@@ -45,6 +53,18 @@ test.describe("sharing a deck as a link", () => {
     await openApp(page);
     await page.click("[data-a='shareDeck']");
     await expect(page.locator("#notice")).toHaveText("Add some cards before sharing the deck.");
+    await expect(page.locator("#toast")).toHaveText("Add some cards first");
+  });
+
+  test("Copy as text says so in the same bubble, and so does a blocked clipboard", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openApp(page);
+    await buildDeck(page, RB_DECK, "Bubble deck");
+    await page.click("[data-a='copyText']");
+    await expect(page.locator("#toast")).toHaveText("Decklist copied");
+    await page.evaluate(() => { navigator.clipboard.writeText = () => Promise.reject(new Error("blocked")); });
+    await page.click("[data-a='copyText']");
+    await expect(page.locator("#toast")).toHaveText("Clipboard blocked");
   });
 
   test("a Pokémon deck round-trips too", async ({ page, context }) => {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-Yi9RDxodSJvaFmKIpKwTLV3iuAovo1Rb0M9oXumu26o=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-WS6p9QUPYKj+Mi7LBUvrvcOJ/U8Bu1theJv8uHGaZXw=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -68,6 +68,12 @@ body{margin:0; background:var(--ink); color:var(--text); padding:22px 18px 40px;
 :focus-visible{outline:2px solid var(--brass); outline-offset:2px}
 button,input{font-family:inherit}
  
+/* A short bubble above the button that was pressed, for actions with no other visible result. */
+.toast{position:fixed; left:0; top:0; z-index:80; pointer-events:none; white-space:nowrap;
+  padding:5px 10px; border-radius:6px; background:var(--text); color:var(--ink);
+  font-size:12px; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,.3);
+  opacity:0; transform:translate(-50%,calc(-100% + 4px)); transition:opacity .15s, transform .15s}
+.toast.on{opacity:1; transform:translate(-50%,-100%)}
 header{position:relative; z-index:40; display:flex; align-items:center; gap:14px;
   flex-wrap:wrap; background:var(--panel); border:1px solid var(--edge);
   border-radius:4px; padding:9px 14px}
@@ -780,6 +786,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 @media (prefers-reduced-motion:reduce){
   .box .flipper{transition:none}
   .deckbar{transition:none}
+  .toast{transition:none}
 }
 
 @media (hover:none){
@@ -1027,6 +1034,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   </div>
 </aside>
 </div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="deckbar" id="deckBar">
   <span class="dbcounts" id="deckBarCounts"></span>
@@ -3181,6 +3189,23 @@ window.colClear = async () => {
 };
  
 const note = t => document.getElementById("notice").textContent = t;
+// Shows text in a small bubble just above `anchor` for a moment, or near the
+// bottom of the screen when the anchor isn't visible.
+let toastTimer = 0;
+function toast(text, anchor){
+  const t = document.getElementById("toast"), r = anchor?.getBoundingClientRect();
+  clearTimeout(toastTimer);
+  t.textContent = text;
+  const half = t.offsetWidth / 2 + 8;
+  const x = r?.width ? r.left + r.width / 2 : innerWidth / 2;
+  t.style.left = Math.min(Math.max(x, half), innerWidth - half) + "px";
+  t.style.top = (r?.width && r.top > 40 ? r.top - 6 : innerHeight - 24) + "px";
+  t.classList.add("on");
+  toastTimer = setTimeout(() => {
+    t.classList.remove("on");
+    toastTimer = setTimeout(() => { t.textContent = ""; }, 200);
+  }, 1600);
+}
  
 const offDomain = c => S.legend && c.domains.length &&
   !c.domains.every(d => d==="Colorless" || S.legend.domains.includes(d));
@@ -3940,22 +3965,25 @@ async function unpackDeck(data){
   };
 }
 async function shareDeck(){
-  if(deckIsBlank()){ note("Add some cards before sharing the deck."); return; }
+  const btn = document.querySelector("[data-a='shareDeck']");
+  if(deckIsBlank()){ note("Add some cards before sharing the deck."); toast("Add some cards first", btn); return; }
   let url;
   try{ url = `${location.origin}/?deck=${ACTIVE_GAME}.${await packDeck()}`; }
-  catch{ note("This browser can't make deck links."); return; }
+  catch{ note("This browser can't make deck links."); toast("Can't make a link here", btn); return; }
   try{
     await navigator.clipboard.writeText(url);
     note("Deck link copied. Anyone who opens it gets a copy of this deck.");
+    toast("Link copied", btn);
   }catch{
     await ask("Deck link", url, [{label:"Done", value:"ok", kind:"go"}]);
   }
 }
 
 function copyText(){
+  const btn = document.querySelector("[data-a='copyText']");
   navigator.clipboard.writeText(GAME.deckText())
-    .then(()=>note("Decklist copied."))
-    .catch(()=>note("Clipboard blocked — use Export instead."));
+    .then(()=>{ note("Decklist copied."); toast("Decklist copied", btn); })
+    .catch(()=>{ note("Clipboard blocked — use Export instead."); toast("Clipboard blocked", btn); });
 }
  
 const ACTIONS = {
