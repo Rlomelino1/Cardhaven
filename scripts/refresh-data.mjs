@@ -67,7 +67,7 @@ const rbBefore = new Map();
 const countOf = async (code) => (await readJson(`data/${code.toLowerCase()}-pool.json`))?.length ?? null;
 
 let html = await readFile(at("index.html"), "utf8");
-const listedOrder = [...html.matchAll(/\{ code:"([A-Z0-9]+)",\s*name:"[^"]*",\s*pool:"\.\/data\//g)].map((m) => m[1]);
+const listedOrder = [...html.matchAll(/\{ code:"([A-Z0-9]+)",\s*name:"[^"]*",\s*pool:"\.\/data\/[^"/]+"/g)].map((m) => m[1]);
 const listed = new Set(listedOrder);
 if (!listed.size) throw new Error("found no GAMES.riftbound.sets entries in index.html");
 

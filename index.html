@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-dONTnD0elkHF7DPmXJjf8XPjmFoqgtgHkEzXgRu9+Xs=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-wUTXZ7YsqsM7v/oHs1HLbAQ8lF5wxyhnG/4zVekL6Ec=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -429,6 +429,10 @@ body.view-collection #collectionView{display:block}
   font-size:26px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--text)}
 .collectonly p{line-height:1.6}
 body.game-collect:not(.view-collection) .collectonly{display:block}
+/* The deckbuilder's load error and Try again live in the hidden layout, so a collect-only
+   game shows them in its note, in either view. */
+body.game-collect.pool-failed .collectonly{display:block}
+.collectonly .colloaderr{color:var(--warn)}
 body.game-collect .layout,
 body.game-collect .deckid,
 body.game-collect #saveBtn,
@@ -826,7 +830,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   .browsecol{min-height:100vh}  /* the deck sits below the cards; keep it there while they load */
   .deckpanel{position:static; max-height:none; scroll-margin-top:12px}
   .backtocards{display:block; align-self:flex-start}
-  body:not(.view-collection){padding-bottom:96px}
+  body:not(.view-collection):not(.game-collect){padding-bottom:96px}
   body:not(.view-collection) .deckbar{display:flex}
   .deckbar{position:fixed; left:0; right:0; bottom:0; z-index:30; align-items:center;
     gap:12px; padding:10px 14px calc(10px + env(safe-area-inset-bottom));
@@ -1054,7 +1058,9 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   <p class="eyebrow">Collect-only game</p>
   <h2 id="collectOnlyTitle"></h2>
   <p id="collectOnlyText"></p>
-  <button class="btn go" data-a="goView" data-a1="collection">Go to my collection</button>
+  <p class="colloaderr" id="collectOnlyErr" hidden></p>
+  <button class="btn go" id="collectOnlyGo" data-a="goView" data-a1="collection">Go to my collection</button>
+  <button class="btn go" id="collectOnlyRetry" data-a="loadPool" hidden>Try again</button>
 </section>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -1334,9 +1340,6 @@ const pkSearchMatch = (c, term) =>
   || (c.artist||"").toLowerCase().includes(term)
   || String(c.pokemonId||"").toLowerCase().includes(term);
 
-// A deck that is still being built is not a deck that breaks a rule: counts it has not
-// reached yet are todos, shown calmly; everything else is a real problem, shown in red.
-
 function mlpNormalize(c){
   return {
     name:String(c.name), rarity:c.rarity ?? null,
@@ -1350,8 +1353,8 @@ const mlpRefOf = c => c.mlpId || c.name;
 // Kayou prints a card's number as HY12-LSR-001; tiles show "LSR 001" to fit the corner.
 const mlpNumLabel = c => String(c.number ?? "").replace("-", " ");
 const mlpModalMeta = c =>
-  `<p class="sub">${esc(c.rarity || "")}${c.setName ? " · " + esc(c.setName) : ""} · ${esc(String(c.mlpId || "").toUpperCase())}</p>`;
-// Until a card has a photo, its tile shows its rarity and number in the rarity's colour.
+  `<p class="sub">${esc(c.rarity || "")}${c.setName ? " · " + esc(c.setName) : ""} · ${esc(c.set ? `${c.set}-${c.number}` : String(c.number || ""))}</p>`;
+// If a card's picture can't load, its tile shows its rarity and number in the rarity's colour.
 const mlpArt = c => {
   const ink = MLP_RARITY_DOT[c.rarity] || "#6B6382";
   return `<svg viewBox="0 0 74 104" aria-hidden="true"><rect width="74" height="104" fill="#1A1530"/>
@@ -1362,6 +1365,8 @@ const mlpArt = c => {
     <text x="37" y="64" text-anchor="middle" font-family="ui-monospace,Menlo,monospace"
       font-size="8" fill="#B9B2CC">${esc(String(c.number || "").split("-").pop())}</text></svg>`;
 };
+// A deck that is still being built is not a deck that breaks a rule: counts it has not
+// reached yet are todos, shown calmly; everything else is a real problem, shown in red.
 const todo = text => ({todo:text});
 
 function rbValidate(){
@@ -1830,10 +1835,8 @@ const GAMES = {
       title: "My Little Pony cards are for collecting",
       text: "Kayou's My Little Pony cards aren't a game you play, so there are no decks to build. Track the cards you own, rarity by rarity, in your collection.",
     },
-    // Written without the space after "{" on purpose: build-set-pages.mjs reads
-    // "{ code:" entries as Riftbound sets.
     sets: [
-      {code:"HY12", name:"Radiant Moon Vol. 12", pool:"./data/mlp/hy12-pool.json"},
+      { code:"HY12", name:"Radiant Moon Vol. 12", pool:"./data/mlp/hy12-pool.json" },
     ],
     zones: MLP_ZONES,
     axis: [], axisLabel: "", axisInk: {},
@@ -1937,7 +1940,7 @@ let SHARED = null, AUTH_KNOWN = false, SHARED_OPEN = false;
     u.searchParams.delete("deck");
     history.replaceState(history.state, "", u.pathname + u.search + u.hash);
     const m = /^([a-z]+)\.([A-Za-z0-9_-]{1,12000})$/.exec(v);
-    if(!m || !GAME_IDS.includes(m[1])) return;
+    if(!m || !GAME_IDS.includes(m[1]) || GAMES[m[1]].collectOnly) return;
     SHARED = {game:m[1], data:m[2], waitAuth:
       localStorage.getItem("ch.signed-in") === "1" || sessionStorage.getItem("rb.oauth-pending") === "1"};
     localStorage.setItem(LS_GAME, m[1]);
@@ -2868,10 +2871,12 @@ window.toggleTheme = () => {
   paintThemeButton();
 };
 
+// A flat map is the old Riftbound-only shape: card ref → copies. A nested map has one
+// object per game. Game keys this page doesn't know (a game added later) still count as
+// nested, so an older page keeps them instead of reading the blob as one flat map.
 const isNestedCollection = raw =>
   !!raw && typeof raw === "object" &&
-  Object.entries(raw).every(([k, v]) =>
-    GAME_IDS.includes(k) && !!v && typeof v === "object" && !Array.isArray(v));
+  Object.values(raw).every(v => !!v && typeof v === "object" && !Array.isArray(v));
 
 function sanitizeGameMap(raw, cap){
   const out = {};
@@ -3092,6 +3097,9 @@ function colMatchesSearch(c, term, qnorm){
   if((c.artist || "").toLowerCase().includes(term)) return true;
   const id = String(refOf(c) || "").toLowerCase();
   if(id.includes(term)) return true;
+  // The number as the tile prints it, so "LSR 001" or "lsr-001" finds that card.
+  const label = String(GAME.numLabel?.(c) ?? "").toLowerCase().replace(/[\s-]/g, "");
+  if(label && label.startsWith(term.replace(/[\s-]/g, ""))) return true;
   if(qnorm){
     const num = c.number != null ? String(c.number).toLowerCase()
                                 : (id.split("-")[1] || "");
@@ -3186,6 +3194,7 @@ function renderColSummary(){
   document.getElementById("colSetName").textContent = colScopeName();
   document.getElementById("colSetMeta").textContent = GAME.lazySets
     ? `${total} printings · ${colLoggedPrintings()} of ${gameCardTotal().toLocaleString()} logged across all sets`
+    : GAME.collectOnly ? `${total} cards`
     : `${total} printings · variants counted separately`;
   document.getElementById("colPct").textContent = COL_READY ? pct : "–";
   document.getElementById("colBar").style.width = (COL_READY ? pct : 0) + "%";
@@ -3379,9 +3388,11 @@ function backSvg(land){
 }
 
 window.imgFail = function(img, name){
-  const card = S.pool.find(c=>c.name===name) || {name, domains:[]};
+  // Several printings can share a name, so a tile's own ref picks the right one.
+  const ref = img.closest("[data-ref]")?.dataset.ref;
+  const card = (ref && POOL_BY_REF.get(ref)) || S.pool.find(c=>c.name===name) || {name, domains:[]};
   const inModal = !!img.closest("#modalBox");
-  img.outerHTML = fallbackSvg(card);
+  img.outerHTML = GAME.artSvg?.(card) || fallbackSvg(card);
   if(inModal) noteMissingArt();
 };
 
@@ -4437,12 +4448,23 @@ async function loadLazyGame(){
   S.pool = await loadSetPool(S.openSet);
 }
 
+function showCollectOnlyError(text){
+  const failed = !!(text && GAME.collectOnly);
+  document.body.classList.toggle("pool-failed", failed);
+  const err = document.getElementById("collectOnlyErr");
+  err.hidden = !failed;
+  err.textContent = failed ? text : "";
+  document.getElementById("collectOnlyRetry").hidden = !failed;
+  document.getElementById("collectOnlyGo").hidden = failed;
+}
+
 window.loadPool = async function loadPool(){
   const msg   = document.getElementById("onboardMsg");
   const retry = document.getElementById("onboardRetry");
   const pick  = document.getElementById("onboardPick");
   msg.textContent = "Loading cards…";
   retry.hidden = pick.hidden = true;
+  showCollectOnlyError(null);
   try{
     if(GAME.lazySets) await loadLazyGame();
     else S.pool = (await Promise.all(GAME.sets.map(fetchSet))).flat();
@@ -4460,6 +4482,7 @@ window.loadPool = async function loadPool(){
     retry.hidden = pick.hidden = false;
     pick.hidden = GAME.lazySets;
     note("Card pool unavailable");
+    showCollectOnlyError(msg.textContent);
     cardsSettled();
   }
 };

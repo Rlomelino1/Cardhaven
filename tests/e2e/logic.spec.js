@@ -39,6 +39,13 @@ test("liftCollection clamps out-of-range and non-numeric quantities", async ({ p
   expect(out).toEqual({ riftbound: { b: 2, c: 3, f: 1, g: 3 } });
 });
 
+test("liftCollection keeps a game this page doesn't know, instead of reading the blob as flat", async ({ page }) => {
+  await openApp(page);
+  const out = await page.evaluate(() =>
+    liftCollection({ riftbound: { a: 2 }, pokemon: { b: 1 }, futuregame: { c: 4 } }));
+  expect(out).toEqual({ riftbound: { a: 2 }, pokemon: { b: 1 }, futuregame: { c: 4 } });
+});
+
 test("no control carries an inline handler, in either game", async ({ page }) => {
   for (const game of ["riftbound", "pokemon"]) {
     await page.addInitScript((g) => localStorage.setItem("ch.game", g), game);

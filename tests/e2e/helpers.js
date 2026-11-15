@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 // the weekly data refresh can add cards or sets without editing tests.
 const repo = (f) => readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
 export const RB_SETS = [...repo("index.html")
-  .matchAll(/\{ code:"([A-Z0-9]+)",\s*name:"([^"]*)",\s*pool:"\.\/(data\/[^"]+)"/g)]
+  .matchAll(/\{ code:"([A-Z0-9]+)",\s*name:"([^"]*)",\s*pool:"\.\/(data\/[^"/]+)"/g)]
   .map(([, code, name, pool]) => ({ code, name, n: JSON.parse(repo(pool)).length }));
 export const RB_CODES = RB_SETS.map(s => s.code);
 export const RB_POOL = RB_SETS.reduce((n, s) => n + s.n, 0);

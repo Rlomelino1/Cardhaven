@@ -56,6 +56,44 @@ test.describe("My Little Pony, a collect-only game", () => {
     await expect(page.locator("#modalBox .face.front img")).toHaveAttribute("src", "./img/mlp/hy12/hy12-hr-001.webp");
   });
 
+  test("the search finds a card by the number printed on its tile", async ({ page }) => {
+    await openMlp(page, "#collection");
+    await page.fill("#colQ", "LSR 001");
+    await expect(page.locator("#colGrid .ctile")).toHaveCount(1);
+    await expect(page.locator("#colGrid .ctile").first()).toHaveAttribute("data-ref", "hy12-lsr-001");
+    await page.fill("#colQ", "◇ZR 002");
+    await expect(page.locator("#colGrid .ctile")).toHaveCount(1);
+    await expect(page.locator("#colGrid .ctile").first()).toHaveAttribute("data-ref", "hy12-dzr-002");
+  });
+
+  test("the card view shows the printed number", async ({ page }) => {
+    await openMlp(page, "#collection");
+    await page.evaluate(() => openCard("hy12-dzr-001"));
+    await expect(page.locator("#modalBox .meta .sub")).toHaveText("◇ZR · Radiant Moon Vol. 12 · HY12-◇ZR-001");
+  });
+
+  test("a pool that fails to load says so, with Try again, in both views", async ({ page }) => {
+    await page.route("**/data/mlp/hy12-pool.json", route => route.fulfill({ status: 503, body: "nope" }));
+    await page.goto("/?game=mlp&set=HY12");
+    const note = page.locator("#collectOnly");
+    await expect(note.locator("#collectOnlyErr")).toContainText("Couldn't load the card pool");
+    await expect(note.locator("#collectOnlyRetry")).toBeVisible();
+    await expect(note.getByRole("button", { name: "Go to my collection" })).toBeHidden();
+    await page.evaluate(() => goView("collection"));
+    await expect(note.locator("#collectOnlyErr")).toBeVisible();
+
+    await page.unroute("**/data/mlp/hy12-pool.json");
+    await note.locator("#collectOnlyRetry").click();
+    await expect(note).toBeHidden();
+    await expect(page.locator("#colGrid .ctile").first()).toBeVisible();
+  });
+
+  test("a shared deck link for a collect-only game is ignored", async ({ page }) => {
+    await page.goto("/?deck=mlp.abc");
+    await page.waitForFunction(() => typeof POOL_READY !== "undefined" && POOL_READY);
+    expect(await page.evaluate(() => ACTIVE_GAME)).toBe("riftbound");
+  });
+
   test("switching away and back keeps the other games' deckbuilders intact", async ({ page }) => {
     await openMlp(page);
     await page.evaluate(() => switchGame("riftbound"));
