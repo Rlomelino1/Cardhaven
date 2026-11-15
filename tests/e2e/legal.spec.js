@@ -66,7 +66,7 @@ test.describe("the legal notices modal", () => {
       paragraphs: document.querySelectorAll("#legalList p").length,
       withLegal: GAME_IDS.filter(id => GAMES[id].legal).length,
     }));
-    expect(r.headings).toEqual(["Riftbound", "Pokémon TCG"]);
+    expect(r.headings).toEqual(["Riftbound", "Pokémon TCG", "My Little Pony (Kayou)"]);
     expect(r.paragraphs).toBe(r.withLegal);
   });
 
@@ -98,7 +98,7 @@ test.describe("the legal notices modal", () => {
     }
     await page.click("#legalAllBtn");
     expect(await page.evaluate(
-      () => document.querySelectorAll("#legalList h4").length)).toBe(2);
+      () => document.querySelectorAll("#legalList h4").length)).toBe(3);
   });
 
   test("the trigger is a real button, and carries no inline handler", async ({ page }) => {

@@ -694,7 +694,7 @@ test.describe("the game switcher", () => {
     expect(await page.evaluate(() => zoneCount("main"))).toBe(1);
   });
 
-  test("the menu offers both games and the planned rows stay inert", async ({ page }) => {
+  test("the menu offers every game and the planned rows stay inert", async ({ page }) => {
     await openApp(page);
     await page.click("#gameBtn");
     const r = await page.evaluate(() => ({
@@ -707,7 +707,7 @@ test.describe("the game switcher", () => {
         "#gameMenu .planned a, #gameMenu .planned button").length,
     }));
     expect(r.active).toBe("Riftbound");
-    expect(r.switchable).toEqual(["Pokémon TCG"]);
+    expect(r.switchable).toEqual(["Pokémon TCG", "My Little Pony (Kayou)"]);
     expect(r.planned).toEqual(["Magic: The Gathering", "One Piece Card Game"]);
     expect(r.plannedInteractive).toBe(0);
   });

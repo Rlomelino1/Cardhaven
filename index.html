@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-WS6p9QUPYKj+Mi7LBUvrvcOJ/U8Bu1theJv8uHGaZXw=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-wUTXZ7YsqsM7v/oHs1HLbAQ8lF5wxyhnG/4zVekL6Ec=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -421,6 +421,23 @@ body.view-collection .layout{display:none}
 .layout,#collectionView{min-height:100vh}
 #collectionView{display:none}
 body.view-collection #collectionView{display:block}
+/* A collect-only game has no deckbuilder: its Deckbuilder view is one note that points
+   to Collection. */
+.collectonly{display:none; max-width:560px; margin:48px auto 96px; padding:28px;
+  background:var(--panel); border:1px solid var(--edge); border-radius:4px}
+.collectonly h2{margin:6px 0 10px; font-family:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  font-size:26px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--text)}
+.collectonly p{line-height:1.6}
+body.game-collect:not(.view-collection) .collectonly{display:block}
+/* The deckbuilder's load error and Try again live in the hidden layout, so a collect-only
+   game shows them in its note, in either view. */
+body.game-collect.pool-failed .collectonly{display:block}
+.collectonly .colloaderr{color:var(--warn)}
+body.game-collect .layout,
+body.game-collect .deckid,
+body.game-collect #saveBtn,
+body.game-collect #setBar,
+body.game-collect:not(.view-collection) .deckbar{display:none}
 
 .colsummary{display:grid; grid-template-columns:1.5fr 1.2fr .9fr; gap:14px;
   margin-top:16px}
@@ -813,7 +830,7 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   .browsecol{min-height:100vh}  /* the deck sits below the cards; keep it there while they load */
   .deckpanel{position:static; max-height:none; scroll-margin-top:12px}
   .backtocards{display:block; align-self:flex-start}
-  body:not(.view-collection){padding-bottom:96px}
+  body:not(.view-collection):not(.game-collect){padding-bottom:96px}
   body:not(.view-collection) .deckbar{display:flex}
   .deckbar{position:fixed; left:0; right:0; bottom:0; z-index:30; align-items:center;
     gap:12px; padding:10px 14px calc(10px + env(safe-area-inset-bottom));
@@ -877,6 +894,9 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   .gamebtn{font-size:12.5px}
   .shelf{grid-template-columns:repeat(auto-fill,minmax(94px,1fr)); gap:8px}
   .curve{min-height:72px}
+  /* Phone tiles are too narrow for the card number and a Missing badge side by side;
+     the faded, striped picture already marks a missing card. */
+  .cown.miss{display:none}
   .syncstate{order:3; flex:1 1 0; min-width:0; text-align:right; white-space:normal}
   .searchrow{flex-wrap:wrap; gap:6px}
   .searchrow .rescount{flex:1 1 100%}
@@ -1034,6 +1054,14 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   </div>
 </aside>
 </div>
+<section class="collectonly" id="collectOnly" aria-labelledby="collectOnlyTitle">
+  <p class="eyebrow">Collect-only game</p>
+  <h2 id="collectOnlyTitle"></h2>
+  <p id="collectOnlyText"></p>
+  <p class="colloaderr" id="collectOnlyErr" hidden></p>
+  <button class="btn go" id="collectOnlyGo" data-a="goView" data-a1="collection">Go to my collection</button>
+  <button class="btn go" id="collectOnlyRetry" data-a="loadPool" hidden>Try again</button>
+</section>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="deckbar" id="deckBar">
@@ -1097,9 +1125,9 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   </p>
   <p class="legal">
     Card Haven is a free online deck builder and collection tracker for
-    Riftbound (the League of Legends trading card game) and the Pokémon TCG.
-    Build decks, check card limits and legality, and track which cards you
-    own across sets.
+    Riftbound (the League of Legends trading card game) and the Pokémon TCG,
+    and a collection tracker for Kayou's My Little Pony cards. Build decks,
+    check card limits and legality, and track which cards you own across sets.
   </p>
   <p class="legal"><a class="legallink" href="/sets/">Card lists for every set</a> ·
     <a class="legallink" id="privacyLink" href="/privacy.html">Privacy</a></p>
@@ -1173,6 +1201,15 @@ const PK_RARITY_DOT = {Common:"#9A93AC", Uncommon:"#5AA55C", Rare:"#3D8FD9",
   "Special Illustration Rare":"#E0B92E", "Hyper Rare":"#C9A227", Promo:"#C4682E"};
 const PK_ZONES = {
   main:{label:"Deck", short:"Deck", target:60, rule:"exact"}
+};
+
+// Kayou's My Little Pony cards are collected, not played: no deck rules, and rarity is
+// what sorts them. Rarities run from most common to rarest.
+const MLP_RARITY_ORDER = ["R","SR","HR","SSR","UR","LSR","SGR","ZR","SC","◇ZR"];
+const MLP_RARITY_DOT = {R:"#9A93AC", SR:"#5AA55C", HR:"#3D8FD9", SSR:"#3FA7A0",
+  UR:"#8B5CD6", LSR:"#D96BA8", SGR:"#E0B92E", ZR:"#C4682E", SC:"#E05A5A", "◇ZR":"#6FD3E0"};
+const MLP_ZONES = {
+  main:{label:"Cards", short:"Cards", target:1, rule:"min"}
 };
 
 const LS_COLLECTION = "rb.collection";
@@ -1303,6 +1340,31 @@ const pkSearchMatch = (c, term) =>
   || (c.artist||"").toLowerCase().includes(term)
   || String(c.pokemonId||"").toLowerCase().includes(term);
 
+function mlpNormalize(c){
+  return {
+    name:String(c.name), rarity:c.rarity ?? null,
+    set:c.set ?? "", setName:c.setName ?? null, number:c.number ?? null,
+    mlpId:c.mlpId ?? null, image:c.image ?? null, artist:c.artist ?? null,
+    landscape:!!c.landscape,
+    text:null, type:null, supertype:null, energy:0, domains:[]
+  };
+}
+const mlpRefOf = c => c.mlpId || c.name;
+// Kayou prints a card's number as HY12-LSR-001; tiles show "LSR 001" to fit the corner.
+const mlpNumLabel = c => String(c.number ?? "").replace("-", " ");
+const mlpModalMeta = c =>
+  `<p class="sub">${esc(c.rarity || "")}${c.setName ? " · " + esc(c.setName) : ""} · ${esc(c.set ? `${c.set}-${c.number}` : String(c.number || ""))}</p>`;
+// If a card's picture can't load, its tile shows its rarity and number in the rarity's colour.
+const mlpArt = c => {
+  const ink = MLP_RARITY_DOT[c.rarity] || "#6B6382";
+  return `<svg viewBox="0 0 74 104" aria-hidden="true"><rect width="74" height="104" fill="#1A1530"/>
+    <rect width="74" height="104" fill="${ink}" fill-opacity="0.16"/>
+    <rect x="5" y="5" width="64" height="94" rx="3" fill="none" stroke="${ink}" stroke-opacity="0.55"/>
+    <text x="37" y="50" text-anchor="middle" font-family="ui-monospace,Menlo,monospace"
+      font-size="${String(c.rarity || "").length > 2 ? 15 : 18}" font-weight="700" fill="${ink}">${esc(c.rarity || "")}</text>
+    <text x="37" y="64" text-anchor="middle" font-family="ui-monospace,Menlo,monospace"
+      font-size="8" fill="#B9B2CC">${esc(String(c.number || "").split("-").pop())}</text></svg>`;
+};
 // A deck that is still being built is not a deck that breaks a rule: counts it has not
 // reached yet are todos, shown calmly; everything else is a real problem, shown in red.
 const todo = text => ({todo:text});
@@ -1761,6 +1823,60 @@ const GAMES = {
     cardBack: pkCardBack,
     legal: "Card Haven is not affiliated with, endorsed, sponsored, or specifically approved by Nintendo, Creatures Inc., GAME FREAK inc., or The Pokémon Company. Pokémon and all related names and card images are trademarks and copyrights of their respective owners.",
   },
+
+  // Collect-only: the Deckbuilder view shows a note that sends people to Collection, and
+  // Collection filters by rarity instead of type. Card lists: scripts/build-mlp-pools.mjs.
+  mlp: {
+    id: "mlp",
+    label: "My Little Pony (Kayou)",
+    mark: "LP",
+    lazySets: false,
+    collectOnly: {
+      title: "My Little Pony cards are for collecting",
+      text: "Kayou's My Little Pony cards aren't a game you play, so there are no decks to build. Track the cards you own, rarity by rarity, in your collection.",
+    },
+    sets: [
+      { code:"HY12", name:"Radiant Moon Vol. 12", pool:"./data/mlp/hy12-pool.json" },
+    ],
+    zones: MLP_ZONES,
+    axis: [], axisLabel: "", axisInk: {},
+    types: [],
+    rarityOrder: MLP_RARITY_ORDER, rarityDot: MLP_RARITY_DOT,
+    chaseRarities: ["SGR","ZR","SC","◇ZR"], chaseLabel: "SGR or rarer",
+    energyCurve: false,
+    legend: false,
+    rules: {
+      deckSizeExact: null,
+      copyLimit: 1,
+      copyLimitScope: "name",
+      collectionCap: 5,
+      playset: 1,
+      unlimitedCopies: null,
+      subtypeCaps: [],
+    },
+    ls: { deck:"mlp.deck", openDeck:"mlp.open-deck" },
+    normalize: mlpNormalize,
+    refOf: mlpRefOf,
+    landscape: c => c.landscape,
+    // Pictures are served from this site as WebP: tiles get the small copy, the card view the full one.
+    thumb: (url, w) => w <= 300 ? url.replace(/\.webp$/, ".sm.webp") : url,
+    cardKeyRef: ref => String(ref),
+    cardLabelRef: (ref, fallback) => POOL_BY_REF.get(String(ref))?.name || fallback,
+    setCode: c => String(c.set || "").toUpperCase(),
+    deckCode: c => String(c.mlpId || "").toUpperCase(),
+    deckRowCounts: () => "",
+    numLabel: mlpNumLabel,
+    tileMeta: c => esc(c.rarity || ""),
+    tileBadges: () => "",
+    modalMeta: mlpModalMeta,
+    colTag: () => null,
+    artSvg: mlpArt,
+    searchMatch: (c, term) => c.name.toLowerCase().includes(term),
+    deckText: () => "",
+    validate: () => [],
+    welcome: null,
+    legal: "Card Haven is not affiliated with, endorsed, sponsored, or approved by Kayou or Hasbro. My Little Pony and all related names and card images are trademarks and copyrights of Hasbro, Inc.; the trading cards are made by Kayou.",
+  },
 };
 const GAME_IDS = Object.keys(GAMES);
 
@@ -1778,6 +1894,11 @@ function adoptGame(){
   ZONES = GAME.zones;
   window.ACTIVE_GAME = ACTIVE_GAME;
   document.body.classList.toggle("game-pokemon", ACTIVE_GAME === "pokemon");
+  document.body.classList.toggle("game-collect", !!GAME.collectOnly);
+  if(GAME.collectOnly){
+    document.getElementById("collectOnlyTitle").textContent = GAME.collectOnly.title;
+    document.getElementById("collectOnlyText").textContent = GAME.collectOnly.text;
+  }
   const legal = document.getElementById("legalActive");
   if(legal){
     legal.textContent = GAME.legal || "";
@@ -1819,7 +1940,7 @@ let SHARED = null, AUTH_KNOWN = false, SHARED_OPEN = false;
     u.searchParams.delete("deck");
     history.replaceState(history.state, "", u.pathname + u.search + u.hash);
     const m = /^([a-z]+)\.([A-Za-z0-9_-]{1,12000})$/.exec(v);
-    if(!m || !GAME_IDS.includes(m[1])) return;
+    if(!m || !GAME_IDS.includes(m[1]) || GAMES[m[1]].collectOnly) return;
     SHARED = {game:m[1], data:m[2], waitAuth:
       localStorage.getItem("ch.signed-in") === "1" || sessionStorage.getItem("rb.oauth-pending") === "1"};
     localStorage.setItem(LS_GAME, m[1]);
@@ -2750,10 +2871,12 @@ window.toggleTheme = () => {
   paintThemeButton();
 };
 
+// A flat map is the old Riftbound-only shape: card ref → copies. A nested map has one
+// object per game. Game keys this page doesn't know (a game added later) still count as
+// nested, so an older page keeps them instead of reading the blob as one flat map.
 const isNestedCollection = raw =>
   !!raw && typeof raw === "object" &&
-  Object.entries(raw).every(([k, v]) =>
-    GAME_IDS.includes(k) && !!v && typeof v === "object" && !Array.isArray(v));
+  Object.values(raw).every(v => !!v && typeof v === "object" && !Array.isArray(v));
 
 function sanitizeGameMap(raw, cap){
   const out = {};
@@ -2974,6 +3097,9 @@ function colMatchesSearch(c, term, qnorm){
   if((c.artist || "").toLowerCase().includes(term)) return true;
   const id = String(refOf(c) || "").toLowerCase();
   if(id.includes(term)) return true;
+  // The number as the tile prints it, so "LSR 001" or "lsr-001" finds that card.
+  const label = String(GAME.numLabel?.(c) ?? "").toLowerCase().replace(/[\s-]/g, "");
+  if(label && label.startsWith(term.replace(/[\s-]/g, ""))) return true;
   if(qnorm){
     const num = c.number != null ? String(c.number).toLowerCase()
                                 : (id.split("-")[1] || "");
@@ -2994,12 +3120,16 @@ const colTabMatch = (q, tab) =>
   tab === "missing" ? q === 0 :
   tab === "partial" ? (q >= 1 && q < colPlayset()) : q >= colPlayset();
 
+// The second chip row filters by type, or by rarity in a collect-only game.
+const colChipOf = c => GAME.collectOnly ? rarityOf(c) : c.type;
+const colChips = () => GAME.collectOnly ? colRarities() : TYPES;
+
 function colBase(){
   const term = COLF.q.trim().toLowerCase();
   const qnorm = term.replace(/^[a-z]+[\s-]*/, "").replace(/[\s-]/g, "").replace(/^0+/, "");
   return colScoped().filter(c =>
     (!COLF.domains.length || c.domains.some(d => COLF.domains.includes(d))) &&
-    (!COLF.types.length || COLF.types.includes(c.type)) &&
+    (!COLF.types.length || COLF.types.includes(colChipOf(c))) &&
     colMatchesSearch(c, term, qnorm));
 }
 
@@ -3013,7 +3143,7 @@ function colTileHtml(c){
     ? `<img src="${esc(thumb(c.image))}" alt="" loading="lazy" decoding="async"
          referrerpolicy="no-referrer"
          data-card="${esc(c.name)}">`
-    : fallbackSvg(c);
+    : (GAME.artSvg?.(c) || fallbackSvg(c));
   const own = !COL_READY ? "" :
     missing ? `<span class="cown miss">Missing</span>`
             : `<span class="cown${q >= cap ? " full" : ""}">${q}/${cap}</span>`;
@@ -3064,13 +3194,15 @@ function renderColSummary(){
   document.getElementById("colSetName").textContent = colScopeName();
   document.getElementById("colSetMeta").textContent = GAME.lazySets
     ? `${total} printings · ${colLoggedPrintings()} of ${gameCardTotal().toLocaleString()} logged across all sets`
+    : GAME.collectOnly ? `${total} cards`
     : `${total} printings · variants counted separately`;
   document.getElementById("colPct").textContent = COL_READY ? pct : "–";
   document.getElementById("colBar").style.width = (COL_READY ? pct : 0) + "%";
   document.getElementById("colCards").textContent =
     COL_READY ? `${ownedPrintings} of ${total} cards` : `${total} cards`;
-  document.getElementById("colCopies").textContent =
-    COL_READY ? `${copies}/${total * cap} copies · ${playsets} playset${playsets === 1 ? "" : "s"}` : "";
+  document.getElementById("colCopies").textContent = !COL_READY ? ""
+    : GAME.collectOnly ? `${copies} cop${copies === 1 ? "y" : "ies"} logged`
+    : `${copies}/${total * cap} copies · ${playsets} playset${playsets === 1 ? "" : "s"}`;
 
   const rarities = colRarities();
   document.getElementById("colRarity").innerHTML = rarities.map(r => {
@@ -3094,7 +3226,10 @@ function renderColSummary(){
     `None of them are ${chaseLabel} printings.`;
 
   const base = colBase();
-  const tabs = [["all","All"],["missing","Missing"],["partial","Partial"],["playset","Playset"]];
+  // A collect-only game counts a card once it's owned, so Owned replaces Partial and Playset.
+  const tabs = GAME.collectOnly
+    ? [["all","All"],["missing","Missing"],["playset","Owned"]]
+    : [["all","All"],["missing","Missing"],["partial","Partial"],["playset","Playset"]];
   document.getElementById("colTabs").innerHTML = tabs.map(([k, label]) => {
     const n = COL_READY ? base.filter(c => colTabMatch(qtyOf(refOf(c)), k)).length
                         : (k === "all" ? base.length : "–");
@@ -3120,7 +3255,7 @@ function renderCollection(){
   document.getElementById("colDomainRow").innerHTML = DOMAINS.map(d =>
     `<button class="chip dchip${COLF.domains.includes(d) ? " on" : ""}" aria-pressed="${COLF.domains.includes(d) ? "true" : "false"}"
       style="--c:var(--${d});--dt:${DOMAIN_INK[d]}" data-a="toggleColChip" data-a1="domains" data-a2="${esc(d)}">${d}</button>`).join("");
-  document.getElementById("colTypeRow").innerHTML = TYPES.map(t =>
+  document.getElementById("colTypeRow").innerHTML = colChips().map(t =>
     `<button class="chip${COLF.types.includes(t) ? " on" : ""}" aria-pressed="${COLF.types.includes(t) ? "true" : "false"}"
       data-a="toggleColChip" data-a1="types" data-a2="${esc(t)}">${t}</button>`).join("");
 
@@ -3253,9 +3388,11 @@ function backSvg(land){
 }
 
 window.imgFail = function(img, name){
-  const card = S.pool.find(c=>c.name===name) || {name, domains:[]};
+  // Several printings can share a name, so a tile's own ref picks the right one.
+  const ref = img.closest("[data-ref]")?.dataset.ref;
+  const card = (ref && POOL_BY_REF.get(ref)) || S.pool.find(c=>c.name===name) || {name, domains:[]};
   const inModal = !!img.closest("#modalBox");
-  img.outerHTML = fallbackSvg(card);
+  img.outerHTML = GAME.artSvg?.(card) || fallbackSvg(card);
   if(inModal) noteMissingArt();
 };
 
@@ -3275,6 +3412,7 @@ window.imgLoaded = function(img, name){
 };
  
 function thumb(url, w = 240){
+  if(GAME.thumb) return GAME.thumb(url, w);
   if(GAME.lazySets) return url;
   return url + (url.includes("?") ? "&" : "?") + `w=${w}&fm=webp`;
 }
@@ -3741,7 +3879,7 @@ function paintCard(c){
   const art = full
     ? `<img src="${esc(full)}" alt="${esc(c.name)}" referrerpolicy="no-referrer"
          data-card="${esc(c.name)}">`
-    : fallbackSvg(c);
+    : (GAME.artSvg?.(c) || fallbackSvg(c));
   const backUrl = GAME.cardBack ? GAME.cardBack(c) : null;
   const land = !!GAME.landscape?.(c);
   const back = backUrl
@@ -4310,12 +4448,23 @@ async function loadLazyGame(){
   S.pool = await loadSetPool(S.openSet);
 }
 
+function showCollectOnlyError(text){
+  const failed = !!(text && GAME.collectOnly);
+  document.body.classList.toggle("pool-failed", failed);
+  const err = document.getElementById("collectOnlyErr");
+  err.hidden = !failed;
+  err.textContent = failed ? text : "";
+  document.getElementById("collectOnlyRetry").hidden = !failed;
+  document.getElementById("collectOnlyGo").hidden = failed;
+}
+
 window.loadPool = async function loadPool(){
   const msg   = document.getElementById("onboardMsg");
   const retry = document.getElementById("onboardRetry");
   const pick  = document.getElementById("onboardPick");
   msg.textContent = "Loading cards…";
   retry.hidden = pick.hidden = true;
+  showCollectOnlyError(null);
   try{
     if(GAME.lazySets) await loadLazyGame();
     else S.pool = (await Promise.all(GAME.sets.map(fetchSet))).flat();
@@ -4333,6 +4482,7 @@ window.loadPool = async function loadPool(){
     retry.hidden = pick.hidden = false;
     pick.hidden = GAME.lazySets;
     note("Card pool unavailable");
+    showCollectOnlyError(msg.textContent);
     cardsSettled();
   }
 };

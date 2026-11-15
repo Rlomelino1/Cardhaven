@@ -633,7 +633,7 @@ test.describe("the game switcher", () => {
       registryGames: Object.keys(GAMES),
     }));
     expect(r.interactive).toBe(0);
-    expect(r.registryGames).toEqual(["riftbound", "pokemon"]);
+    expect(r.registryGames).toEqual(["riftbound", "pokemon", "mlp"]);
   });
 
   test("the collection context relabels the header and the menu", async ({ page }) => {

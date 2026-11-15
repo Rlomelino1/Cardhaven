@@ -2,8 +2,10 @@
 
 A deckbuilding and collection-tracking tool for two trading card games:
 [Riftbound](https://riftbound.leagueoflegends.com/), Riot's League of Legends TCG, and
-the [Pokémon TCG](https://www.pokemon.com/us/pokemon-tcg) — every English set. Pick a
-game from the header; decks and collection are kept per game.
+the [Pokémon TCG](https://www.pokemon.com/us/pokemon-tcg) — every English set. It also
+tracks collections of Kayou's My Little Pony cards (小马宝莉), which are collected rather
+than played, so that game has a collection and no deckbuilder. Pick a game from the
+header; decks and collection are kept per game.
 
 **Live:** <https://cardhavenapp.com> (the old Pages URL,
 `https://rlomelino1.github.io/Riftbound-deck-builder/`, redirects there)
@@ -167,8 +169,14 @@ index.html              the app — must stay at the root; Pages deploys from ma
 data/{set}-pool.json    the 8 Riftbound sets, 1,304 printings with image URLs
                         (OGN 352, SFD 288, UNL 280, VEN 227, OPP 117, OGS 24, PR 13,
                         JDG 3)
+data/mlp/               Kayou My Little Pony card lists, written by build-mlp-pools.mjs
+                        (HY12 Radiant Moon Vol. 12: 164 cards in 10 rarities, with names)
+img/mlp/hy12/           a picture of every HY12 card, cropped once from public eBay listings
+                        (no source refreshes these): {id}.webp full size (~6.6 MB),
+                        {id}.sm.webp tile size (~3 MB, loaded lazily as tiles scroll in)
 data/pokemon/           176 slim per-set pools + sets.json + search-index.json (~8.9 MB)
 scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon) ·
+                        build-mlp-pools.mjs (My Little Pony) ·
                         refresh-data.mjs (both, weekly) · build-set-pages.mjs (sets/)
 sets/                   generated card-list page per set, plus the /sets/ index
 vendor/neon/            bundle.mjs (what the page loads) + the vendored module graph
@@ -235,6 +243,10 @@ owned by Riot Games. Riot Games does not endorse or sponsor this project.
 Card Haven is not affiliated with, endorsed, sponsored, or specifically approved by
 Nintendo, Creatures Inc., GAME FREAK inc., or The Pokémon Company. Pokémon and all related
 names and card images are trademarks and copyrights of their respective owners.
+
+Card Haven is not affiliated with, endorsed, sponsored, or approved by Kayou or Hasbro.
+My Little Pony and all related names and card images are trademarks and copyrights of
+Hasbro, Inc.; the trading cards are made by Kayou.
 
 Card fronts are hotlinked from the publishers' own CDNs — `cmsassets.rgpub.io` for
 Riftbound, `images.pokemontcg.io` and `images.scrydex.com` for Pokémon. The Riftbound

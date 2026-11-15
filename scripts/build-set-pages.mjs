@@ -41,7 +41,7 @@ const fmtDate = (d) => {
 // ---- the two games, flattened to one shape ----
 
 const html = await readFile(at("index.html"), "utf8");
-const rbSets = [...html.matchAll(/\{ code:"([A-Z0-9]+)",\s*name:"([^"]*)",\s*pool:"\.\/(data\/[^"]+)"/g)]
+const rbSets = [...html.matchAll(/\{ code:"([A-Z0-9]+)",\s*name:"([^"]*)",\s*pool:"\.\/(data\/[^"/]+)"/g)]
   .map(([, code, name, pool]) => ({ code, name, pool }));
 if (!rbSets.length) throw new Error("found no GAMES.riftbound.sets entries in index.html");
 
