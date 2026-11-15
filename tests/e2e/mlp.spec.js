@@ -56,31 +56,24 @@ test.describe("My Little Pony, a collect-only game", () => {
     await expect(page.locator("#modalBox .face.front img")).toHaveAttribute("src", "./img/mlp/hy12/hy12-hr-001.webp");
   });
 
-  test("a card is owned or not: one copy, with an Owned toggle", async ({ page }) => {
+  test("a card is owned or not: the usual stepper, capped at one copy", async ({ page }) => {
     await openMlp(page, "#collection");
     const tile = page.locator('#colGrid .ctile[data-ref="hy12-sgr-001"]');
-    const toggle = tile.locator(".step");
-    await expect(toggle).toHaveCount(1);
-    await expect(toggle).toHaveText("Mark owned");
+    await expect(tile.locator(".cseg i")).toHaveCount(1);
+    await expect(tile.locator(".cown")).toHaveText("Missing");
+    await expect(page.locator("#colGrid h2.colsec", { hasText: /^SGR/ })).toHaveText("SGR 0/10");
+
+    await tile.locator(".step").last().click();
+    await expect(tile.locator(".cown")).toHaveText("1/1");
+    await expect(tile.locator(".cown")).toHaveClass(/full/);
+    await expect(tile.locator(".step").last()).toBeDisabled();
+    await expect(page.locator("#colGrid h2.colsec", { hasText: /^SGR/ })).toHaveText("SGR 1/10");
+
+    await tile.locator(".step").first().click();
     await expect(tile.locator(".cown")).toHaveText("Missing");
 
-    await expect(page.locator("#colGrid h2.colsec", { hasText: /^SGR/ })).toHaveText("SGR 0/10");
-    await toggle.click();
-    await expect(toggle).toHaveText("✓ Owned");
-    await expect(page.locator("#colGrid h2.colsec", { hasText: /^SGR/ })).toHaveText("SGR 1/10");
-    await expect(toggle).toHaveAttribute("aria-pressed", "true");
-    await expect(tile.locator(".cown")).toHaveText("Owned");
-    expect(await page.evaluate(() => qtyOf("hy12-sgr-001"))).toBe(1);
-    await expect(page.locator("#syncState")).toContainText("1 card owned");
-
-    await toggle.click();
-    await expect(toggle).toHaveText("Mark owned");
-    expect(await page.evaluate(() => qtyOf("hy12-sgr-001"))).toBe(0);
-
     await page.evaluate(() => openCard("hy12-sgr-001"));
-    await page.locator("#modalBox .modalcount .btn").click();
-    await expect(page.locator("#modalBox .modalcount .btn")).toHaveText("✓ Owned");
-    expect(await page.evaluate(() => qtyOf("hy12-sgr-001"))).toBe(1);
+    await expect(page.locator("#modalBox .modalcount span")).toHaveText("0 of 1 owned");
   });
 
   test("an older log of several copies counts as one", async ({ page }) => {

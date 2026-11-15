@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-geW5ne/JjAkjEcw4aCZevoWPysInXxuDlAclUOl6mnY=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-m3t8PquwwnnYSCOvgykVKn0Z6fx2qtqcJ3pWFfTQWIE=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -540,8 +540,6 @@ body.game-pokemon .crlabel{width:170px}
 .cseg i.on{background:var(--text)}
 .cseg i.full{background:var(--teal)}
 .step:disabled{opacity:.35; cursor:default}
-.cstep .step.own{flex:1; width:auto; height:22px; font-size:11px; letter-spacing:.04em}
-.cstep .step.own.on{border-color:var(--teal); color:var(--teal)}
 
 .checks{list-style:none; display:flex; flex-direction:column; gap:10px; margin:0; padding:0}
 .checks li{font-family:ui-monospace,Menlo,monospace; font-size:11px;
@@ -810,7 +808,6 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
 
 @media (hover:none){
   .step{width:36px; height:36px; font-size:16px}
-  .cstep .step.own{height:36px; font-size:13px}
   .qty{gap:8px; font-size:14px}
   .btn,.acct .btn{padding:11px 14px}
   .btn.sm{padding:10px 12px; font-size:12px}
@@ -2922,9 +2919,6 @@ window.clearLocalCollection = () => { try{ localStorage.removeItem(LS_COLLECTION
 
 const qtyOf = id => COL[id] || 0;
 const colCap = () => GAME.rules.collectionCap;
-// A game that only tracks whether you own a card (one copy at most) shows Owned and a
-// toggle instead of a copy count and stepper.
-const colSingle = () => colCap() === 1;
 const colPlayset = () => GAME.rules.playset;
 
 const colNum = c => GAME.numLabel(c);
@@ -3074,9 +3068,6 @@ function renderCollectionAll(){
   if(VIEW === "collection") renderCollection();
 }
 
-const colLoggedLabel = n => colSingle()
-  ? `${n} card${n === 1 ? "" : "s"} owned` : `${n} copies logged`;
-
 function renderSyncState(){
   const el = document.getElementById("syncState");
   if(!el) return;
@@ -3085,7 +3076,7 @@ function renderSyncState(){
   const copies = colLoggedCopies();
   let txt, cls = "";
   if(MODE !== "cloud"){
-    txt = `On this device only · ${colLoggedLabel(copies)}`;
+    txt = `On this device only · ${copies} copies logged`;
   } else if(!COL_READY){
     txt = COL_LOAD_FAILED ? "Can't reach your collection — retrying" : "Loading collection…";
     cls = COL_LOAD_FAILED ? "bad" : "";
@@ -3094,7 +3085,7 @@ function renderSyncState(){
   } else if(colFailed && colDirty){
     txt = "Offline — changes pending"; cls = "bad";
   } else {
-    txt = `Synced · ${colLoggedLabel(copies)}`;
+    txt = `Synced · ${copies} copies logged`;
   }
   el.textContent = txt;
   el.classList.toggle("bad", cls === "bad");
@@ -3155,14 +3146,13 @@ function colTileHtml(c){
     : (GAME.artSvg?.(c) || fallbackSvg(c));
   const own = !COL_READY ? "" :
     missing ? `<span class="cown miss">Missing</span>`
-    : colSingle() ? `<span class="cown full">Owned</span>`
             : `<span class="cown${q >= cap ? " full" : ""}">${q}/${cap}</span>`;
   const segs = Array.from({length: cap}, (_, i) =>
     `<i class="${q >= i + 1 ? (q >= cap ? "full" : "on") : ""}"></i>`).join("");
   return `<figure class="ctile${missing ? " ismissing" : ""}" data-ref="${esc(id)}">
     <button class="cframe${GAME.landscape?.(c) ? " land" : ""}" style="--fc:${border}"
       title="${esc(c.name)}" aria-label="${esc(c.name)}, ${esc(colNum(c))}${tag ? `, ${esc(tag)}` : ""}${
-        !COL_READY ? "" : missing ? ", missing" : colSingle() ? ", owned" : `, ${q} of ${cap} owned`}"
+        !COL_READY ? "" : missing ? ", missing" : `, ${q} of ${cap} owned`}"
       data-a="openCard" data-a1="${esc(id)}">
       ${art}
       <span class="hatch"></span>
@@ -3173,17 +3163,13 @@ function colTileHtml(c){
     </button>
     <figcaption class="tname" title="${esc(c.name)}">${esc(c.name)}</figcaption>
     <p class="ttype">${esc(c.rarity || "")}${c.rarity && c.type ? " · " : ""}${esc(c.type || "")}</p>
-    ${colSingle() ? `<div class="cstep">
-      <button class="step own${q ? " on" : ""}" data-a="colBump" data-a1="${esc(id)}" data-a2="${q ? -1 : 1}"
-        ${!COL_READY ? "disabled" : ""} aria-pressed="${q > 0}"
-        aria-label="${q ? "Owned" : "Mark owned"}: ${esc(c.name)}">${q ? "✓ Owned" : "Mark owned"}</button>
-    </div>` : `<div class="cstep">
+    <div class="cstep">
       <button class="step" data-a="colBump" data-a1="${esc(id)}" data-a2="-1"
         ${(!COL_READY || q === 0) ? "disabled" : ""} aria-label="Remove a copy of ${esc(c.name)}">–</button>
       <span class="cseg" aria-label="${q} of ${cap} copies">${segs}</span>
       <button class="step" data-a="colBump" data-a1="${esc(id)}" data-a2="1"
         ${(!COL_READY || q >= cap) ? "disabled" : ""} aria-label="Add a copy of ${esc(c.name)}">+</button>
-    </div>`}
+    </div>
   </figure>`;
 }
 
@@ -3222,7 +3208,6 @@ function renderColSummary(){
   document.getElementById("colCards").textContent =
     COL_READY ? `${ownedPrintings} of ${total} cards` : `${total} cards`;
   document.getElementById("colCopies").textContent = !COL_READY ? ""
-    : colSingle() ? ""
     : GAME.collectOnly ? `${copies} cop${copies === 1 ? "y" : "ies"} logged`
     : `${copies}/${total * cap} copies · ${playsets} playset${playsets === 1 ? "" : "s"}`;
 
@@ -3753,10 +3738,6 @@ function modalActs(c){
   if(VIEW === "collection"){
     if(!COL_READY) return "";
     const q = qtyOf(id), cap = colCap();
-    if(colSingle()) return `<div class="modalcount">
-      <button class="btn${q ? "" : " go"}" data-a="modalColBump" data-a1="${esc(id)}" data-a2="${q ? -1 : 1}"
-        aria-pressed="${q > 0}">${q ? "✓ Owned" : "Mark owned"}</button>
-      ${q ? `<span>Tap again to remove it</span>` : ""}</div>`;
     return `<div class="modalcount">
       <button class="btn" data-a="modalColBump" data-a1="${esc(id)}" data-a2="-1"
         ${q === 0 ? "disabled" : ""} aria-label="Remove a copy">–</button>
