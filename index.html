@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-wUTXZ7YsqsM7v/oHs1HLbAQ8lF5wxyhnG/4zVekL6Ec=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-exTC+nHPgOB1Xjpd3cPyz81STUS19SGiI6IpTCJkcww=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -1849,7 +1849,7 @@ const GAMES = {
       deckSizeExact: null,
       copyLimit: 1,
       copyLimitScope: "name",
-      collectionCap: 5,
+      collectionCap: 1,
       playset: 1,
       unlimitedCopies: null,
       subtypeCaps: [],
@@ -3173,10 +3173,20 @@ function colTileHtml(c){
   </figure>`;
 }
 
+// A rarity heading's count: owned/total once the collection has loaded, else the total.
+function colSecCount(r, scope = colScoped()){
+  const all = scope.filter(c => rarityOf(c) === r);
+  return COL_READY ? `${colOwnedCount(all)}/${all.length}` : String(all.length);
+}
+
 function updateColTile(id){
-  const el = document.querySelector(`#colGrid .ctile[data-ref="${id}"]`);
+  const el = document.querySelector(`#colGrid .ctile[data-ref="${CSS.escape(id)}"]`);
   const card = findCard(id);
-  if(el && card) el.outerHTML = colTileHtml(card);
+  if(!el || !card) return;
+  el.outerHTML = colTileHtml(card);
+  // Keep the rarity heading's count in step with the tile.
+  const head = document.querySelector(`#colGrid h2.colsec[data-rarity="${CSS.escape(rarityOf(card))}"] .seccount`);
+  if(head) head.textContent = colSecCount(rarityOf(card));
 }
 
 function renderColSummary(){
@@ -3201,7 +3211,7 @@ function renderColSummary(){
   document.getElementById("colCards").textContent =
     COL_READY ? `${ownedPrintings} of ${total} cards` : `${total} cards`;
   document.getElementById("colCopies").textContent = !COL_READY ? ""
-    : GAME.collectOnly ? `${copies} cop${copies === 1 ? "y" : "ies"} logged`
+    : GAME.collectOnly ? (cap > 1 ? `${copies} cop${copies === 1 ? "y" : "ies"} logged` : "")
     : `${copies}/${total * cap} copies · ${playsets} playset${playsets === 1 ? "" : "s"}`;
 
   const rarities = colRarities();
@@ -3268,9 +3278,7 @@ function renderCollection(){
         const cards = filtered.filter(c => rarityOf(c) === r)
           .sort(byNumber);
         if(!cards.length) return "";
-        const all = scope.filter(c => rarityOf(c) === r);
-        const owned = COL_READY ? colOwnedCount(all) : null;
-        return `<h2 class="colsec">${esc(r)} <span>${owned === null ? all.length : `${owned}/${all.length}`}</span></h2>
+        return `<h2 class="colsec" data-rarity="${esc(r)}">${esc(r)} <span class="seccount">${colSecCount(r, scope)}</span></h2>
           <div class="shelf colshelf">${cards.map(colTileHtml).join("")}</div>`;
       }).join("")
     : `<div class="noresults"><p class="dempty">Nothing matches these filters.</p>
@@ -3299,7 +3307,7 @@ window.colMarkAll = async () => {
   if(!COL_READY) return;
   const scope = colScoped(), where = colScopeName();
   const v = await ask("Mark every printing owned?",
-    `This raises all ${scope.length} printings in ${where} to at least 1 copy. Quantities you've already logged above 1 are untouched.`,
+    `This raises all ${scope.length} printings in ${where} to at least 1 copy.${colCap() > 1 ? " Quantities you've already logged above 1 are untouched." : ""}`,
     [{label: colIsAll() ? "Mark all owned" : "Mark set owned", value:"yes", kind:"go"},
      {label:"Cancel", value:"cancel", kind:"quiet"}]);
   if(v !== "yes") return;

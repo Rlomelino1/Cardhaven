@@ -56,6 +56,32 @@ test.describe("My Little Pony, a collect-only game", () => {
     await expect(page.locator("#modalBox .face.front img")).toHaveAttribute("src", "./img/mlp/hy12/hy12-hr-001.webp");
   });
 
+  test("a card is owned or not: the usual stepper, capped at one copy", async ({ page }) => {
+    await openMlp(page, "#collection");
+    const tile = page.locator('#colGrid .ctile[data-ref="hy12-sgr-001"]');
+    await expect(tile.locator(".cseg i")).toHaveCount(1);
+    await expect(tile.locator(".cown")).toHaveText("Missing");
+    await expect(page.locator("#colGrid h2.colsec", { hasText: /^SGR/ })).toHaveText("SGR 0/10");
+
+    await tile.locator(".step").last().click();
+    await expect(tile.locator(".cown")).toHaveText("1/1");
+    await expect(tile.locator(".cown")).toHaveClass(/full/);
+    await expect(tile.locator(".step").last()).toBeDisabled();
+    await expect(page.locator("#colGrid h2.colsec", { hasText: /^SGR/ })).toHaveText("SGR 1/10");
+
+    await tile.locator(".step").first().click();
+    await expect(tile.locator(".cown")).toHaveText("Missing");
+
+    await page.evaluate(() => openCard("hy12-sgr-001"));
+    await expect(page.locator("#modalBox .modalcount span")).toHaveText("0 of 1 owned");
+  });
+
+  test("an older log of several copies counts as one", async ({ page }) => {
+    await openMlp(page, "#collection");
+    expect(await page.evaluate(() => liftCollection({ mlp: { "hy12-r-001": 4 } })))
+      .toEqual({ mlp: { "hy12-r-001": 1 } });
+  });
+
   test("the search finds a card by the number printed on its tile", async ({ page }) => {
     await openMlp(page, "#collection");
     await page.fill("#colQ", "LSR 001");
