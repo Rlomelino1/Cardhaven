@@ -169,11 +169,15 @@ index.html              the app — must stay at the root; Pages deploys from ma
 data/{set}-pool.json    the 8 Riftbound sets, 1,304 printings with image URLs
                         (OGN 352, SFD 288, UNL 280, VEN 227, OPP 117, OGS 24, PR 13,
                         JDG 3)
-data/mlp/               Kayou My Little Pony card lists, written by build-mlp-pools.mjs
-                        (HY12 Radiant Moon Vol. 12: 164 cards in 10 rarities, with names)
-img/mlp/hy12/           a picture of every HY12 card, cropped once from public eBay listings
-                        (no source refreshes these): {id}.webp full size (~6.6 MB),
-                        {id}.sm.webp tile size (~3 MB, loaded lazily as tiles scroll in)
+data/mlp/               Kayou My Little Pony card lists, written by build-mlp-pools.mjs from
+                        scripts/mlp-sets.json: Moon Edition Waves 7–12 (HY07–HY12), 1,017
+                        cards in up to 10 rarities, with names
+img/mlp/hy07…hy12/      a picture of every card (no source refreshes these). Waves 7–11 are
+                        Kayou's official pictures from its US site, whose English Moon
+                        Edition Series 1–4 reprint those waves; the few cards missing there
+                        and all of Wave 12 are cropped from public eBay listings.
+                        {id}.webp full size (~47 MB in all, loaded only in the card view),
+                        {id}.sm.webp tile size (~21 MB, loaded lazily as tiles scroll in)
 data/pokemon/           176 slim per-set pools + sets.json + search-index.json (~8.9 MB)
 scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon) ·
                         build-mlp-pools.mjs (My Little Pony) ·

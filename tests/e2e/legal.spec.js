@@ -66,7 +66,7 @@ test.describe("the legal notices modal", () => {
       paragraphs: document.querySelectorAll("#legalList p").length,
       withLegal: GAME_IDS.filter(id => GAMES[id].legal).length,
     }));
-    expect(r.headings).toEqual(["Riftbound", "Pokémon TCG", "My Little Pony (Kayou)"]);
+    expect(r.headings).toEqual(["Riftbound", "Pokémon TCG", "My Little Pony"]);
     expect(r.paragraphs).toBe(r.withLegal);
   });
 

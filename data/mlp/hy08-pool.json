@@ -1,0 +1,1727 @@
+[
+  {
+    "name": "Princess Twilight Sparkle",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-001",
+    "mlpId": "hy08-r-001",
+    "image": "./img/mlp/hy08/hy08-r-001.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-002",
+    "mlpId": "hy08-r-002",
+    "image": "./img/mlp/hy08/hy08-r-002.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-003",
+    "mlpId": "hy08-r-003",
+    "image": "./img/mlp/hy08/hy08-r-003.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-004",
+    "mlpId": "hy08-r-004",
+    "image": "./img/mlp/hy08/hy08-r-004.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-005",
+    "mlpId": "hy08-r-005",
+    "image": "./img/mlp/hy08/hy08-r-005.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-006",
+    "mlpId": "hy08-r-006",
+    "image": "./img/mlp/hy08/hy08-r-006.webp"
+  },
+  {
+    "name": "Nurse Redheart",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-007",
+    "mlpId": "hy08-r-007",
+    "image": "./img/mlp/hy08/hy08-r-007.webp"
+  },
+  {
+    "name": "Cozy Glow",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-008",
+    "mlpId": "hy08-r-008",
+    "image": "./img/mlp/hy08/hy08-r-008.webp"
+  },
+  {
+    "name": "Toola Roola",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-009",
+    "mlpId": "hy08-r-009",
+    "image": "./img/mlp/hy08/hy08-r-009.webp"
+  },
+  {
+    "name": "Coconut Cream",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-010",
+    "mlpId": "hy08-r-010",
+    "image": "./img/mlp/hy08/hy08-r-010.webp"
+  },
+  {
+    "name": "Inky Rose",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-011",
+    "mlpId": "hy08-r-011",
+    "image": "./img/mlp/hy08/hy08-r-011.webp"
+  },
+  {
+    "name": "Prince Blueblood",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-012",
+    "mlpId": "hy08-r-012",
+    "image": "./img/mlp/hy08/hy08-r-012.webp"
+  },
+  {
+    "name": "Sunny Daze",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-013",
+    "mlpId": "hy08-r-013",
+    "image": "./img/mlp/hy08/hy08-r-013.webp"
+  },
+  {
+    "name": "Peachy Pie",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-014",
+    "mlpId": "hy08-r-014",
+    "image": "./img/mlp/hy08/hy08-r-014.webp"
+  },
+  {
+    "name": "Bulk Biceps",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-015",
+    "mlpId": "hy08-r-015",
+    "image": "./img/mlp/hy08/hy08-r-015.webp"
+  },
+  {
+    "name": "Randolph",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-016",
+    "mlpId": "hy08-r-016",
+    "image": "./img/mlp/hy08/hy08-r-016.webp"
+  },
+  {
+    "name": "Fleur de Lis",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-017",
+    "mlpId": "hy08-r-017",
+    "image": "./img/mlp/hy08/hy08-r-017.webp"
+  },
+  {
+    "name": "Trouble Shoes",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-018",
+    "mlpId": "hy08-r-018",
+    "image": "./img/mlp/hy08/hy08-r-018.webp"
+  },
+  {
+    "name": "Mr. Stripes",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-019",
+    "mlpId": "hy08-r-019",
+    "image": "./img/mlp/hy08/hy08-r-019.webp"
+  },
+  {
+    "name": "Plaid Stripes",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-020",
+    "mlpId": "hy08-r-020",
+    "image": "./img/mlp/hy08/hy08-r-020.webp"
+  },
+  {
+    "name": "Night Glider",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-021",
+    "mlpId": "hy08-r-021",
+    "image": "./img/mlp/hy08/hy08-r-021.webp"
+  },
+  {
+    "name": "Party Favor",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-022",
+    "mlpId": "hy08-r-022",
+    "image": "./img/mlp/hy08/hy08-r-022.webp"
+  },
+  {
+    "name": "Double Diamond",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-023",
+    "mlpId": "hy08-r-023",
+    "image": "./img/mlp/hy08/hy08-r-023.webp"
+  },
+  {
+    "name": "Snips",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-024",
+    "mlpId": "hy08-r-024",
+    "image": "./img/mlp/hy08/hy08-r-024.webp"
+  },
+  {
+    "name": "Snails",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-025",
+    "mlpId": "hy08-r-025",
+    "image": "./img/mlp/hy08/hy08-r-025.webp"
+  },
+  {
+    "name": "Gabriella",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-026",
+    "mlpId": "hy08-r-026",
+    "image": "./img/mlp/hy08/hy08-r-026.webp"
+  },
+  {
+    "name": "Breezies",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-027",
+    "mlpId": "hy08-r-027",
+    "image": "./img/mlp/hy08/hy08-r-027.webp"
+  },
+  {
+    "name": "Parasprite",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-028",
+    "mlpId": "hy08-r-028",
+    "image": "./img/mlp/hy08/hy08-r-028.webp"
+  },
+  {
+    "name": "Cockatrice",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-029",
+    "mlpId": "hy08-r-029",
+    "image": "./img/mlp/hy08/hy08-r-029.webp"
+  },
+  {
+    "name": "Jackalope",
+    "rarity": "R",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "R-030",
+    "mlpId": "hy08-r-030",
+    "image": "./img/mlp/hy08/hy08-r-030.webp"
+  },
+  {
+    "name": "Twilight Sparkle",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-001",
+    "mlpId": "hy08-sr-001",
+    "image": "./img/mlp/hy08/hy08-sr-001.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-002",
+    "mlpId": "hy08-sr-002",
+    "image": "./img/mlp/hy08/hy08-sr-002.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-003",
+    "mlpId": "hy08-sr-003",
+    "image": "./img/mlp/hy08/hy08-sr-003.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-004",
+    "mlpId": "hy08-sr-004",
+    "image": "./img/mlp/hy08/hy08-sr-004.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-005",
+    "mlpId": "hy08-sr-005",
+    "image": "./img/mlp/hy08/hy08-sr-005.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-006",
+    "mlpId": "hy08-sr-006",
+    "image": "./img/mlp/hy08/hy08-sr-006.webp"
+  },
+  {
+    "name": "Princess Twilight Sparkle",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-007",
+    "mlpId": "hy08-sr-007",
+    "image": "./img/mlp/hy08/hy08-sr-007.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-008",
+    "mlpId": "hy08-sr-008",
+    "image": "./img/mlp/hy08/hy08-sr-008.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-009",
+    "mlpId": "hy08-sr-009",
+    "image": "./img/mlp/hy08/hy08-sr-009.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-010",
+    "mlpId": "hy08-sr-010",
+    "image": "./img/mlp/hy08/hy08-sr-010.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-011",
+    "mlpId": "hy08-sr-011",
+    "image": "./img/mlp/hy08/hy08-sr-011.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-012",
+    "mlpId": "hy08-sr-012",
+    "image": "./img/mlp/hy08/hy08-sr-012.webp"
+  },
+  {
+    "name": "Apple Bloom",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-013",
+    "mlpId": "hy08-sr-013",
+    "image": "./img/mlp/hy08/hy08-sr-013.webp"
+  },
+  {
+    "name": "Scootaloo",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-014",
+    "mlpId": "hy08-sr-014",
+    "image": "./img/mlp/hy08/hy08-sr-014.webp"
+  },
+  {
+    "name": "Sweetie Belle",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-015",
+    "mlpId": "hy08-sr-015",
+    "image": "./img/mlp/hy08/hy08-sr-015.webp"
+  },
+  {
+    "name": "Octavia",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-016",
+    "mlpId": "hy08-sr-016",
+    "image": "./img/mlp/hy08/hy08-sr-016.webp"
+  },
+  {
+    "name": "Moon Dancer",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-017",
+    "mlpId": "hy08-sr-017",
+    "image": "./img/mlp/hy08/hy08-sr-017.webp"
+  },
+  {
+    "name": "Twinkleshine",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-018",
+    "mlpId": "hy08-sr-018",
+    "image": "./img/mlp/hy08/hy08-sr-018.webp"
+  },
+  {
+    "name": "Lemon Hearts",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-019",
+    "mlpId": "hy08-sr-019",
+    "image": "./img/mlp/hy08/hy08-sr-019.webp"
+  },
+  {
+    "name": "Minuette",
+    "rarity": "SR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SR-020",
+    "mlpId": "hy08-sr-020",
+    "image": "./img/mlp/hy08/hy08-sr-020.webp"
+  },
+  {
+    "name": "Twilight Sparkle",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-001",
+    "mlpId": "hy08-hr-001",
+    "image": "./img/mlp/hy08/hy08-hr-001.webp",
+    "landscape": true
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-002",
+    "mlpId": "hy08-hr-002",
+    "image": "./img/mlp/hy08/hy08-hr-002.webp",
+    "landscape": true
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-003",
+    "mlpId": "hy08-hr-003",
+    "image": "./img/mlp/hy08/hy08-hr-003.webp",
+    "landscape": true
+  },
+  {
+    "name": "Rarity",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-004",
+    "mlpId": "hy08-hr-004",
+    "image": "./img/mlp/hy08/hy08-hr-004.webp",
+    "landscape": true
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-005",
+    "mlpId": "hy08-hr-005",
+    "image": "./img/mlp/hy08/hy08-hr-005.webp",
+    "landscape": true
+  },
+  {
+    "name": "Applejack",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-006",
+    "mlpId": "hy08-hr-006",
+    "image": "./img/mlp/hy08/hy08-hr-006.webp",
+    "landscape": true
+  },
+  {
+    "name": "Spike",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-007",
+    "mlpId": "hy08-hr-007",
+    "image": "./img/mlp/hy08/hy08-hr-007.webp",
+    "landscape": true
+  },
+  {
+    "name": "Granny Smith",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-008",
+    "mlpId": "hy08-hr-008",
+    "image": "./img/mlp/hy08/hy08-hr-008.webp",
+    "landscape": true
+  },
+  {
+    "name": "Sweetie Belle",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-009",
+    "mlpId": "hy08-hr-009",
+    "image": "./img/mlp/hy08/hy08-hr-009.webp",
+    "landscape": true
+  },
+  {
+    "name": "Scare Master",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-010",
+    "mlpId": "hy08-hr-010",
+    "image": "./img/mlp/hy08/hy08-hr-010.webp",
+    "landscape": true
+  },
+  {
+    "name": "Sisterhooves Strong",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-011",
+    "mlpId": "hy08-hr-011",
+    "image": "./img/mlp/hy08/hy08-hr-011.webp",
+    "landscape": true
+  },
+  {
+    "name": "Instant Besties",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-012",
+    "mlpId": "hy08-hr-012",
+    "image": "./img/mlp/hy08/hy08-hr-012.webp",
+    "landscape": true
+  },
+  {
+    "name": "Break Up Break Down",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-013",
+    "mlpId": "hy08-hr-013",
+    "image": "./img/mlp/hy08/hy08-hr-013.webp",
+    "landscape": true
+  },
+  {
+    "name": "Glam Pony Pals",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-014",
+    "mlpId": "hy08-hr-014",
+    "image": "./img/mlp/hy08/hy08-hr-014.webp",
+    "landscape": true
+  },
+  {
+    "name": "Winter Wrap Up",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-015",
+    "mlpId": "hy08-hr-015",
+    "image": "./img/mlp/hy08/hy08-hr-015.webp",
+    "landscape": true
+  },
+  {
+    "name": "Cutie Angels",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-016",
+    "mlpId": "hy08-hr-016",
+    "image": "./img/mlp/hy08/hy08-hr-016.webp",
+    "landscape": true
+  },
+  {
+    "name": "Cutie Mark Crusaders",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-017",
+    "mlpId": "hy08-hr-017",
+    "image": "./img/mlp/hy08/hy08-hr-017.webp",
+    "landscape": true
+  },
+  {
+    "name": "Spiritual Friendship",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-018",
+    "mlpId": "hy08-hr-018",
+    "image": "./img/mlp/hy08/hy08-hr-018.webp",
+    "landscape": true
+  },
+  {
+    "name": "Sing and Trot",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-019",
+    "mlpId": "hy08-hr-019",
+    "image": "./img/mlp/hy08/hy08-hr-019.webp",
+    "landscape": true
+  },
+  {
+    "name": "Pinkie Surprise",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-020",
+    "mlpId": "hy08-hr-020",
+    "image": "./img/mlp/hy08/hy08-hr-020.webp",
+    "landscape": true
+  },
+  {
+    "name": "Grand Finale",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-021",
+    "mlpId": "hy08-hr-021",
+    "image": "./img/mlp/hy08/hy08-hr-021.webp",
+    "landscape": true
+  },
+  {
+    "name": "Yummy Feast",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-022",
+    "mlpId": "hy08-hr-022",
+    "image": "./img/mlp/hy08/hy08-hr-022.webp",
+    "landscape": true
+  },
+  {
+    "name": "Princess Twilight Sparkle",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-023",
+    "mlpId": "hy08-hr-023",
+    "image": "./img/mlp/hy08/hy08-hr-023.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-024",
+    "mlpId": "hy08-hr-024",
+    "image": "./img/mlp/hy08/hy08-hr-024.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-025",
+    "mlpId": "hy08-hr-025",
+    "image": "./img/mlp/hy08/hy08-hr-025.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-026",
+    "mlpId": "hy08-hr-026",
+    "image": "./img/mlp/hy08/hy08-hr-026.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-027",
+    "mlpId": "hy08-hr-027",
+    "image": "./img/mlp/hy08/hy08-hr-027.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-028",
+    "mlpId": "hy08-hr-028",
+    "image": "./img/mlp/hy08/hy08-hr-028.webp"
+  },
+  {
+    "name": "Spike",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-029",
+    "mlpId": "hy08-hr-029",
+    "image": "./img/mlp/hy08/hy08-hr-029.webp"
+  },
+  {
+    "name": "Princess Celestia",
+    "rarity": "HR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "HR-030",
+    "mlpId": "hy08-hr-030",
+    "image": "./img/mlp/hy08/hy08-hr-030.webp"
+  },
+  {
+    "name": "Princess Twilight Sparkle",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-001",
+    "mlpId": "hy08-ssr-001",
+    "image": "./img/mlp/hy08/hy08-ssr-001.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-002",
+    "mlpId": "hy08-ssr-002",
+    "image": "./img/mlp/hy08/hy08-ssr-002.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-003",
+    "mlpId": "hy08-ssr-003",
+    "image": "./img/mlp/hy08/hy08-ssr-003.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-004",
+    "mlpId": "hy08-ssr-004",
+    "image": "./img/mlp/hy08/hy08-ssr-004.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-005",
+    "mlpId": "hy08-ssr-005",
+    "image": "./img/mlp/hy08/hy08-ssr-005.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-006",
+    "mlpId": "hy08-ssr-006",
+    "image": "./img/mlp/hy08/hy08-ssr-006.webp"
+  },
+  {
+    "name": "Spike",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-007",
+    "mlpId": "hy08-ssr-007",
+    "image": "./img/mlp/hy08/hy08-ssr-007.webp"
+  },
+  {
+    "name": "Apple Bloom",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-008",
+    "mlpId": "hy08-ssr-008",
+    "image": "./img/mlp/hy08/hy08-ssr-008.webp"
+  },
+  {
+    "name": "Scootaloo",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-009",
+    "mlpId": "hy08-ssr-009",
+    "image": "./img/mlp/hy08/hy08-ssr-009.webp"
+  },
+  {
+    "name": "Sweetie Belle",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-010",
+    "mlpId": "hy08-ssr-010",
+    "image": "./img/mlp/hy08/hy08-ssr-010.webp"
+  },
+  {
+    "name": "Vapor Trail",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-011",
+    "mlpId": "hy08-ssr-011",
+    "image": "./img/mlp/hy08/hy08-ssr-011.webp"
+  },
+  {
+    "name": "Flurry Heart",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-012",
+    "mlpId": "hy08-ssr-012",
+    "image": "./img/mlp/hy08/hy08-ssr-012.webp"
+  },
+  {
+    "name": "Princess Cadance",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-013",
+    "mlpId": "hy08-ssr-013",
+    "image": "./img/mlp/hy08/hy08-ssr-013.webp"
+  },
+  {
+    "name": "Princess Twilight Sparkle",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-014",
+    "mlpId": "hy08-ssr-014",
+    "image": "./img/mlp/hy08/hy08-ssr-014.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-015",
+    "mlpId": "hy08-ssr-015",
+    "image": "./img/mlp/hy08/hy08-ssr-015.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-016",
+    "mlpId": "hy08-ssr-016",
+    "image": "./img/mlp/hy08/hy08-ssr-016.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-017",
+    "mlpId": "hy08-ssr-017",
+    "image": "./img/mlp/hy08/hy08-ssr-017.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-018",
+    "mlpId": "hy08-ssr-018",
+    "image": "./img/mlp/hy08/hy08-ssr-018.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-019",
+    "mlpId": "hy08-ssr-019",
+    "image": "./img/mlp/hy08/hy08-ssr-019.webp"
+  },
+  {
+    "name": "Spike",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-020",
+    "mlpId": "hy08-ssr-020",
+    "image": "./img/mlp/hy08/hy08-ssr-020.webp"
+  },
+  {
+    "name": "Apple Bloom",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-021",
+    "mlpId": "hy08-ssr-021",
+    "image": "./img/mlp/hy08/hy08-ssr-021.webp"
+  },
+  {
+    "name": "Scootaloo",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-022",
+    "mlpId": "hy08-ssr-022",
+    "image": "./img/mlp/hy08/hy08-ssr-022.webp"
+  },
+  {
+    "name": "Sweetie Belle",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-023",
+    "mlpId": "hy08-ssr-023",
+    "image": "./img/mlp/hy08/hy08-ssr-023.webp"
+  },
+  {
+    "name": "Vapor Trail",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-024",
+    "mlpId": "hy08-ssr-024",
+    "image": "./img/mlp/hy08/hy08-ssr-024.webp"
+  },
+  {
+    "name": "Flurry Heart",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-025",
+    "mlpId": "hy08-ssr-025",
+    "image": "./img/mlp/hy08/hy08-ssr-025.webp"
+  },
+  {
+    "name": "Princess Cadance",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-026",
+    "mlpId": "hy08-ssr-026",
+    "image": "./img/mlp/hy08/hy08-ssr-026.webp"
+  },
+  {
+    "name": "Princess Twilight Sparkle",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-027",
+    "mlpId": "hy08-ssr-027",
+    "image": "./img/mlp/hy08/hy08-ssr-027.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-028",
+    "mlpId": "hy08-ssr-028",
+    "image": "./img/mlp/hy08/hy08-ssr-028.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-029",
+    "mlpId": "hy08-ssr-029",
+    "image": "./img/mlp/hy08/hy08-ssr-029.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-030",
+    "mlpId": "hy08-ssr-030",
+    "image": "./img/mlp/hy08/hy08-ssr-030.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-031",
+    "mlpId": "hy08-ssr-031",
+    "image": "./img/mlp/hy08/hy08-ssr-031.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-032",
+    "mlpId": "hy08-ssr-032",
+    "image": "./img/mlp/hy08/hy08-ssr-032.webp"
+  },
+  {
+    "name": "Spike",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-033",
+    "mlpId": "hy08-ssr-033",
+    "image": "./img/mlp/hy08/hy08-ssr-033.webp"
+  },
+  {
+    "name": "Apple Bloom",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-034",
+    "mlpId": "hy08-ssr-034",
+    "image": "./img/mlp/hy08/hy08-ssr-034.webp"
+  },
+  {
+    "name": "Scootaloo",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-035",
+    "mlpId": "hy08-ssr-035",
+    "image": "./img/mlp/hy08/hy08-ssr-035.webp"
+  },
+  {
+    "name": "Sweetie Belle",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-036",
+    "mlpId": "hy08-ssr-036",
+    "image": "./img/mlp/hy08/hy08-ssr-036.webp"
+  },
+  {
+    "name": "Vapor Trail",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-037",
+    "mlpId": "hy08-ssr-037",
+    "image": "./img/mlp/hy08/hy08-ssr-037.webp"
+  },
+  {
+    "name": "Flurry Heart",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-038",
+    "mlpId": "hy08-ssr-038",
+    "image": "./img/mlp/hy08/hy08-ssr-038.webp"
+  },
+  {
+    "name": "Princess Cadance",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-039",
+    "mlpId": "hy08-ssr-039",
+    "image": "./img/mlp/hy08/hy08-ssr-039.webp"
+  },
+  {
+    "name": "Princess Twilight Sparkle",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-040",
+    "mlpId": "hy08-ssr-040",
+    "image": "./img/mlp/hy08/hy08-ssr-040.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-041",
+    "mlpId": "hy08-ssr-041",
+    "image": "./img/mlp/hy08/hy08-ssr-041.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-042",
+    "mlpId": "hy08-ssr-042",
+    "image": "./img/mlp/hy08/hy08-ssr-042.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-043",
+    "mlpId": "hy08-ssr-043",
+    "image": "./img/mlp/hy08/hy08-ssr-043.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-044",
+    "mlpId": "hy08-ssr-044",
+    "image": "./img/mlp/hy08/hy08-ssr-044.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-045",
+    "mlpId": "hy08-ssr-045",
+    "image": "./img/mlp/hy08/hy08-ssr-045.webp"
+  },
+  {
+    "name": "Spike",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-046",
+    "mlpId": "hy08-ssr-046",
+    "image": "./img/mlp/hy08/hy08-ssr-046.webp"
+  },
+  {
+    "name": "Apple Bloom",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-047",
+    "mlpId": "hy08-ssr-047",
+    "image": "./img/mlp/hy08/hy08-ssr-047.webp"
+  },
+  {
+    "name": "Scootaloo",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-048",
+    "mlpId": "hy08-ssr-048",
+    "image": "./img/mlp/hy08/hy08-ssr-048.webp"
+  },
+  {
+    "name": "Sweetie Belle",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-049",
+    "mlpId": "hy08-ssr-049",
+    "image": "./img/mlp/hy08/hy08-ssr-049.webp"
+  },
+  {
+    "name": "Vapor Trail",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-050",
+    "mlpId": "hy08-ssr-050",
+    "image": "./img/mlp/hy08/hy08-ssr-050.webp"
+  },
+  {
+    "name": "Flurry Heart",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-051",
+    "mlpId": "hy08-ssr-051",
+    "image": "./img/mlp/hy08/hy08-ssr-051.webp"
+  },
+  {
+    "name": "Princess Cadance",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-052",
+    "mlpId": "hy08-ssr-052",
+    "image": "./img/mlp/hy08/hy08-ssr-052.webp"
+  },
+  {
+    "name": "Queen Chrysalis",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-053",
+    "mlpId": "hy08-ssr-053",
+    "image": "./img/mlp/hy08/hy08-ssr-053.webp"
+  },
+  {
+    "name": "Discord",
+    "rarity": "SSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SSR-054",
+    "mlpId": "hy08-ssr-054",
+    "image": "./img/mlp/hy08/hy08-ssr-054.webp"
+  },
+  {
+    "name": "Princess Twilight Sparkle",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-001",
+    "mlpId": "hy08-ur-001",
+    "image": "./img/mlp/hy08/hy08-ur-001.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-002",
+    "mlpId": "hy08-ur-002",
+    "image": "./img/mlp/hy08/hy08-ur-002.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-003",
+    "mlpId": "hy08-ur-003",
+    "image": "./img/mlp/hy08/hy08-ur-003.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-004",
+    "mlpId": "hy08-ur-004",
+    "image": "./img/mlp/hy08/hy08-ur-004.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-005",
+    "mlpId": "hy08-ur-005",
+    "image": "./img/mlp/hy08/hy08-ur-005.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-006",
+    "mlpId": "hy08-ur-006",
+    "image": "./img/mlp/hy08/hy08-ur-006.webp"
+  },
+  {
+    "name": "Spitfire",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-007",
+    "mlpId": "hy08-ur-007",
+    "image": "./img/mlp/hy08/hy08-ur-007.webp"
+  },
+  {
+    "name": "Fleetfoot",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-008",
+    "mlpId": "hy08-ur-008",
+    "image": "./img/mlp/hy08/hy08-ur-008.webp"
+  },
+  {
+    "name": "Thunderlane",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-009",
+    "mlpId": "hy08-ur-009",
+    "image": "./img/mlp/hy08/hy08-ur-009.webp"
+  },
+  {
+    "name": "Vapor Trail",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-010",
+    "mlpId": "hy08-ur-010",
+    "image": "./img/mlp/hy08/hy08-ur-010.webp"
+  },
+  {
+    "name": "Maud Pie",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-011",
+    "mlpId": "hy08-ur-011",
+    "image": "./img/mlp/hy08/hy08-ur-011.webp"
+  },
+  {
+    "name": "Trixie",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-012",
+    "mlpId": "hy08-ur-012",
+    "image": "./img/mlp/hy08/hy08-ur-012.webp"
+  },
+  {
+    "name": "Starlight Glimmer",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-013",
+    "mlpId": "hy08-ur-013",
+    "image": "./img/mlp/hy08/hy08-ur-013.webp"
+  },
+  {
+    "name": "Princess Luna",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-014",
+    "mlpId": "hy08-ur-014",
+    "image": "./img/mlp/hy08/hy08-ur-014.webp"
+  },
+  {
+    "name": "Princess Cadance",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-015",
+    "mlpId": "hy08-ur-015",
+    "image": "./img/mlp/hy08/hy08-ur-015.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "UR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "UR-016",
+    "mlpId": "hy08-ur-016",
+    "image": "./img/mlp/hy08/hy08-ur-016.webp"
+  },
+  {
+    "name": "Princess Twilight Sparkle",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-001",
+    "mlpId": "hy08-lsr-001",
+    "image": "./img/mlp/hy08/hy08-lsr-001.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-002",
+    "mlpId": "hy08-lsr-002",
+    "image": "./img/mlp/hy08/hy08-lsr-002.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-003",
+    "mlpId": "hy08-lsr-003",
+    "image": "./img/mlp/hy08/hy08-lsr-003.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-004",
+    "mlpId": "hy08-lsr-004",
+    "image": "./img/mlp/hy08/hy08-lsr-004.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-005",
+    "mlpId": "hy08-lsr-005",
+    "image": "./img/mlp/hy08/hy08-lsr-005.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-006",
+    "mlpId": "hy08-lsr-006",
+    "image": "./img/mlp/hy08/hy08-lsr-006.webp"
+  },
+  {
+    "name": "Princess Celestia",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-007",
+    "mlpId": "hy08-lsr-007",
+    "image": "./img/mlp/hy08/hy08-lsr-007.webp"
+  },
+  {
+    "name": "Princess Luna",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-008",
+    "mlpId": "hy08-lsr-008",
+    "image": "./img/mlp/hy08/hy08-lsr-008.webp"
+  },
+  {
+    "name": "Apple Bloom",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-009",
+    "mlpId": "hy08-lsr-009",
+    "image": "./img/mlp/hy08/hy08-lsr-009.webp"
+  },
+  {
+    "name": "Scootaloo",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-010",
+    "mlpId": "hy08-lsr-010",
+    "image": "./img/mlp/hy08/hy08-lsr-010.webp"
+  },
+  {
+    "name": "Sweetie Belle",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-011",
+    "mlpId": "hy08-lsr-011",
+    "image": "./img/mlp/hy08/hy08-lsr-011.webp"
+  },
+  {
+    "name": "Sunset Shimmer",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-012",
+    "mlpId": "hy08-lsr-012",
+    "image": "./img/mlp/hy08/hy08-lsr-012.webp"
+  },
+  {
+    "name": "Spike",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-013",
+    "mlpId": "hy08-lsr-013",
+    "image": "./img/mlp/hy08/hy08-lsr-013.webp"
+  },
+  {
+    "name": "Shining Armor",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-014",
+    "mlpId": "hy08-lsr-014",
+    "image": "./img/mlp/hy08/hy08-lsr-014.webp"
+  },
+  {
+    "name": "Maud Pie",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-015",
+    "mlpId": "hy08-lsr-015",
+    "image": "./img/mlp/hy08/hy08-lsr-015.webp"
+  },
+  {
+    "name": "Cheese Sandwich",
+    "rarity": "LSR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "LSR-016",
+    "mlpId": "hy08-lsr-016",
+    "image": "./img/mlp/hy08/hy08-lsr-016.webp"
+  },
+  {
+    "name": "Twilight Sparkle",
+    "rarity": "SGR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SGR-001",
+    "mlpId": "hy08-sgr-001",
+    "image": "./img/mlp/hy08/hy08-sgr-001.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "SGR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SGR-002",
+    "mlpId": "hy08-sgr-002",
+    "image": "./img/mlp/hy08/hy08-sgr-002.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "SGR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SGR-003",
+    "mlpId": "hy08-sgr-003",
+    "image": "./img/mlp/hy08/hy08-sgr-003.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "SGR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SGR-004",
+    "mlpId": "hy08-sgr-004",
+    "image": "./img/mlp/hy08/hy08-sgr-004.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "SGR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SGR-005",
+    "mlpId": "hy08-sgr-005",
+    "image": "./img/mlp/hy08/hy08-sgr-005.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "SGR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SGR-006",
+    "mlpId": "hy08-sgr-006",
+    "image": "./img/mlp/hy08/hy08-sgr-006.webp"
+  },
+  {
+    "name": "Spike",
+    "rarity": "SGR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SGR-007",
+    "mlpId": "hy08-sgr-007",
+    "image": "./img/mlp/hy08/hy08-sgr-007.webp"
+  },
+  {
+    "name": "Princess Celestia",
+    "rarity": "SGR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SGR-008",
+    "mlpId": "hy08-sgr-008",
+    "image": "./img/mlp/hy08/hy08-sgr-008.webp"
+  },
+  {
+    "name": "Twilight Sparkle",
+    "rarity": "ZR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "ZR-001",
+    "mlpId": "hy08-zr-001",
+    "image": "./img/mlp/hy08/hy08-zr-001.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "ZR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "ZR-002",
+    "mlpId": "hy08-zr-002",
+    "image": "./img/mlp/hy08/hy08-zr-002.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "ZR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "ZR-003",
+    "mlpId": "hy08-zr-003",
+    "image": "./img/mlp/hy08/hy08-zr-003.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "ZR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "ZR-004",
+    "mlpId": "hy08-zr-004",
+    "image": "./img/mlp/hy08/hy08-zr-004.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "ZR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "ZR-005",
+    "mlpId": "hy08-zr-005",
+    "image": "./img/mlp/hy08/hy08-zr-005.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "ZR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "ZR-006",
+    "mlpId": "hy08-zr-006",
+    "image": "./img/mlp/hy08/hy08-zr-006.webp"
+  },
+  {
+    "name": "Happy 15th Anniversary!",
+    "rarity": "ZR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "ZR-007",
+    "mlpId": "hy08-zr-007",
+    "image": "./img/mlp/hy08/hy08-zr-007.webp"
+  },
+  {
+    "name": "Princess Twilight Sparkle",
+    "rarity": "SC",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SC-001",
+    "mlpId": "hy08-sc-001",
+    "image": "./img/mlp/hy08/hy08-sc-001.webp"
+  },
+  {
+    "name": "Pinkie Pie",
+    "rarity": "SC",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SC-002",
+    "mlpId": "hy08-sc-002",
+    "image": "./img/mlp/hy08/hy08-sc-002.webp"
+  },
+  {
+    "name": "Rainbow Dash",
+    "rarity": "SC",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SC-003",
+    "mlpId": "hy08-sc-003",
+    "image": "./img/mlp/hy08/hy08-sc-003.webp"
+  },
+  {
+    "name": "Rarity",
+    "rarity": "SC",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SC-004",
+    "mlpId": "hy08-sc-004",
+    "image": "./img/mlp/hy08/hy08-sc-004.webp"
+  },
+  {
+    "name": "Fluttershy",
+    "rarity": "SC",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SC-005",
+    "mlpId": "hy08-sc-005",
+    "image": "./img/mlp/hy08/hy08-sc-005.webp"
+  },
+  {
+    "name": "Applejack",
+    "rarity": "SC",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SC-006",
+    "mlpId": "hy08-sc-006",
+    "image": "./img/mlp/hy08/hy08-sc-006.webp"
+  },
+  {
+    "name": "Princess Twilight Sparkle",
+    "rarity": "SC",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "SC-007",
+    "mlpId": "hy08-sc-007",
+    "image": "./img/mlp/hy08/hy08-sc-007.webp",
+    "landscape": true
+  },
+  {
+    "name": "Happy 15th Anniversary!",
+    "rarity": "◇ZR",
+    "set": "HY08",
+    "setName": "Moon Edition Wave 8",
+    "number": "◇ZR-001",
+    "mlpId": "hy08-dzr-001",
+    "image": "./img/mlp/hy08/hy08-dzr-001.webp",
+    "landscape": true
+  }
+]
