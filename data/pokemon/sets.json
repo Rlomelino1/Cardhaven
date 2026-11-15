@@ -1,5 +1,16 @@
 [
   {
+    "id": "me6",
+    "name": "Delta Reign",
+    "series": "Mega Evolution",
+    "ptcgoCode": "DLR",
+    "releaseDate": "2026/11/06",
+    "total": 141,
+    "symbolUrl": "https://images.scrydex.com/pokemon/me6-symbol/symbol",
+    "logoUrl": "https://images.scrydex.com/pokemon/me6-logo/logo",
+    "cards": 141
+  },
+  {
     "id": "me55",
     "name": "30th Celebration",
     "series": "Mega Evolution",
