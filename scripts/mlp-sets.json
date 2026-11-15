@@ -2,7 +2,7 @@
   {
     "code": "HY07",
     "name": "Moon Edition Wave 7",
-    "note": "第7弹. Same cards as Kayou's US release Moon Edition Series 1 (MLPME01); names and pictures from Kayou's US site (kayouofficial.com).",
+    "note": "第7弹. Same cards as Kayou's US release Moon Edition Series 1 (MLPME01); names and pictures from Kayou's US site (kayouofficial.com), except SGR-004/005, whose names that site swaps.",
     "cards": {
       "R": ["Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Rarity", "Fluttershy", "Applejack", "Spike", "Cheese Sandwich", "Cheerilee", "Babs Seed", "Diamond Tiara", "Silver Spoon", "Starlight Glimmer", "Trixie", "Lyra Heartstrings", "Sweetie Drops", "Muffins", "Lily Valley", "Daisy", "Junebug", "Ms. Harshwhinny", "Peachbottom", "Suri Polomare", "Zipporwhill", "Dr. Caballeron", "Stygian", "Zecora", "Discord", "Iron Will", "Fruit Bat"],
       "SR": ["Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Rarity", "Fluttershy", "Applejack", "Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Rarity", "Fluttershy", "Applejack", "Sunburst", "Starlight Glimmer", "Big McIntosh", "Maud Pie", "Spitfire", "Flurry Heart", "Pizzelle", "Steven Magnet"],
@@ -10,14 +10,14 @@
       "SSR": ["Princess Twilight Sparkle", "Pinkie Pie", "Fluttershy", "Rainbow Dash", "Rarity", "Applejack", "Spike", "Pear Butter", "Nurse Redheart", "Cherry Jubilee", "Starlight Glimmer", "Trixie", "Sunset Shimmer", "Princess Twilight Sparkle", "Pinkie Pie", "Fluttershy", "Rainbow Dash", "Rarity", "Applejack", "Spike", "Pear Butter", "Nurse Redheart", "Cherry Jubilee", "Starlight Glimmer", "Trixie", "Sunset Shimmer", "Princess Twilight Sparkle", "Pinkie Pie", "Fluttershy", "Rainbow Dash", "Rarity", "Applejack", "Spike", "Pear Butter", "Nurse Redheart", "Cherry Jubilee", "Starlight Glimmer", "Trixie", "Sunset Shimmer", "Princess Twilight Sparkle", "Pinkie Pie", "Fluttershy", "Rainbow Dash", "Rarity", "Applejack", "Spike", "Pear Butter", "Nurse Redheart", "Cherry Jubilee", "Starlight Glimmer", "Trixie", "Sunset Shimmer", "Princess Luna", "Princess Celestia"],
       "UR": ["Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Fluttershy", "Rarity", "Applejack", "DJ Pon-3", "Octavia", "Cheerilee", "Sweetie Belle", "Scootaloo", "Apple Bloom", "Songbird Serenade", "Cheese Sandwich", "Countess Coloratura", "Applejack"],
       "LSR": ["Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Fluttershy", "Rarity", "Applejack", "Star Swirl", "Somnambula", "Flash Magnus", "Mage Meadowbrook", "Mistmane", "Rockhoof", "Starlight Glimmer", "Trixie", "Sunburst"],
-      "SGR": ["Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Fluttershy", "Rarity", "Applejack", "Princess Cadance", "Flurry Heart"],
+      "SGR": ["Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Rarity", "Fluttershy", "Applejack", "Princess Cadance", "Flurry Heart"],
       "SC": ["Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Rarity", "Fluttershy", "Applejack", "Friends Forever"]
     }
   },
   {
     "code": "HY08",
     "name": "Moon Edition Wave 8",
-    "note": "第8弹, the 15th-anniversary wave. Same cards as Moon Edition Series 2 (MLPME02), whose HR numbers skip 23–44; here they run 1–30 as printed in China. Names and pictures from Kayou's US site (kayouofficial.com).",
+    "note": "第8弹, the 15th-anniversary wave. Same cards as Moon Edition Series 2 (MLPME02), whose HR numbers skip 23–44; here they run 1–30 as printed in China. Names and pictures from Kayou's US site (kayouofficial.com), except SGR-004/005, whose names that site swaps.",
     "cards": {
       "R": ["Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Rarity", "Fluttershy", "Applejack", "Nurse Redheart", "Cozy Glow", "Toola Roola", "Coconut Cream", "Inky Rose", "Prince Blueblood", "Sunny Daze", "Peachy Pie", "Bulk Biceps", "Randolph", "Fleur de Lis", "Trouble Shoes", "Mr. Stripes", "Plaid Stripes", "Night Glider", "Party Favor", "Double Diamond", "Snips", "Snails", "Gabriella", "Breezies", "Parasprite", "Cockatrice", "Jackalope"],
       "SR": ["Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Fluttershy", "Rarity", "Applejack", "Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Fluttershy", "Rarity", "Applejack", "Apple Bloom", "Scootaloo", "Sweetie Belle", "Octavia", "Moon Dancer", "Twinkleshine", "Lemon Hearts", "Minuette"],
@@ -25,7 +25,7 @@
       "SSR": ["Princess Twilight Sparkle", "Pinkie Pie", "Fluttershy", "Rainbow Dash", "Rarity", "Applejack", "Spike", "Apple Bloom", "Scootaloo", "Sweetie Belle", "Vapor Trail", "Flurry Heart", "Princess Cadance", "Princess Twilight Sparkle", "Pinkie Pie", "Fluttershy", "Rainbow Dash", "Rarity", "Applejack", "Spike", "Apple Bloom", "Scootaloo", "Sweetie Belle", "Vapor Trail", "Flurry Heart", "Princess Cadance", "Princess Twilight Sparkle", "Pinkie Pie", "Fluttershy", "Rainbow Dash", "Rarity", "Applejack", "Spike", "Apple Bloom", "Scootaloo", "Sweetie Belle", "Vapor Trail", "Flurry Heart", "Princess Cadance", "Princess Twilight Sparkle", "Pinkie Pie", "Fluttershy", "Rainbow Dash", "Rarity", "Applejack", "Spike", "Apple Bloom", "Scootaloo", "Sweetie Belle", "Vapor Trail", "Flurry Heart", "Princess Cadance", "Queen Chrysalis", "Discord"],
       "UR": ["Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Fluttershy", "Rarity", "Applejack", "Spitfire", "Fleetfoot", "Thunderlane", "Vapor Trail", "Maud Pie", "Trixie", "Starlight Glimmer", "Princess Luna", "Princess Cadance", "Rainbow Dash"],
       "LSR": ["Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Fluttershy", "Rarity", "Applejack", "Princess Celestia", "Princess Luna", "Apple Bloom", "Scootaloo", "Sweetie Belle", "Sunset Shimmer", "Spike", "Shining Armor", "Maud Pie", "Cheese Sandwich"],
-      "SGR": ["Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Fluttershy", "Rarity", "Applejack", "Spike", "Princess Celestia"],
+      "SGR": ["Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Rarity", "Fluttershy", "Applejack", "Spike", "Princess Celestia"],
       "ZR": ["Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Rarity", "Fluttershy", "Applejack", "Happy 15th Anniversary!"],
       "SC": ["Princess Twilight Sparkle", "Pinkie Pie", "Rainbow Dash", "Rarity", "Fluttershy", "Applejack", "Princess Twilight Sparkle"],
       "◇ZR": ["Happy 15th Anniversary!"]
