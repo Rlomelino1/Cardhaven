@@ -170,7 +170,10 @@ data/{set}-pool.json    the 8 Riftbound sets, 1,304 printings with image URLs
                         (OGN 352, SFD 288, UNL 280, VEN 227, OPP 117, OGS 24, PR 13,
                         JDG 3)
 data/mlp/               Kayou My Little Pony card lists, written by build-mlp-pools.mjs
-                        (HY12 Radiant Moon Vol. 12: 148 cards by rarity, no names or art yet)
+                        (HY12 Radiant Moon Vol. 12: 164 cards in 10 rarities, with names)
+img/mlp/hy12/           a picture of every HY12 card, cropped once from public eBay listings
+                        (no source refreshes these): {id}.webp full size (~6.6 MB),
+                        {id}.sm.webp tile size (~3 MB, loaded lazily as tiles scroll in)
 data/pokemon/           176 slim per-set pools + sets.json + search-index.json (~8.9 MB)
 scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon) ·
                         build-mlp-pools.mjs (My Little Pony) ·

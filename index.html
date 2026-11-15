@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-jmwmXlEC0kjeiANxaxaVp/8hvWLH1ArkKfhzgYKuUNY=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-dONTnD0elkHF7DPmXJjf8XPjmFoqgtgHkEzXgRu9+Xs=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -890,6 +890,9 @@ body.game-pokemon .box .face.back img{border-radius:5%/3.6%}
   .gamebtn{font-size:12.5px}
   .shelf{grid-template-columns:repeat(auto-fill,minmax(94px,1fr)); gap:8px}
   .curve{min-height:72px}
+  /* Phone tiles are too narrow for the card number and a Missing badge side by side;
+     the faded, striped picture already marks a missing card. */
+  .cown.miss{display:none}
   .syncstate{order:3; flex:1 1 0; min-width:0; text-align:right; white-space:normal}
   .searchrow{flex-wrap:wrap; gap:6px}
   .searchrow .rescount{flex:1 1 100%}
@@ -1196,9 +1199,9 @@ const PK_ZONES = {
 
 // Kayou's My Little Pony cards are collected, not played: no deck rules, and rarity is
 // what sorts them. Rarities run from most common to rarest.
-const MLP_RARITY_ORDER = ["R","SR","HR","SSR","UR","LSR","SGR","ZR","SC"];
+const MLP_RARITY_ORDER = ["R","SR","HR","SSR","UR","LSR","SGR","ZR","SC","◇ZR"];
 const MLP_RARITY_DOT = {R:"#9A93AC", SR:"#5AA55C", HR:"#3D8FD9", SSR:"#3FA7A0",
-  UR:"#8B5CD6", LSR:"#D96BA8", SGR:"#E0B92E", ZR:"#C4682E", SC:"#E05A5A"};
+  UR:"#8B5CD6", LSR:"#D96BA8", SGR:"#E0B92E", ZR:"#C4682E", SC:"#E05A5A", "◇ZR":"#6FD3E0"};
 const MLP_ZONES = {
   main:{label:"Cards", short:"Cards", target:1, rule:"min"}
 };
@@ -1339,6 +1342,7 @@ function mlpNormalize(c){
     name:String(c.name), rarity:c.rarity ?? null,
     set:c.set ?? "", setName:c.setName ?? null, number:c.number ?? null,
     mlpId:c.mlpId ?? null, image:c.image ?? null, artist:c.artist ?? null,
+    landscape:!!c.landscape,
     text:null, type:null, supertype:null, energy:0, domains:[]
   };
 }
@@ -1835,7 +1839,7 @@ const GAMES = {
     axis: [], axisLabel: "", axisInk: {},
     types: [],
     rarityOrder: MLP_RARITY_ORDER, rarityDot: MLP_RARITY_DOT,
-    chaseRarities: ["SGR","ZR","SC"], chaseLabel: "SGR or rarer",
+    chaseRarities: ["SGR","ZR","SC","◇ZR"], chaseLabel: "SGR or rarer",
     energyCurve: false,
     legend: false,
     rules: {
@@ -1850,6 +1854,9 @@ const GAMES = {
     ls: { deck:"mlp.deck", openDeck:"mlp.open-deck" },
     normalize: mlpNormalize,
     refOf: mlpRefOf,
+    landscape: c => c.landscape,
+    // Pictures are served from this site as WebP: tiles get the small copy, the card view the full one.
+    thumb: (url, w) => w <= 300 ? url.replace(/\.webp$/, ".sm.webp") : url,
     cardKeyRef: ref => String(ref),
     cardLabelRef: (ref, fallback) => POOL_BY_REF.get(String(ref))?.name || fallback,
     setCode: c => String(c.set || "").toUpperCase(),
@@ -3394,6 +3401,7 @@ window.imgLoaded = function(img, name){
 };
  
 function thumb(url, w = 240){
+  if(GAME.thumb) return GAME.thumb(url, w);
   if(GAME.lazySets) return url;
   return url + (url.includes("?") ? "&" : "?") + `w=${w}&fm=webp`;
 }

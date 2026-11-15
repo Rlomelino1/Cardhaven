@@ -25,7 +25,7 @@ test.describe("My Little Pony, a collect-only game", () => {
     await openMlp(page, "#collection");
     await expect(page.locator("#colSetChips")).toContainText("Radiant Moon Vol. 12");
     const chips = await page.locator("#colTypeRow .chip").allTextContents();
-    expect(chips).toEqual(["R", "SR", "HR", "SSR", "UR", "LSR", "SGR"]);
+    expect(chips).toEqual(["R", "SR", "HR", "SSR", "UR", "LSR", "SGR", "ZR", "SC", "◇ZR"]);
     await expect(page.locator("#colTabs .coltab")).toHaveText([/^All/, /^Missing/, /^Owned/]);
 
     await page.locator("#colTypeRow .chip", { hasText: /^LSR$/ }).click();
@@ -35,6 +35,25 @@ test.describe("My Little Pony, a collect-only game", () => {
 
     await page.locator('#colGrid .ctile[data-ref="hy12-lsr-001"] .step').last().click();
     await expect(page.locator("#colTabs .coltab").nth(2)).toContainText("1");
+  });
+
+  test("every card has its picture: small on tiles, full size in the card view", async ({ page }) => {
+    await openMlp(page, "#collection");
+    const missing = await page.evaluate(() => S.pool.filter(c => !c.image).length);
+    expect(await page.evaluate(() => S.pool.length)).toBe(164);
+    expect(missing).toBe(0);
+    await page.locator("#colTypeRow .chip", { hasText: /^LSR$/ }).click();
+    const img = page.locator('#colGrid .ctile[data-ref="hy12-lsr-001"] img');
+    await expect(img).toHaveAttribute("src", "./img/mlp/hy12/hy12-lsr-001.sm.webp");
+    await expect.poll(() => img.evaluate(el => el.naturalWidth)).toBeGreaterThan(0);
+    await expect(page.locator('#colGrid .ctile[data-ref="hy12-lsr-001"] .cframe')).not.toHaveClass(/land/);
+
+    // Sideways-printed cards are turned to fit the portrait tile.
+    await page.locator("#colTypeRow .chip", { hasText: /^HR$/ }).click();
+    await expect(page.locator('#colGrid .ctile[data-ref="hy12-hr-001"] .cframe')).toHaveClass(/land/);
+
+    await page.locator('#colGrid .ctile[data-ref="hy12-hr-001"] .cframe').click();
+    await expect(page.locator("#modalBox .face.front img")).toHaveAttribute("src", "./img/mlp/hy12/hy12-hr-001.webp");
   });
 
   test("switching away and back keeps the other games' deckbuilders intact", async ({ page }) => {
