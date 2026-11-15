@@ -707,7 +707,7 @@ test.describe("the game switcher", () => {
         "#gameMenu .planned a, #gameMenu .planned button").length,
     }));
     expect(r.active).toBe("Riftbound");
-    expect(r.switchable).toEqual(["Pokémon TCG", "My Little Pony (Kayou)"]);
+    expect(r.switchable).toEqual(["Pokémon TCG", "My Little Pony"]);
     expect(r.planned).toEqual(["Magic: The Gathering", "One Piece Card Game"]);
     expect(r.plannedInteractive).toBe(0);
   });
