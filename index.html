@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-Maficzrlo10bqupS55+6uMPq9vxpCO9n1XIBrqNx5lc=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7C1KbzYiCafLaZ3YpjE+1FO1hecLrfGl8c613/CK+/E=' 'sha256-Yp2utl2lrnGpm7WTKd0NJwDEUWRmiLlYTBTCcW59uPw=' 'sha256-6mqc3BI7BjvojB+ddNivf7hQJIRy1Fdon+hYML8ouLE=' 'sha256-YYnhaQ1K+/WvuIwCj4R1xstbTLihWynHDbnBXEBxVLk=' 'self'; style-src 'unsafe-inline'; connect-src https://ep-flat-tooth-ay7zxkh2.neonauth.c-5.us-east-2.aws.neon.tech https://ep-flat-tooth-ay7zxkh2.apirest.c-5.us-east-2.aws.neon.tech https://rlomelino.goatcounter.com 'self'; img-src 'self' https://cmsassets.rgpub.io https://images.pokemontcg.io https://images.scrydex.com https://raw.githubusercontent.com data:; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="preconnect" href="https://cmsassets.rgpub.io">
 <link rel="preconnect" href="https://images.scrydex.com">
 <title>Card Haven — Deck Builder &amp; Collection</title>
@@ -1350,8 +1350,13 @@ function mlpNormalize(c){
   };
 }
 const mlpRefOf = c => c.mlpId || c.name;
-// Kayou prints a card's number as HY12-LSR-001; tiles show "LSR 001" to fit the corner.
-const mlpNumLabel = c => String(c.number ?? "").replace("-", " ");
+// Kayou prints a card's number as HY12-LSR-001; tiles show "HY12 LSR 001", so a tile in
+// All sets says which wave it is from.
+const mlpNumLabel = c => `${String(c.set || "").toUpperCase()} ${String(c.number ?? "").replace("-", " ")}`.trim();
+// In All sets, keep each wave together and in print order (numbers like "R-001" aren't numeric).
+const mlpByNumber = (a, b) =>
+  GAME.sets.findIndex(s => s.code === a.set) - GAME.sets.findIndex(s => s.code === b.set) ||
+  String(a.number ?? "").localeCompare(String(b.number ?? ""));
 const mlpModalMeta = c =>
   `<p class="sub">${esc(c.rarity || "")}${c.setName ? " · " + esc(c.setName) : ""} · ${esc(c.set ? `${c.set}-${c.number}` : String(c.number || ""))}</p>`;
 // If a card's picture can't load, its tile shows its rarity and number in the rarity's colour.
@@ -1871,6 +1876,7 @@ const GAMES = {
     deckCode: c => String(c.mlpId || "").toUpperCase(),
     deckRowCounts: () => "",
     numLabel: mlpNumLabel,
+    byNumber: mlpByNumber,
     tileMeta: c => esc(c.rarity || ""),
     tileBadges: () => "",
     modalMeta: mlpModalMeta,
@@ -3102,9 +3108,13 @@ function colMatchesSearch(c, term, qnorm){
   if((c.artist || "").toLowerCase().includes(term)) return true;
   const id = String(refOf(c) || "").toLowerCase();
   if(id.includes(term)) return true;
-  // The number as the tile prints it, so "LSR 001" or "lsr-001" finds that card.
+  // The number as the tile prints it, with or without the set code, so "HY12 LSR 001",
+  // "LSR 001" or "lsr-001" finds that card.
   const label = String(GAME.numLabel?.(c) ?? "").toLowerCase().replace(/[\s-]/g, "");
-  if(label && label.startsWith(term.replace(/[\s-]/g, ""))) return true;
+  const bare = term.replace(/[\s-]/g, "");
+  const code = String(c.set || "").toLowerCase();
+  if(label && bare && (label.startsWith(bare) ||
+     (code && label.startsWith(code) && label.slice(code.length).startsWith(bare)))) return true;
   if(qnorm){
     const num = c.number != null ? String(c.number).toLowerCase()
                                 : (id.split("-")[1] || "");
@@ -3281,7 +3291,7 @@ function renderCollection(){
   document.getElementById("colGrid").innerHTML = filtered.length
     ? rarities.map(r => {
         const cards = filtered.filter(c => rarityOf(c) === r)
-          .sort(byNumber);
+          .sort(GAME.byNumber || byNumber);
         if(!cards.length) return "";
         return `<h2 class="colsec" data-rarity="${esc(r)}">${esc(r)} <span class="seccount">${colSecCount(r, scope)}</span></h2>
           <div class="shelf colshelf">${cards.map(colTileHtml).join("")}</div>`;

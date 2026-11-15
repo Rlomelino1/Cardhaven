@@ -58,6 +58,23 @@ test.describe("My Little Pony, a collect-only game", () => {
     // Ids are unique across sets, so one log can hold every wave.
     expect(await page.evaluate(() => new Set(S.pool.map(c => c.mlpId)).size)).toBe(1017);
 
+    // All sets keeps each wave together, in print order, and tiles say which wave.
+    await page.locator("#colTypeRow .chip", { hasText: /^SC$/ }).click();
+    const refs = await page.locator("#colGrid .ctile").evaluateAll(els => els.map(e => e.dataset.ref));
+    expect(refs).toHaveLength(42);
+    expect(refs.slice(0, 8)).toEqual([1, 2, 3, 4, 5, 6, 7].map(n => `hy07-sc-00${n}`).concat("hy08-sc-001"));
+    expect(refs.at(-1)).toBe("hy12-sc-007");
+    await expect(page.locator("#colGrid .ctile .cnum").first()).toHaveText("HY07 SC 001");
+    await page.locator("#colTypeRow .chip", { hasText: /^SC$/ }).click();
+
+    // The number finds a card with the wave code, or in every wave without it.
+    await page.fill("#colQ", "HY10 LSR 001");
+    await expect(page.locator("#colGrid .ctile")).toHaveCount(1);
+    await expect(page.locator("#colGrid .ctile").first()).toHaveAttribute("data-ref", "hy10-lsr-001");
+    await page.fill("#colQ", "LSR 001");
+    await expect(page.locator("#colGrid .ctile")).toHaveCount(6);
+    await page.fill("#colQ", "");
+
     await page.locator('#colSetChips .setchip[data-a1="HY10"]').click();
     await expect(page.locator("#colGrid .ctile")).toHaveCount(158);
     await expect(page.locator("#colGrid h2.colsec", { hasText: /^SC/ })).toHaveText("SC 0/7");
@@ -72,7 +89,7 @@ test.describe("My Little Pony, a collect-only game", () => {
     await page.locator("#colTypeRow .chip", { hasText: /^LSR$/ }).click();
     await expect(page.locator("#colGrid .ctile")).toHaveCount(16);
     await expect(page.locator("#colGrid h2.colsec")).toHaveCount(1);
-    await expect(page.locator("#colGrid .ctile .cnum").first()).toHaveText("LSR 001");
+    await expect(page.locator("#colGrid .ctile .cnum").first()).toHaveText("HY12 LSR 001");
 
     await page.locator('#colGrid .ctile[data-ref="hy12-lsr-001"] .step').last().click();
     await expect(page.locator("#colTabs .coltab").nth(2)).toContainText("1");

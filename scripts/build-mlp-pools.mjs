@@ -52,7 +52,10 @@ for (const set of SETS) {
       const n = String(i + 1).padStart(3, "0");
       const mlpId = `${set.code.toLowerCase()}-${idPart(rarity)}-${n}`;
       const img = `img/mlp/${set.code.toLowerCase()}/${mlpId}.webp`;
-      const has = await exists(img);
+      // Tiles load the small copy, the card view the full one: a card needs both.
+      const [full, small] = await Promise.all([exists(img), exists(img.replace(/\.webp$/, ".sm.webp"))]);
+      if (full !== small) throw new Error(`${mlpId}: has ${full ? "no" : "only a"} .sm.webp picture`);
+      const has = full;
       if (has) pictured++;
       // Some Kayou cards are printed sideways; the site turns those to fit a portrait tile.
       const [w, h] = has ? await webpSize(img) : [0, 0];

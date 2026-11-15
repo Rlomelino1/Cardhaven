@@ -177,7 +177,7 @@ img/mlp/hy07…hy12/      a picture of every card (no source refreshes these). W
                         Edition Series 1–4 reprint those waves; the few cards missing there
                         and all of Wave 12 are cropped from public eBay listings.
                         {id}.webp full size (~47 MB in all, loaded only in the card view),
-                        {id}.sm.webp tile size (~21 MB, loaded lazily as tiles scroll in)
+                        {id}.sm.webp tile size (~19 MB, loaded lazily as tiles scroll in)
 data/pokemon/           176 slim per-set pools + sets.json + search-index.json (~8.9 MB)
 scripts/                build-pool-v2.mjs (Riftbound) · build-pokemon-pools.mjs (Pokémon) ·
                         build-mlp-pools.mjs (My Little Pony) ·
