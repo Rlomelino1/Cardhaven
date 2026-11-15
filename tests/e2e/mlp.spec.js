@@ -55,6 +55,12 @@ test.describe("My Little Pony, a collect-only game", () => {
       return out;
     }, RARITIES);
     expect(counts).toEqual(WAVES);
+    // Kayou's US site swaps these two names; the pictures and print numbers are right.
+    const nameOf = (id) => page.evaluate((id) => S.pool.find(c => c.mlpId === id).name, id);
+    for (const w of ["hy07", "hy08"]) {
+      expect(await nameOf(`${w}-sgr-004`)).toBe("Rarity");
+      expect(await nameOf(`${w}-sgr-005`)).toBe("Fluttershy");
+    }
     // Ids are unique across sets, so one log can hold every wave.
     expect(await page.evaluate(() => new Set(S.pool.map(c => c.mlpId)).size)).toBe(1017);
 
